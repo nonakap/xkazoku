@@ -1,4 +1,4 @@
-/*	$Id: inputmng.c,v 1.2 2003/04/22 07:15:51 yui Exp $	*/
+/*	$Id: inputmng.c,v 1.3 2003/08/13 05:01:54 yui Exp $	*/
 
 #include "compiler.h"
 #include "inputmng.h"
@@ -28,7 +28,7 @@ static const KEYBIND keybind[] = {
 	{ SDLK_RIGHT,	KEY_RIGHT },
 	{ SDLK_RETURN,	KEY_ENTER },
 	{ SDLK_ESCAPE,	KEY_MENU },
-	{ SDLK_TAB,	KEY_SKIP },	/* ¤È¤ê¤¢¤¨¤º¤Í¡Ä */
+	{ SDLK_TAB,	KEY_SKIP },	/* ‚Æ‚è‚ ‚¦‚¸‚Ëc */
 };
 
 void
@@ -36,7 +36,7 @@ inputmng_init(void)
 {
 	INPMNG *im = &inpmng;
 
-	bzero(im, sizeof(*im));
+	memset(im, 0, sizeof(*im));
 	im->kbs = NELEMENTS(keybind);
 	__ASSERT(im->kbs <= NELEMENTS(im->kb));
 	CopyMemory(im->kb, keybind, sizeof(keybind));

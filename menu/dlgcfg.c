@@ -1,12 +1,12 @@
 #include	"compiler.h"
 #include	"gamecore.h"
-#include	"arcfile.h"
-#include	"sysmenu.h"
 #include	"menubase.h"
-#include	"sysmenu.res"
-#include	"dlgcfg.h"
 #include	"sound.h"
+#include	"arcfile.h"
 #include	"sstream.h"
+#include	"sysmenu.res"
+#include	"sysmenu.h"
+#include	"dlgcfg.h"
 
 
 // move(11,27)
@@ -17,53 +17,71 @@ static const char str_test[] = "Test";
 static const char str_min[] = "MIN";
 static const char str_max[] = "MAX";
 
-static const BYTE str_syscfg[] = {		// [  ¥·¥¹¥Æ¥àÀßÄê  ]
+static const BYTE str_syscfg[] = {		// [  ƒVƒXƒeƒ€Ý’è  ]
 		0x20,0x20,0xbc,0xbd,0xc3,0xd1,0x90,0xdd,0x92,0xe8,0x20,0x20,0x00};
 
-static const BYTE str_voice[] = {		// ²»À¼
+static const BYTE str_voice[] = {		// ‰¹º
 		0x89,0xb9,0x90,0xba,0x00};
-static const BYTE str_text[] = {		// ¥Æ¥­¥¹¥È
+static const BYTE str_text[] = {		// ƒeƒLƒXƒg
 		0x83,0x65,0x83,0x4c,0x83,0x58,0x83,0x67,0x00};
-static const BYTE str_textvoice[] = {	// ¥Æ¥­¥¹¥È¡Ü²»À¼
+static const BYTE str_textvoice[] = {	// ƒeƒLƒXƒg{‰¹º
 		0x83,0x65,0x83,0x4c,0x83,0x58,0x83,0x67,0x81,0x7b,0x89,0xb9,0x90,0xba,
 		0x00};
-static const BYTE str_se[] = {			// ¸ú²Ì²»
+static const BYTE str_se[] = {			// Œø‰Ê‰¹
 		0x8c,0xf8,0x89,0xca,0x89,0xb9,0x00};
-static const BYTE str_bgm[] = {			// £Â£Ç£Í
+static const BYTE str_bgm[] = {			// ‚a‚f‚l
 		0x82,0x61,0x82,0x66,0x82,0x6c,0x00};
 
+static const BYTE str_savescrn[] = {	// ‰æ–Ê•Û‘¶
+		0x89,0xe6,0x96,0xca,0x95,0xdb,0x91,0xb6,0x00};
+static const BYTE str_savetype[] = {	// •Û‘¶•û–@
+		0x95,0xdb,0x91,0xb6,0x95,0xfb,0x96,0x40,0x00};
+static const BYTE str_setwall[] = {		// •ÇŽ†‚Æ‚µ‚Ä•Û‘¶
+		0x95,0xc7,0x8e,0x86,0x82,0xc6,0x82,0xb5,0x82,0xc4,0x95,0xdb,0x91,0xb6,
+		0x00};
+static const BYTE str_gamedir[] = {		// ƒQ[ƒ€ƒtƒHƒ‹ƒ_‚É•Û‘¶
+		0x83,0x51,0x81,0x5b,0x83,0x80,0x83,0x74,0x83,0x48,0x83,0x8b,0x83,0x5f,
+		0x82,0xc9,0x95,0xdb,0x91,0xb6,0x00};
+static const BYTE str_seldir[] = {		// •Û‘¶æŽw’è
+		0x95,0xdb,0x91,0xb6,0x90,0xe6,0x8e,0x77,0x92,0xe8,0x00};
+static const BYTE str_browse[] = {		// ŽQÆ
+		0x8e,0x51,0x8f,0xc6,0x00};
+static const BYTE str_lb[] = {			// ¶‰º
+		0x8d,0xb6,0x89,0xba,0x00};
+static const BYTE str_rb[] = {			// ‰E‰º
+		0x89,0x45,0x89,0xba,0x00};
 
-static const BYTE str_window[] = {		// ¥¦¥£¥ó¥É¥¦
+static const BYTE str_window[] = {		// ƒEƒBƒ“ƒhƒE
 		0xb3,0xa8,0xdd,0xc4,0xde,0xb3,0x00};
 
-static const BYTE str_wincol[] = {		// ¥¦¥£¥ó¥É¥¦¿§
+static const BYTE str_wincol[] = {		// ƒEƒBƒ“ƒhƒEF
 		0x83,0x45,0x83,0x42,0x83,0x93,0x83,0x68,0x83,0x45,0x90,0x46,0x00};
-static const BYTE str_wincolr[] = {		// ÀÖ(R)
+static const BYTE str_wincolr[] = {		// Ô(R)
 		0x90,0xd4,0x28,0x52,0x29,0x00};
-static const BYTE str_wincolg[] = {		// ÎÐ(G)
+static const BYTE str_wincolg[] = {		// —Î(G)
 		0x97,0xce,0x28,0x47,0x29,0x00};
-static const BYTE str_wincolb[] = {		// ÀÄ(B)
+static const BYTE str_wincolb[] = {		// Â(B)
 		0x90,0xc2,0x28,0x42,0x29,0x00};
-static const BYTE str_wincole[] = {		// Æ©²áÅÙ(%)
+static const BYTE str_wincole[] = {		// “§‰ß“x(%)
 		0x93,0xa7,0x89,0xdf,0x93,0x78,0x28,0x25,0x29,0x00};
-static const BYTE str_wincold[] = {		// É¸½àÀßÄê
+static const BYTE str_wincold[] = {		// •W€Ý’è
 		0x95,0x57,0x8f,0x80,0x90,0xdd,0x92,0xe8,0x00};
 
 
 #ifndef SIZE_QVGA
 
-static const MENUPRM res_cfg[] = {
-			{DLGTYPE_TABLIST,	DID_TAB,		0,
+// ƒVƒXƒeƒ€ƒƒjƒ…[EƒvƒƒpƒeƒBƒV[ƒg
+static const MENUPRM res_cfg[] = {			// 433,328
+			{DLGTYPE_TABLIST,	DID_TAB,		MENU_TABSTOP,
 				NULL,									  7,   6, 419, 289},
-			{DLGTYPE_BUTTON,	DID_OK,			0,
+			{DLGTYPE_BUTTON,	DID_OK,			MENU_TABSTOP,
 				str_ok,									150, 301,  88,  21},
 			{DLGTYPE_BUTTON,	DID_CANCEL,		0,
 				str_cancel,								245, 301,  88,  21},
 			{DLGTYPE_BUTTON,	DID_APPLY,		MENU_GRAY,
 				str_apply,								339, 301,  88,  21}};
 
-
-// ¥ô¥©¥¤¥¹Ìµ¤·¥·¥¹¥Æ¥à¥á¥Ë¥å¡¼
+// ƒ”ƒHƒCƒX–³‚µƒVƒXƒeƒ€ƒƒjƒ…[
 static const MENUPRM res_108[] = {
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_msgspd,								 23,  44, 387,  80},
@@ -73,7 +91,6 @@ static const MENUPRM res_108[] = {
 				str_max,								375,  60,  32,  13},
 			{DLGTYPE_SLIDER,	DID_TEXTSPD,	MENU_TABSTOP,
 				(void *)SLIDERPOS(20, 0),				147,  79, 247,  21},
-			    // ¢¬ µÕ¡¢½¤ÀµºÑ NONAKA.K
 
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_sndmd,								 23, 134, 387, 134},
@@ -93,8 +110,7 @@ static const MENUPRM res_108[] = {
 				(void *)SLIDERPOS(-16, 8),				147, 215, 247,  21},
 };
 
-
-// ¥ô¥©¥¤¥¹¤Î¤ßÍ­¤ê¥·¥¹¥Æ¥à¥á¥Ë¥å¡¼
+// ƒ”ƒHƒCƒX‚Ì‚Ý—L‚èƒVƒXƒeƒ€ƒƒjƒ…[
 static const MENUPRM res_109[] = {
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_msgmd,								 23,  36, 387,  41},
@@ -113,7 +129,6 @@ static const MENUPRM res_109[] = {
 				str_max,								375,  95,  32,  13},
 			{DLGTYPE_SLIDER,	DID_TEXTSPD,	MENU_TABSTOP,
 				(void *)SLIDERPOS(20, 0),				147, 110, 247,  21},
-			    // ¢¬ µÕ¡¢½¤ÀµºÑ NONAKA.K
 
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_sndmd,								 23, 146, 387, 134},
@@ -139,8 +154,33 @@ static const MENUPRM res_109[] = {
 				(void *)SLIDERPOS(-16, 8),				147, 238, 247,  21},
 };
 
+// ‰æ–Ê•Û‘¶
+static const MENUPRM res_189[] = {			// 327,239
+			{DLGTYPE_FRAME,		DID_STATIC,		0,
+				str_savetype,							  9,   8, 306, 120},
+			{DLGTYPE_RADIO,		DID_SCRNSAVE0,	MENU_GRAY | MENU_TABSTOP,
+				str_setwall,							 19,  31, 292,  13},
+			{DLGTYPE_RADIO,		DID_SCRNSAVE1,	0,
+				str_gamedir,							 19,  54, 292,  13},
+			{DLGTYPE_RADIO,		DID_SCRNSAVE2,	MENU_GRAY,
+				str_seldir,								 19,  76, 292,  13},
+			{DLGTYPE_EDIT,		DID_SCRNDIR,	MENU_GRAY | MENU_TABSTOP,
+				NULL,									 18,  98, 219,  21},
+			{DLGTYPE_BUTTON,	DID_SCRNDIRB,	MENU_GRAY | MENU_TABSTOP,
+				str_browse,								235,  98,  71,  21},
+			{DLGTYPE_FRAME,		DID_STATIC,		0,
+				"Copyright(C)",							  9, 135, 306,  53},
+			{DLGTYPE_RADIO,		DID_CREDIT0,	MENU_TABSTOP,
+				str_lb,									 19, 159, 128,  13},
+			{DLGTYPE_RADIO,		DID_CREDIT1,	0,
+				str_rb,									176, 159, 128,  13},
+			{DLGTYPE_BUTTON,	DID_OK,			MENU_TABSTOP,
+				str_ok,									114, 203,  88,  21},
+			{DLGTYPE_BUTTON,	DID_CANCEL,		0,
+				str_cancel,								222, 203,  88,  21},
+};
 
-// ¥ô¥©¥¤¥¹Í­¤ê¥·¥¹¥Æ¥à¥á¥Ë¥å¡¼
+// ƒ”ƒHƒCƒX—L‚èƒVƒXƒeƒ€ƒƒjƒ…[
 static const MENUPRM res_191[] = {
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_msgmd,								 23,  36, 387,  41},
@@ -157,7 +197,6 @@ static const MENUPRM res_191[] = {
 				str_max,								375,  95,  32,  13},
 			{DLGTYPE_SLIDER,	DID_TEXTSPD,	MENU_TABSTOP,
 				(void *)SLIDERPOS(20, 0),				147, 110, 247,  21},
-			    // ¢¬ µÕ¡¢½¤ÀµºÑ NONAKA.K
 
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_sndmd,								 23, 146, 387, 134},
@@ -183,8 +222,7 @@ static const MENUPRM res_191[] = {
 				(void *)SLIDERPOS(-16, 8),				147, 238, 247,  21},
 };
 
-
-// ¥¦¥£¥ó¥É¥¦¿§
+// ƒEƒBƒ“ƒhƒEF
 static const MENUPRM res_199[] = {
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_wincol,								 20,  35, 394, 245},
@@ -222,18 +260,18 @@ static const MENUPRM res_199[] = {
 
 #else
 
-static const MENUPRM res_cfg[] = {
-			{DLGTYPE_TABLIST,	DID_TAB,		0,
+// ƒVƒXƒeƒ€ƒƒjƒ…[EƒvƒƒpƒeƒBƒV[ƒg
+static const MENUPRM res_cfg[] = {			// 288,216
+			{DLGTYPE_TABLIST,	DID_TAB,		MENU_TABSTOP,
 				NULL,									  5,   3, 279, 194},
-			{DLGTYPE_BUTTON,	DID_OK,			0,
+			{DLGTYPE_BUTTON,	DID_OK,			MENU_TABSTOP,
 				str_ok,									102, 200,  58,  15},
 			{DLGTYPE_BUTTON,	DID_CANCEL,		0,
 				str_cancel,								164, 200,  58,  15},
 			{DLGTYPE_BUTTON,	DID_APPLY,		MENU_GRAY,
 				str_apply,								226, 200,  58,  15}};
 
-
-// ¥ô¥©¥¤¥¹Ìµ¤·¥·¥¹¥Æ¥à¥á¥Ë¥å¡¼
+// ƒ”ƒHƒCƒX–³‚µƒVƒXƒeƒ€ƒƒjƒ…[
 static const MENUPRM res_108[] = {
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_msgspd,								 15,  29, 258,  54},
@@ -243,7 +281,6 @@ static const MENUPRM res_108[] = {
 				str_max,								247,  38,  24,  11},
 			{DLGTYPE_SLIDER,	DID_TEXTSPD,	MENU_TABSTOP,
 				(void *)SLIDERPOS(20, 0),				 98,  52, 164,  15},
-			    // ¢¬ µÕ¡¢½¤ÀµºÑ NONAKA.K
 
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_sndmd,								 15,  89, 258,  89},
@@ -264,8 +301,7 @@ static const MENUPRM res_108[] = {
 				(void *)SLIDERPOS(-16, 8),				 98, 145, 164,  15},
 };
 
-
-// ¥ô¥©¥¤¥¹¤Î¤ßÍ­¤ê¥·¥¹¥Æ¥à¥á¥Ë¥å¡¼
+// ƒ”ƒHƒCƒX‚Ì‚Ý—L‚èƒVƒXƒeƒ€ƒƒjƒ…[
 static const MENUPRM res_109[] = {
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_msgmd,								 15,  24, 258,  28},
@@ -284,7 +320,6 @@ static const MENUPRM res_109[] = {
 				str_max,								247,  62,  24,  11},
 			{DLGTYPE_SLIDER,	DID_TEXTSPD,	MENU_TABSTOP,
 				(void *)SLIDERPOS(20, 0),				 98,  73, 164,  15},
-			    // ¢¬ µÕ¡¢½¤ÀµºÑ NONAKA.K
 
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_sndmd,								 15,  97, 258,  85},
@@ -310,8 +345,33 @@ static const MENUPRM res_109[] = {
 				(void *)SLIDERPOS(-16, 8),				 98, 158, 164,  15},
 };
 
+// ‰æ–Ê•Û‘¶
+static const MENUPRM res_189[] = {			// 218,159
+			{DLGTYPE_FRAME,		DID_STATIC,		0,
+				str_savetype,							  6,   4, 204,  80},
+			{DLGTYPE_RADIO,		DID_SCRNSAVE0,	MENU_GRAY | MENU_TABSTOP,
+				str_setwall,							 12,  20, 192,  11},
+			{DLGTYPE_RADIO,		DID_SCRNSAVE1,	0,
+				str_gamedir,							 12,  35, 192,  11},
+			{DLGTYPE_RADIO,		DID_SCRNSAVE2,	MENU_GRAY,
+				str_seldir,								 12,  50, 192,  11},
+			{DLGTYPE_EDIT,		DID_SCRNDIR,	MENU_GRAY | MENU_TABSTOP,
+				NULL,									 12,  65, 146,  15},
+			{DLGTYPE_BUTTON,	DID_SCRNDIRB,	MENU_GRAY | MENU_TABSTOP,
+				str_browse,								156,  65,  47,  15},
+			{DLGTYPE_FRAME,		DID_STATIC,		0,
+				"Copyright(C)",							  6,  90, 204,  35},
+			{DLGTYPE_RADIO,		DID_CREDIT0,	MENU_TABSTOP,
+				str_lb,									 12, 106,  80,  11},
+			{DLGTYPE_RADIO,		DID_CREDIT1,	0,
+				str_rb,									117, 106,  80,  11},
+			{DLGTYPE_BUTTON,	DID_OK,			MENU_TABSTOP,
+				str_ok,									 86, 134,  58,  15},
+			{DLGTYPE_BUTTON,	DID_CANCEL,		0,
+				str_cancel,								148, 134,  58,  15},
+};
 
-// ¥ô¥©¥¤¥¹Í­¤ê¥·¥¹¥Æ¥à¥á¥Ë¥å¡¼
+// ƒ”ƒHƒCƒX—L‚èƒVƒXƒeƒ€ƒƒjƒ…[
 static const MENUPRM res_191[] = {
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_msgmd,								 15,  24, 258,  28},
@@ -328,7 +388,6 @@ static const MENUPRM res_191[] = {
 				str_max,								247,  61,  24,  11},
 			{DLGTYPE_SLIDER,	DID_TEXTSPD,	MENU_TABSTOP,
 				(void *)SLIDERPOS(20, 0),				 98,  73, 164,  15},
-			    // ¢¬ µÕ¡¢½¤ÀµºÑ NONAKA.K
 
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_sndmd,								 15,  97, 258,  85},
@@ -354,8 +413,7 @@ static const MENUPRM res_191[] = {
 				(void *)SLIDERPOS(-16, 8),				 98, 158, 164,  15},
 };
 
-
-// ¥¦¥£¥ó¥É¥¦¿§
+// ƒEƒBƒ“ƒhƒEF
 static const MENUPRM res_199[] = {
 			{DLGTYPE_FRAME,		DID_STATIC,		0,
 				str_wincol,								 13,  24, 262, 163},
@@ -533,6 +591,9 @@ static BOOL gcms4(void *vpItem, void *vpArg) {
 				(val == gcdlg->num)) {
 				menudlg_setval(gcdlg->id, 1);
 			}
+			if (gcdlg->disable) {
+				menudlg_setenable(gcdlg->id, FALSE);
+			}
 			break;
 
 		case CFGTYPE_CHECK:
@@ -558,6 +619,9 @@ static BOOL gcms4(void *vpItem, void *vpArg) {
 									GCFG_CXRITEM - 1, GCFG_CYRITEM);
 			if (scr_valget(gcdlg->c.r.val, &val) == SUCCESS) {
 				menudlg_setval(gcdlg->id, val);
+			}
+			if (gcdlg->disable) {
+				menudlg_setenable(gcdlg->id, FALSE);
 			}
 			break;
 
@@ -590,6 +654,9 @@ static BOOL gcms4(void *vpItem, void *vpArg) {
 #endif
 			if (scr_valget(gcdlg->c.r.val, &val) == SUCCESS) {
 				menudlg_setval(gcdlg->id, val);
+			}
+			if (gcdlg->disable) {
+				menudlg_setenable(gcdlg->id, FALSE);
 			}
 			break;
 	}
@@ -728,7 +795,7 @@ static BOOL gcmg(void *vpItem, void *vpArg) {
 
 int cfgdlg_cmd(int msg, MENUID id) {
 
-	GAMECFG			gc;
+	GAMECFG			gamecfg;
 	int				i;
 	int				val;
 	int				page;
@@ -738,7 +805,7 @@ const MENUPRM		*res;
 	int				tfile;
 	ARCSTREAMARG	asa;
 
-	gc = &gamecore.gamecfg;
+	gamecfg = &gamecore.gamecfg;
 	switch(msg) {
 		case DLGMSG_CREATE:
 			page = 0;
@@ -747,21 +814,47 @@ const MENUPRM		*res;
 			page++;
 			menudlg_setpage((MENUID)page);
 			menudlg_itemappend(DID_TAB, (char *)str_syscfg);
-			gametype = gamecore.sys.type;
-			if (gametype & GAME_VOICEONLY) {
-				res = res_109;
-				val = sizeof(res_109)/sizeof(MENUPRM);
-			}
-			else if (gametype & GAME_VOICE) {
-				res = res_191;
-				val = sizeof(res_191)/sizeof(MENUPRM);
-			}
-			else {
-				res = res_108;
-				val = sizeof(res_108)/sizeof(MENUPRM);
+			switch(gamecfg->msgdlgtype) {
+				case 0:
+					res = res_109;
+					val = sizeof(res_109)/sizeof(MENUPRM);
+					break;
+				case 1:
+					res = res_191;
+					val = sizeof(res_191)/sizeof(MENUPRM);
+					break;
+				case 2:
+				default:
+					res = res_108;
+					val = sizeof(res_108)/sizeof(MENUPRM);
+					break;
 			}
 			menudlg_appends(res, val);
+			if (gamecfg->msgdisable) {
+				menudlg_setenable(DID_TEXTSPD, FALSE);
+			}
+			if (gamecfg->voicedisable) {
+				menudlg_setenable(DID_VOICE, FALSE);
+				menudlg_setenable(DID_VOICEVOL, FALSE);
+				menudlg_setenable(DID_VOICETEST, FALSE);
+			}
+			if (gamecfg->sedisable) {
+				menudlg_setenable(DID_SE, FALSE);
+				menudlg_setenable(DID_SEVOL, FALSE);
+				menudlg_setenable(DID_SETEST, FALSE);
+			}
+			if (gamecfg->bgmdisable) {
+				menudlg_setenable(DID_BGM, FALSE);
+				menudlg_setenable(DID_BGMVOL, FALSE);
+			}
+			if (gamecfg->voicetestdisable) {
+				menudlg_setenable(DID_VOICETEST, FALSE);
+			}
+			if (gamecfg->setestdisable) {
+				menudlg_setenable(DID_SETEST, FALSE);
+			}
 
+			gametype = gamecore.sys.type;
 			if (gametype & GAME_HAVEALPHA) {
 				page++;
 				menudlg_setpage((MENUID)page);
@@ -777,19 +870,19 @@ const MENUPRM		*res;
 				menudlg_disppagehidden((MENUID)(i + 1), TRUE);
 			}
 
-			val = gc->msgtype;
+			val = gamecfg->msgtype;
 			if ((val >= 0) && (val < 3)) {
 				menudlg_setval((MENUID)(DID_TEXTMD0 + val), 1);
 			}
-			menudlg_setval(DID_TEXTSPD, gc->textwaittick / 5);
-			menudlg_setval(DID_BGM, gc->bgm);
-			menudlg_setval(DID_SE, gc->se);
-			menudlg_setval(DID_VOICE, gc->voice);
-			menudlg_setval(DID_BGMVOL, gc->bgmvol);
-			menudlg_setval(DID_SEVOL, gc->sevol);
-			menudlg_setval(DID_VOICEVOL, gc->voicevol);
+			menudlg_setval(DID_TEXTSPD, gamecfg->textwaittick / 5);
+			menudlg_setval(DID_BGM, gamecfg->bgm);
+			menudlg_setval(DID_SE, gamecfg->se);
+			menudlg_setval(DID_VOICE, gamecfg->voice);
+			menudlg_setval(DID_BGMVOL, gamecfg->bgmvol);
+			menudlg_setval(DID_SEVOL, gamecfg->sevol);
+			menudlg_setval(DID_VOICEVOL, gamecfg->voicevol);
 
-			setwincol(gc->winrgb, gc->winalpha);
+			setwincol(gamecfg->winrgb, gamecfg->winalpha);
 
 			break;
 
@@ -816,14 +909,14 @@ const MENUPRM		*res;
 						if (!tfile) {
 							break;
 						}
-						tfile = rand() % tfile;
+						tfile = GETRAND() % tfile;
 						if (arcfile_gettestname(ARCTYPE_VOICE, tfile,
 														work, sizeof(work))) {
 							break;
 						}
 						asa.type = ARCTYPE_VOICE;
 						asa.fname = work;
-						soundmix_load(SOUNDTRK_VOICE, &se_stream, &asa);
+						soundmix_load(SOUNDTRK_VOICE, arcse_ssopen, &asa);
 						soundmix_play(SOUNDTRK_VOICE, 0, 0);
 					}
 					break;
@@ -844,14 +937,14 @@ const MENUPRM		*res;
 						if (!tfile) {
 							break;
 						}
-						tfile = rand() % tfile;
+						tfile = GETRAND() % tfile;
 						if (arcfile_gettestname(ARCTYPE_SE, tfile,
 														work, sizeof(work))) {
 							break;
 						}
 						asa.type = ARCTYPE_SE;
 						asa.fname = work;
-						soundmix_load(SOUNDTRK_SE, &se_stream, &asa);
+						soundmix_load(SOUNDTRK_SE, arcse_ssopen, &asa);
 						sndplay_seplay(0x20, 0);
 					}
 					break;
@@ -903,35 +996,44 @@ const MENUPRM		*res;
 					break;
 
 				case DID_OK:
+				case DID_APPLY:
 					for (i=0; i<3; i++) {
 						if (menudlg_getval((MENUID)(DID_TEXTMD0 + i))) {
-							gc->msgtype = i;
+							gamecfg->msgtype = i;
 							break;
 						}
 					}
-					gc->textwaittick = menudlg_getval(DID_TEXTSPD) * 5;
-					gc->bgm = menudlg_getval(DID_BGM);
-					gc->se = menudlg_getval(DID_SE);
-					gc->voice = menudlg_getval(DID_VOICE);
-					gc->bgmvol = menudlg_getval(DID_BGMVOL);
-					gc->sevol = menudlg_getval(DID_SEVOL);
-					gc->voicevol = menudlg_getval(DID_VOICEVOL);
+					gamecfg->textwaittick = menudlg_getval(DID_TEXTSPD) * 5;
+					gamecfg->bgm = menudlg_getval(DID_BGM);
+					gamecfg->se = menudlg_getval(DID_SE);
+					gamecfg->voice = menudlg_getval(DID_VOICE);
+					gamecfg->bgmvol = menudlg_getval(DID_BGMVOL);
+					gamecfg->sevol = menudlg_getval(DID_SEVOL);
+					gamecfg->voicevol = menudlg_getval(DID_VOICEVOL);
 					val = menudlg_getval(DID_WINCOLR) << 16;
 					val |= (menudlg_getval(DID_WINCOLG) << 8);
 					val |= (menudlg_getval(DID_WINCOLB));
-					gc->winrgb = val;
+					gamecfg->winrgb = val;
 					val = menudlg_getval(DID_WINCOLE);
-					gc->winalpha = (val * 64) / 100;
+					gamecfg->winalpha = (val * 64) / 100;
 
 					listarray_enum(gamecore.cfglist, gcmg, NULL);
 
-					menubase_close();
+					if (id == DID_APPLY) {
+						menudlg_setenable(DID_APPLY, FALSE);
+					}
+					else {
+						menubase_close();
+					}
 					break;
 
 				case DID_CANCEL:
 					resetcfg();
 					menubase_close();
 					break;
+			}
+			if ((id != DID_OK) &&  (id != DID_CANCEL) && (id != DID_APPLY)) {
+				menudlg_setenable(DID_APPLY, TRUE);
 			}
 			break;
 
@@ -941,5 +1043,74 @@ const MENUPRM		*res;
 			break;
 	}
 	return(0);
+}
+
+void cfgdlg_open(void) {
+
+#ifndef SIZE_QVGA
+	menudlg_create(433, 328, (char *)str_prop, cfgdlg_cmd);
+#else
+	menudlg_create(288, 216, (char *)str_prop, cfgdlg_cmd);
+#endif
+}
+
+
+// ----
+
+static	BOOL	ssexec;
+
+static int ssdlg_cmd(int msg, MENUID id) {
+
+	SCRNSHOT_T	*ss;
+	BYTE		type;
+
+	ss = &gamecore.scrnshot;
+	switch(msg) {
+		case DLGMSG_CREATE:
+			menudlg_appends(res_189, sizeof(res_189)/sizeof(MENUPRM));
+			menudlg_setval(DID_SCRNSAVE1, 1);
+			menudlg_settext(DID_SCRNDIR, gamecore.suf.scriptpath);
+			menudlg_setval((MENUID)((!ss->pos)?DID_CREDIT0:DID_CREDIT1), 1);
+			break;
+
+		case DLGMSG_COMMAND:
+			switch(id) {
+				case DID_OK:
+					type = 0;
+					if (menudlg_getval(DID_SCRNSAVE1)) {
+						type = 1;
+					}
+					else if (menudlg_getval(DID_SCRNSAVE1)) {
+						type = 1;
+					}
+					ss->type = type;
+					ss->pos = (menudlg_getval(DID_CREDIT0))?0:1;
+					ssexec = TRUE;
+					menubase_close();
+					break;
+
+				case DID_CANCEL:
+					menubase_close();
+					break;
+			}
+			break;
+
+		case DLGMSG_CLOSE:
+			menubase_close();
+			break;
+	}
+	return(0);
+}
+
+BOOL ssdlg_open(void) {
+
+	ssexec = FALSE;
+#ifndef SIZE_QVGA
+	menudlg_create(327, 239, (char *)str_savescrn, ssdlg_cmd);
+#else
+	menudlg_create(218, 159, (char *)str_savescrn, ssdlg_cmd);
+#endif
+	menubase_modalproc();
+	return(ssexec);
 }
 

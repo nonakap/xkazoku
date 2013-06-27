@@ -8,15 +8,12 @@
 // -------------------------------------------------------------
 
 #include	"compiler.h"
+#include	"cddamng.h"
 #include	"gamecore.h"
 #include	"isf_cmd.h"
-#include	"cddamng.h"
-#include	"sound.h"
-#include	"sstream.h"
-#include	"dosio.h"
 
 
-// DAE : CDDA§Œ¿ﬂƒÍ (T.Yui)
+// DAE : CDDAÇÃê›íË (T.Yui)
 int isfcmd_90(SCR_OPE *op) {
 
 	SINT32	cddastart;
@@ -31,7 +28,7 @@ int isfcmd_90(SCR_OPE *op) {
 }
 
 
-// DAP : CDDA§Œ∫∆¿∏ (T.Yui)
+// DAP : CDDAÇÃçƒê∂ (T.Yui)
 int isfcmd_91(SCR_OPE *op) {
 
 	SINT32	track;
@@ -52,7 +49,7 @@ int isfcmd_91(SCR_OPE *op) {
 }
 
 
-// DAS : CDDA§Œƒ‰ªﬂ (T.Yui)
+// DAS : CDDAÇÃí‚é~ (T.Yui)
 int isfcmd_92(SCR_OPE *op) {
 
 	SINT32	tick;

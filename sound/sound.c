@@ -1,8 +1,20 @@
+// ----------------------------------------------------------------
+//	Sound Mix
+//
+//			(c) 2002, K.Takagi(Kenjo) [waffle@mac.com]
+//			(c) 2002, K.Nonaka        [aw9k-nnk@asahi-net.or.jp]
+//			(c) 2002, T.Yui           [myu@yui.ne.jp]
+//
+//		sound.c
+//			サウンド合成メイン
+// ----------------------------------------------------------------
+
 #include	"compiler.h"
 #include	"sound.h"
+#include	"sndcsec.h"
 
 
-static	SOUND_T		*snd = NULL;
+static	SNDHDL	_snd = NULL;
 
 // FOR I=-16 TO 8:PRINT INT((2^(I/4)) * 256);",";:NEXT
 static const int gaintbl[24+1] =
@@ -10,6 +22,22 @@ static const int gaintbl[24+1] =
 				  64,  76,  90, 107, 128, 152, 181, 215,
 				 256, 304, 362, 430, 512, 608, 724, 861, 1024};
 
+
+static int defdecrew(SMIXTRACK trk) {
+
+	trk->fremain = trk->loopsize;
+	sndmix_datatrash(trk, (UINT)-1);
+	if (trk->stream.ssseek == NULL) {
+		return(SNDMIX_FAILURE);
+	}
+	else if (trk->stream.ssseek(&trk->stream, trk->loopfpos, SSSEEK_SET)
+														== trk->loopfpos) {
+		return(SNDMIX_SUCCESS);
+	}
+	else {
+		return(SNDMIX_STREAMERROR);
+	}
+}
 
 UINT sndmix_dataload(SMIXTRACK trk, UINT size) {
 
@@ -19,7 +47,11 @@ UINT sndmix_dataload(SMIXTRACK trk, UINT size) {
 	else {
 		size -= trk->indatas;
 		size = min(size, trk->fremain);
-		size = trk->stream_read(trk->stream, trk->data + trk->indatas, size);
+		if (trk->stream.ssread == NULL) {
+			return(0);
+		}
+		size = trk->stream.ssread(&trk->stream,
+											trk->data + trk->indatas, size);
 		if (size == (UINT)-1) {
 			return(size);
 		}
@@ -38,11 +70,12 @@ UINT sndmix_dataread(SMIXTRACK trk, void *buf, UINT size) {
 	ret = min(size, trk->indatas);
 	if (ret) {
 		CopyMemory(buf, trk->data, ret);
+		buf = (void *)(((BYTE *)buf) + ret);
 		sndmix_datatrash(trk, ret);
 		size -= ret;
 	}
-	if (size) {
-		size = trk->stream_read(trk->stream, ((BYTE *)buf) + ret, size);
+	if ((size) && (trk->stream.ssread != NULL)) {
+		size = trk->stream.ssread(&trk->stream, buf, size);
 		if (size != (UINT)-1) {
 			ret += size;
 		}
@@ -74,6 +107,7 @@ void sndmix_datatrash(SMIXTRACK trk, UINT size) {
 void soundmix_create(UINT basehz) {
 
 	int		size;
+	SNDHDL	snd;
 
 	soundmix_destory();
 
@@ -82,32 +116,33 @@ void soundmix_create(UINT basehz) {
 	}
 
 	size = sizeof(int) * 2 * SND_MAXSAMPLE;
-	size += sizeof(SOUND_T);
-	snd = (SOUND_T *)_MALLOC(size, "SOUND");
+	size += sizeof(_SNDHDL);
+	snd = (SNDHDL)_MALLOC(size, "SOUND");
 	if (snd) {
 		ZeroMemory(snd, size);
 		snd->basehz = basehz;
+		SNDCSEC_INIT;
 	}
+	_snd = snd;
 }
-
 
 void soundmix_destory(void) {
 
-	if (snd) {
-		SOUND_T *tmp;
-		int		i;
+	SNDHDL	snd;
+	int		i;
 
+	snd = _snd;
+	if (snd) {
 		for (i=0; i<SND_MAXTRACK; i++) {
 			soundmix_unload(i);
 		}
-		tmp = snd;
-		snd = NULL;
-		_MFREE(tmp);
+		_snd = NULL;
+		_MFREE(snd);
+		SNDCSEC_TERM;
 	}
 }
 
-
-static void sndsetvol(SMIXTRACK trk, UINT samp) {
+static void sndsetvol(SNDHDL snd, SMIXTRACK trk, UINT samp) {
 
 	if (!(trk->flag & SNDTRK_FADE)) {
 		trk->vol = trk->basevol;
@@ -138,8 +173,7 @@ static void sndsetvol(SMIXTRACK trk, UINT samp) {
 	sndmix_setmixproc(trk, snd->basehz);
 }
 
-
-static void sndsetgain(SMIXTRACK trk, int gain) {
+static void sndsetgain(SNDHDL snd, SMIXTRACK trk, int gain) {
 
 	if (gain < -16) {
 		gain = -16;
@@ -154,9 +188,10 @@ static void sndsetgain(SMIXTRACK trk, int gain) {
 	else {
 		trk->basevol = gaintbl[gain+16];
 	}
-	sndsetvol(trk, 0);
+	SNDCSEC_ENTER;
+	sndsetvol(snd, trk, 0);
+	SNDCSEC_LEAVE;
 }
-
 
 static void setfade(SMIXTRACK trk, UINT basehz, int tick, int dir) {
 
@@ -166,6 +201,7 @@ static void setfade(SMIXTRACK trk, UINT basehz, int tick, int dir) {
 	basehz *= tick;
 	basehz /= 1000;
 
+	SNDCSEC_ENTER;
 	if (basehz == 0) {
 		if (dir) {
 			trk->flag &= ~SNDTRK_PLAYING;
@@ -178,36 +214,39 @@ static void setfade(SMIXTRACK trk, UINT basehz, int tick, int dir) {
 		trk->dir = dir;
 		trk->flag |= SNDTRK_FADE;
 	}
+	SNDCSEC_LEAVE;
 }
 
+int soundmix_load(int num, SNDSTREAM_OPEN ssopen, void *arg) {
 
-BOOL soundmix_load(int num, PCMSTREAM *stream, void *arg) {
-
-	SMIXTRACK	trk;
+	SNDHDL		snd;
 	int			r;
+	SMIXTRACK	trk;
 	int			outsize;
 	int			size;
 	int			ptr;
 	BYTE		data[512];
 
-	if ((snd == NULL) || ((unsigned int)num >= SND_MAXTRACK)) {
+	snd = _snd;
+	r = SNDMIX_SUCCESS;
+	if (snd == NULL) {
+		r = SNDMIX_FAILURE;
+		goto smld_err0;
+	}
+	if ((unsigned int)num >= SND_MAXTRACK) {
+		r = SNDMIX_TRACKERROR;
 		goto smld_err0;
 	}
 	soundmix_unload(num);
-	if (stream == NULL) {
-		goto smld_err0;
-	}
-	if ((stream->stream_read == NULL) ||
-		(stream->stream_seek == NULL)) {
-		goto smld_err0;
-	}
 	trk = snd->trk + num;
 	ZeroMemory(trk, sizeof(_SMIXTRACK));
-	trk->stream_read = stream->stream_read;
-	trk->stream_seek = stream->stream_seek;
-	trk->stream_close = stream->stream_close;
-	if (stream->stream_open) {
-		trk->stream = stream->stream_open(arg, num);
+	if (ssopen == NULL) {
+		r = SNDMIX_PARAMERROR;
+		goto smld_err0;
+	}
+	if (ssopen(&trk->stream, arg, num) != SNDMIX_SUCCESS) {
+		r = SNDMIX_STREAMERROR;
+		goto smld_err0;
 	}
 	trk->data = data;
 	trk->maxdatas = sizeof(data);
@@ -215,22 +254,27 @@ BOOL soundmix_load(int num, PCMSTREAM *stream, void *arg) {
 
 	r = sndwave_open(trk);
 #if defined(AMETHYST_LIB) || defined(AMETHYST_OVL)
-	if (r == SNDMIX_NEXT) {
+	if (r == SNDMIX_NOTSUPPORT) {
 		r = sndmp3_open(trk);
 	}
 #ifdef USE_EXSE
-	if (r == SNDMIX_NEXT) {
+	if (r == SNDMIX_NOTSUPPORT) {
 		r = sndexse_open(trk);
 	}
 #endif
 #endif
+#if defined(VERMOUTH_LIB)
+	if (r == SNDMIX_NOTSUPPORT) {
+		r = sndmidi_open(trk);
+	}
+#endif
 #if defined(OGGVORBIS_LIB)
-	if (r == SNDMIX_NEXT) {
+	if (r == SNDMIX_NOTSUPPORT) {
 		r = sndogg_open(trk);
 	}
 #endif
 #ifdef KSYS_KPV0
-	if (r == SNDMIX_NEXT) {
+	if (r == SNDMIX_NOTSUPPORT) {
 		r = sndkpv_open(trk);
 	}
 #endif
@@ -238,7 +282,11 @@ BOOL soundmix_load(int num, PCMSTREAM *stream, void *arg) {
 		goto smld_err1;
 	}
 	if (sndmix_setmixproc(trk, snd->basehz) != SUCCESS) {
+		r = SNDMIX_PARAMERROR;
 		goto smld_err1;
+	}
+	if (trk->decrew == NULL) {
+		trk->decrew = defdecrew;
 	}
 
 	trk->maxdatas = max(trk->indatas, trk->block);
@@ -248,6 +296,7 @@ BOOL soundmix_load(int num, PCMSTREAM *stream, void *arg) {
 	size = outsize + trk->maxdatas + 64;
 	trk->buffer = (BYTE *)_MALLOC(size, "SOUND track");
 	if (trk->buffer == NULL) {
+		r = SNDMIX_MEMORYERROR;
 		goto smld_err1;
 	}
 	ptr = (outsize + 16 + 15) & (~(0x0f));
@@ -255,39 +304,45 @@ BOOL soundmix_load(int num, PCMSTREAM *stream, void *arg) {
 	if (trk->indatas) {
 		CopyMemory(trk->data, data, trk->indatas);
 	}
-	sndsetgain(trk, snd->gain[num]);
+	sndsetgain(snd, trk, snd->gain[num]);
 	trk->flag = SNDTRK_LOADED;
 	TRACEOUT(("sound load success"));
-	return(SUCCESS);
+	return(SNDMIX_SUCCESS);
 
 smld_err1:
 	if (trk->decend) {
-		trk->decend(trk);         // ｢ｫ020618 ･皈筵�･遙ｼ･ｯ､讀､､ｿ､､ﾀｵ
+		trk->decend(trk);         // ←020618 メモリリークゆいたん修正
 	}
-	if (trk->stream_close) {
-		trk->stream_close(trk->stream);
+	if (trk->stream.ssclose) {
+		trk->stream.ssclose(&trk->stream);
 	}
 
 smld_err0:
-	return(FAILURE);
+	return(SNDMIX_FAILURE);
 }
-
 
 void soundmix_unload(int num) {
 
+	SNDHDL		snd;
 	SMIXTRACK	trk;
 
+	snd = _snd;
 	if ((snd == NULL) || ((unsigned int)num >= SND_MAXTRACK)) {
 		return;
 	}
 	trk = snd->trk + num;
+	SNDCSEC_ENTER;
+	if (trk->flag & SNDTRK_PLAYING) {
+		trk->flag &= ~SNDTRK_PLAYING;
+	}
+	SNDCSEC_LEAVE;
 	if (trk->flag & SNDTRK_LOADED) {
 		trk->flag = 0;
 		if (trk->decend) {
-			trk->decend(trk);         // ｢ｫ020618 ･皈筵�･遙ｼ･ｯ､讀､､ｿ､､ﾀｵ
+			trk->decend(trk);         // ←020618 メモリリークゆいたん修正
 		}
-		if (trk->stream_close) {
-			trk->stream_close(trk->stream);
+		if (trk->stream.ssclose) {
+			trk->stream.ssclose(&trk->stream);
 		}
 		if (trk->buffer) {
 			_MFREE(trk->buffer);
@@ -296,66 +351,80 @@ void soundmix_unload(int num) {
 	}
 }
 
-
 void soundmix_play(int num, int loop, int fadeintick) {
 
+	SNDHDL		snd;
 	SMIXTRACK	trk;
 
+	snd = _snd;
 	if ((snd == NULL) || ((unsigned int)num >= SND_MAXTRACK)) {
 		return;
 	}
 	trk = snd->trk + num;
 	if (trk->flag & SNDTRK_LOADED) {
+		SNDCSEC_ENTER;
 		trk->loop = loop;
 		if (!(trk->flag & SNDTRK_PLAYING)) {
 			trk->flag |= SNDTRK_PLAYING;
 			TRACEOUT(("sound play track:%d", num));
 			setfade(trk, snd->basehz, fadeintick, 0);
 		}
+		SNDCSEC_LEAVE;
 	}
 }
 
-
 void soundmix_stop(int num, int fadeouttick) {
 
+	SNDHDL	snd;
+
+	snd = _snd;
 	if ((snd == NULL) || ((unsigned int)num >= SND_MAXTRACK)) {
 		return;
 	}
 	setfade(snd->trk + num, snd->basehz, fadeouttick, 1);
 }
 
-
 void soundmix_rew(int num) {
 
+	SNDHDL		snd;
 	SMIXTRACK	trk;
 
+	snd = _snd;
 	if ((snd == NULL) || ((unsigned int)num >= SND_MAXTRACK)) {
 		return;
 	}
 	trk = snd->trk + num;
-	if ((trk->flag & (SNDTRK_LOADED | SNDTRK_PLAYING)) != SNDTRK_LOADED) {
-		return;
+	SNDCSEC_ENTER;
+	if ((trk->flag & (SNDTRK_LOADED | SNDTRK_PLAYING)) == SNDTRK_LOADED) {
+		trk->samplepos = 0;
+		trk->decrew(trk);
 	}
-	trk->fremain = trk->loopsize;
-	sndmix_datatrash(trk, (UINT)-1);
-	trk->stream_seek(trk->stream, trk->loopfpos, 0);
+	SNDCSEC_LEAVE;
 }
-
 
 void soundmix_continue(int num) {
 
+	SNDHDL		snd;
+	SMIXTRACK	trk;
+
+	snd = _snd;
 	if ((snd == NULL) || ((unsigned int)num >= SND_MAXTRACK)) {
 		return;
 	}
-	if (snd->trk[num].flag & SNDTRK_PAUSED) {
-		snd->trk[num].flag &= ~SNDTRK_PAUSED;
-		snd->trk[num].flag |= SNDTRK_PLAYING;
+	trk = snd->trk + num;
+	SNDCSEC_ENTER;
+	if (trk->flag & SNDTRK_PAUSED) {
+		trk->flag &= ~SNDTRK_PAUSED;
+		trk->flag |= SNDTRK_PLAYING;
 	}
+	SNDCSEC_LEAVE;
 }
-
 
 BOOL soundmix_isplaying(int num) {
 
+	SNDHDL	snd;
+
+	snd = _snd;
 	if ((snd == NULL) || ((unsigned int)num >= SND_MAXTRACK) ||
 		(!(snd->trk[num].flag & SNDTRK_PLAYING))) {
 		return(FALSE);
@@ -363,10 +432,49 @@ BOOL soundmix_isplaying(int num) {
 	return(TRUE);
 }
 
+UINT soundmix_getpos(int num) {
+
+	SNDHDL		snd;
+	SMIXTRACK	trk;
+	UINT		samp;
+	UINT		sec;
+	UINT		mill;
+
+	snd = _snd;
+	if ((snd == NULL) || ((unsigned int)num >= SND_MAXTRACK)) {
+		return(0);
+	}
+	trk = snd->trk + num;
+	if (!(trk->flag & SNDTRK_PLAYING)) {
+		return(0);
+	}
+	samp = trk->samplepos - trk->remain;
+	sec = samp / trk->samprate;
+	mill = samp - (sec * trk->samprate);
+	mill *= 1000;
+	mill /= trk->samprate;
+	return((sec * 1000) + mill);
+}
+
+void soundmix_setgain(int num, int gain) {
+
+	SNDHDL	snd;
+
+	snd = _snd;
+	if ((snd != NULL) && ((unsigned int)num < SND_MAXTRACK)) {
+		snd->gain[num] = gain;
+		if (snd->trk[num].flag & SNDTRK_LOADED) {	// これー 2003/05/04
+			sndsetgain(snd, snd->trk + num, gain);
+		}
+	}
+}
 
 #ifdef SOUND_MOREINFO
 SMIXTRACK soundmix_getinfo(int num) {
 
+	SNDHDL	snd;
+
+	snd = _snd;
 	if ((snd == NULL) || ((unsigned int)num >= SND_MAXTRACK) ||
 		(!(snd->trk[num].flag & SNDTRK_LOADED))) {
 		return(NULL);
@@ -376,17 +484,9 @@ SMIXTRACK soundmix_getinfo(int num) {
 #endif
 
 
-void soundmix_setgain(int num, int gain) {
-
-	if ((snd != NULL) && ((unsigned int)num < SND_MAXTRACK)) {
-		snd->gain[num] = gain;
-		sndsetgain(snd->trk + num, gain);
-	}
-}
-
-
 UINT soundmix_getpcm(SINT16 *pcm, UINT samples) {
 
+	SNDHDL		snd;
 	UINT		cnt;
 	int			fade;
 	SMIXTRACK	trk;
@@ -394,7 +494,9 @@ UINT soundmix_getpcm(SINT16 *pcm, UINT samples) {
 	UINT		smpcnt;
 	SINT32		*ptr;
 
+	snd = _snd;
 	if (snd) {
+		SNDCSEC_ENTER;
 		while(samples) {
 			trk = snd->trk;
 			cnt = 0;
@@ -424,7 +526,7 @@ UINT soundmix_getpcm(SINT16 *pcm, UINT samples) {
 				r = SND_MAXTRACK;
 				do {
 					if (trk->flag & SNDTRK_FADE) {
-						sndsetvol(trk, smpcnt);
+						sndsetvol(snd, trk, smpcnt);
 					}
 					trk++;
 				} while(--r);
@@ -445,7 +547,7 @@ UINT soundmix_getpcm(SINT16 *pcm, UINT samples) {
 
 			samples -= smpcnt;
 
-			if (cnt == 1) {							// ｣ｱ･ﾈ･鬣ﾃ･ｯ､ﾎ､ﾟｺﾆﾀｸﾃ譯ﾁ
+			if (cnt == 1) {							// １トラックのみ再生中～
 				(*trk->cpy16)(trk, pcm, smpcnt);
 #if defined(SOUND_MONOOUT)
 				pcm += smpcnt;
@@ -453,7 +555,7 @@ UINT soundmix_getpcm(SINT16 *pcm, UINT samples) {
 				pcm += (smpcnt << 1);
 #endif
 			}
-			else {									// ﾊ｣ｿﾈ･鬣ﾃ･ｯｺﾆﾀｸﾃ譯ﾁ
+			else {									// 複数トラック再生中～
 				ptr = (SINT32 *)(snd + 1);
 				(*trk->cpy32)(trk, ptr, smpcnt);
 
@@ -481,6 +583,7 @@ UINT soundmix_getpcm(SINT16 *pcm, UINT samples) {
 				} while(--smpcnt);
 			}
 		}
+		SNDCSEC_LEAVE;
 	}
 	if (samples) {
 #if defined(SOUND_MONOOUT)

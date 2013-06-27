@@ -14,7 +14,8 @@ typedef struct {
 	int			winalpha;				// 1099
 
 	int			fullscreen;
-
+	int			winposx;
+	int			winposy;
 	int			skip;
 	int			readskip;
 	int			autoclick;
@@ -23,6 +24,14 @@ typedef struct {
 
 	BYTE		enablepopup;
 	BYTE		enablesave;
+
+	BYTE		msgdlgtype;
+	BYTE		msgdisable;
+	BYTE		voicedisable;
+	BYTE		sedisable;
+	BYTE		bgmdisable;
+	BYTE		voicetestdisable;
+	BYTE		setestdisable;
 } GAMECFG_T, *GAMECFG;
 
 enum {
@@ -67,6 +76,7 @@ typedef struct {
 	BYTE	group;
 	BYTE	num;
 	UINT16	id;
+	BYTE	disable;
 	union {
 		GCD_TAG		t;
 		GCD_FRAME	f;
@@ -75,6 +85,13 @@ typedef struct {
 		GCD_SLIDER	s;
 	} c;
 } _GCDLG, *GCDLG;
+
+typedef struct {
+	BYTE	page;
+	BYTE	group;
+	BYTE	num;
+	BYTE	disable;
+} _GCDLGD, *GCDLGD;
 
 
 #ifdef __cplusplus
@@ -89,6 +106,8 @@ void gamecfg_save(void);
 
 void gamecfg_setskip(int skip);
 void gamecfg_setreadskip(int readskip);
+
+void gamecfg_setdisable(GCDLGD prm);
 
 #ifdef __cplusplus
 }

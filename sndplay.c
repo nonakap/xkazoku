@@ -1,10 +1,10 @@
 #include	"compiler.h"
-#include	"gamecore.h"
-#include	"arcfile.h"
-#include	"cddamng.h"
-#include	"sound.h"
-#include	"sstream.h"
 #include	"dosio.h"
+#include	"cddamng.h"
+#include	"gamecore.h"
+#include	"sound.h"
+#include	"arcfile.h"
+#include	"sstream.h"
 
 
 void sndplay_init(void) {
@@ -16,45 +16,58 @@ void sndplay_init(void) {
 
 // ---- cdda
 
+static BOOL cddafileplay(int track, const char *subdir) {
+
+	BOOL	r;
+	char	path[MAX_PATH];
+	char	fname[32];
+
+	milstr_ncpy(path, gamecore.suf.scriptpath, sizeof(path));
+	plusyen(path, sizeof(path));
+	milstr_ncat(path, subdir, sizeof(path));
+	plusyen(path, sizeof(path));
+
+	sprintf(fname, "track%02d.wav", track);
+	milstr_ncat(path, fname, sizeof(path));
+	r = soundmix_load(SOUNDTRK_CDDA, mp3_ssopen, path);
+#if defined(AMETHYST_LIB) || defined(AMETHYST_OVL)
+	if (r != SUCCESS) {
+		cutFileName(path);
+		sprintf(fname, "track%02d.mp3", track);
+		milstr_ncat(path, fname, sizeof(path));
+		r = soundmix_load(SOUNDTRK_CDDA, mp3_ssopen, path);
+	}
+#endif
+#if defined(OGGVORBIS_LIB)
+	if (r != SUCCESS) {
+		cutFileName(path);
+		sprintf(fname, "track%02d.ogg", track);
+		milstr_ncat(path, fname, sizeof(path));
+		r = soundmix_load(SOUNDTRK_CDDA, mp3_ssopen, path);
+	}
+#endif
+	return(r);
+}
+
 static void cddaplay(int tick) {
 
-	SNDPLAY		sndplay;
-	char		path[MAX_PATH];
-	char		fname[32];
-	BOOL		r;
+	SNDPLAY	sndplay;
+	BOOL	r;
 
 	sndplay = &gamecore.sndplay;
 	if (!(sndplay->playing & SNDPLAY_CDDAPLAY)) {
 		sndplay->playing |= SNDPLAY_CDDAPLAY;
 		r = cddamng_play(sndplay->cddatrack, sndplay->cddaloop, tick);
 		if (r != SUCCESS) {
-			milstr_ncpy(path, gamecore.suf.scriptpath, sizeof(path));
-			plusyen(path, sizeof(path));
-			milstr_ncat(path, "cdda", sizeof(path));
-			plusyen(path, sizeof(path));
-
-			sprintf(fname, "track%02d.wav", sndplay->cddatrack);
-			milstr_ncat(path, fname, sizeof(path));
-			r = soundmix_load(SOUNDTRK_CDDA, &mp3_stream, path);
-#if defined(AMETHYST_LIB) || defined(AMETHYST_OVL)
+			r = cddafileplay(sndplay->cddatrack, "cdda");
+#if defined(MACOS)
 			if (r != SUCCESS) {
-				cutFileName(path);
-				sprintf(fname, "track%02d.mp3", sndplay->cddatrack);
-				milstr_ncat(path, fname, sizeof(path));
-				r = soundmix_load(SOUNDTRK_CDDA, &mp3_stream, path);
+				r = cddafileplay(sndplay->cddatrack, "bgm");
 			}
 #endif
-#if defined(OGGVORBIS_LIB)
-			if (r != SUCCESS) {
-				cutFileName(path);
-				sprintf(fname, "track%02d.ogg", sndplay->cddatrack);
-				milstr_ncat(path, fname, sizeof(path));
-				r = soundmix_load(SOUNDTRK_CDDA, &mp3_stream, path);
+			if (r == SUCCESS) {
+				soundmix_play(SOUNDTRK_CDDA, sndplay->cddaloop, tick);
 			}
-#endif
-		}
-		if (r == SUCCESS) {
-			soundmix_play(SOUNDTRK_CDDA, sndplay->cddaloop, tick);
 		}
 	}
 }
@@ -128,7 +141,11 @@ static void waveplay(int tick) {
 		sndplay->playing |= SNDPLAY_WAVEPLAY;
 		asa.type = ARCTYPE_SOUND;
 		asa.fname = sndplay->sound;
-		soundmix_load(SOUNDTRK_SOUND, &arc_stream, &asa);
+		if (soundmix_load(SOUNDTRK_SOUND, arc_ssopen, &asa) != SUCCESS) {
+			asa.type = ARCTYPE_MIDI;
+			asa.fname = sndplay->sound;
+			soundmix_load(SOUNDTRK_SOUND, arcraw_ssopen, &asa);
+		}
 		soundmix_play(SOUNDTRK_SOUND, sndplay->waveloop, tick);
 	}
 }
@@ -141,8 +158,11 @@ void sndplay_waveset(const char *fname, int cmd) {
 	sndplay->playing &= ~(SNDPLAY_WAVE | SNDPLAY_WAVEPLAY);
 	milstr_ncpy(sndplay->sound, fname, sizeof(sndplay->sound));
 	soundmix_unload(SOUNDTRK_SOUND);
-	if (!cmd) {
+	if (cmd == 0) {
 		sndplay_waveplay(0, 0);
+	}
+	else if (cmd == 2) {
+		sndplay_waveplay(1, 0);
 	}
 }
 
@@ -153,12 +173,11 @@ void sndplay_waveplay(BYTE flag, int tick) {
 	sndplay = &gamecore.sndplay;
 	if (!(sndplay->playing & SNDPLAY_WAVE)) {
 		sndplay->playing |= SNDPLAY_WAVE;
-		sndplay->waveloop = TRUE;
+		sndplay->waveloop = (flag == 0)?TRUE:FALSE;
 		if (gamecore.gamecfg.bgm) {
 			waveplay(tick);
 		}
 	}
-	(void)flag;
 }
 
 void sndplay_wavestop(int tick) {
@@ -244,6 +263,54 @@ void sndplay_seenable(int enable, int fade) {
 				}
 			}
 		}
+	}
+}
+
+
+// ---- voice
+
+void sndplay_voiceset(const char *fname) {
+
+	SNDPLAY	sndplay;
+
+	sndplay = &gamecore.sndplay;
+	sndplay->playing |= SNDPLAY_PCMLOAD;
+	milstr_ncpy(sndplay->pcm, fname, sizeof(sndplay->pcm));
+}
+
+void sndplay_voicereset(void) {
+
+	SNDPLAY	sndplay;
+
+	sndplay = &gamecore.sndplay;
+	sndplay->playing &= ~SNDPLAY_PCMLOAD;
+}
+
+void sndplay_voiceplay(void) {
+
+	SNDPLAY			sndplay;
+	ARCSTREAMARG	asa;
+
+	sndplay = &gamecore.sndplay;
+	if (sndplay->playing & SNDPLAY_PCMLOAD) {
+		asa.type = ARCTYPE_VOICE;
+		asa.fname = sndplay->pcm;
+		soundmix_load(SOUNDTRK_VOICE, arcse_ssopen, &asa);
+		soundmix_play(SOUNDTRK_VOICE, 0, 0);
+	}
+}
+
+BOOL sndplay_voicecondition(const char *fname) {
+
+	SNDPLAY	sndplay;
+
+	sndplay = &gamecore.sndplay;
+	if ((sndplay->playing & SNDPLAY_PCMLOAD) &&
+		(fname) && (!milstr_cmp(fname, sndplay->pcm))) {
+		return(SUCCESS);
+	}
+	else {
+		return(FAILURE);
 	}
 }
 

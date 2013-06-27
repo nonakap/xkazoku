@@ -1,6 +1,6 @@
 
 
-// Win32 SYSTEMTIME ¥¹¥È¥é¥¯¥Á¥ã
+// Win32 SYSTEMTIME ƒXƒgƒ‰ƒNƒ`ƒƒ
 
 #if defined(__GNUC__)
 typedef struct {

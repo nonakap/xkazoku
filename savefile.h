@@ -1,62 +1,65 @@
 
 typedef struct {
-	BYTE	*ptr;
-	int		size;
-} _SAVEDATA, *SAVEDATA;
+	int		year;
+	int		month;
+	int		day;
+	int		hour;
+	int		min;
+	int		sec;
+} _SAVEDATE, *SAVEDATE;
 
 typedef struct {
-	void		*fh;
-	UINT		fsize;
-	int			files;						// トータル
-	int			gamesaves;					// ゲームセーブ数
-	int			sysflag;					// システムフラグの場所
-	int			exaflag;					// EXAフラグの格納場所
-	int			exavalue;					// EXA変数の格納場所
-	int			kid;						// 既読フラグの格納場所
-	BYTE		header[33][4];				// <- これ可変にしたい。
-} SAVE_T, *SAVEHDL;
-
-typedef struct {
-	int			year;
-	int			month;
-	int			day;
-	int			hour;
-	int			min;
-	int			sec;
-} SAVEDATE_T, *SAVEDATE;
-
-typedef struct {
-	SAVEDATE_T	date;
+	_SAVEDATE	date;
 	void		*preview;
 	char		comment[104];
-} SAVEINF_T, *SAVEINF;
+} _SAVEINF, *SAVEINF;
+
+struct _savehdl;
+typedef	struct _savehdl		_SAVEHDL;
+typedef	struct _savehdl		*SAVEHDL;
+
+struct _savehdl {
+	void	(*close)(SAVEHDL hdl);
+	BOOL	(*exist)(SAVEHDL hdl, int num);
+	int		(*getnewdate)(SAVEHDL hdl);
+	BOOL	(*readinf)(SAVEHDL hdl, int num, SAVEINF inf,
+													int width, int height);
+	BOOL	(*readgame)(SAVEHDL hdl, int num);
+	BOOL	(*readflags)(SAVEHDL hdl, int num, UINT reg, UINT pos, UINT cnt);
+	BOOL	(*readsysflag)(SAVEHDL hdl, UINT pos, UINT size);
+	BOOL	(*readsysflagex)(SAVEHDL hdl, UINT pos, UINT size);
+	BOOL	(*readexaflag)(SAVEHDL hdl, void *val);
+	BOOL	(*readexaval)(SAVEHDL hdl, void *val);
+	BOOL	(*readkid)(SAVEHDL hdl, void *val);
+
+	BOOL	(*writegame)(SAVEHDL hdl, int num, int vnum);
+	BOOL	(*writesysflag)(SAVEHDL hdl, UINT pos, UINT size);
+	BOOL	(*writeexaflag)(SAVEHDL hdl, void *val);
+	BOOL	(*writeexaval)(SAVEHDL hdl, void *val);
+	BOOL	(*writekid)(SAVEHDL hdl, void *val);
+};
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+int savefile_getsaves(void);
+void savefile_cnvdate(SAVEDATE sd, const void *st);
+int savefile_cmpdate(const SAVEDATE sd1, const SAVEDATE sd2);
+
 SAVEHDL savefile_open(BOOL create);
-SAVEHDL savefile_create(void);
-void savefile_close(SAVEHDL hdl);
 
-BOOL savefile_exist(SAVEHDL hdl, int num);
-int savefile_getnewdate(SAVEHDL hdl);
-BOOL savefile_readinf(SAVEHDL hdl, int num, SAVEINF inf,
+void savenone_close(SAVEHDL hdl);
+BOOL savenone_exist(SAVEHDL hdl, int num);
+int savenone_getnewdate(SAVEHDL hdl);
+BOOL savenone_readinf(SAVEHDL hdl, int num, SAVEINF inf,
 													int width, int height);
-BOOL savefile_readgame(SAVEHDL hdl, int num);
-
-BOOL savefile_readsysflag(SAVEHDL hdl, UINT pos, UINT size);
-BOOL savefile_readexaflag(SAVEHDL hdl, void *val);
-BOOL savefile_readexaval(SAVEHDL hdl, void *val);
-BOOL savefile_readkid(SAVEHDL hdl, void *val);
-
-BOOL savefile_writegame(SAVEHDL hdl, int num, int vnum);
-
-BOOL savefile_writesysflag(SAVEHDL hdl, UINT pos, UINT size);
-BOOL savefile_writeexaflag(SAVEHDL hdl, void *val);
-BOOL savefile_writeexaval(SAVEHDL hdl, void *val);
-BOOL savefile_writekid(SAVEHDL hdl, void *val);
+BOOL savenone_readgame(SAVEHDL hdl, int num);
+BOOL savenone_readflags(SAVEHDL hdl, int num, UINT reg, UINT pos, UINT cnt);
+BOOL savenone_writegame(SAVEHDL hdl, int num, int vnum);
+BOOL savenone_sys(SAVEHDL hdl, UINT pos, UINT size);
+BOOL savenone_exa(SAVEHDL hdl, void *val);
 
 #ifdef __cplusplus
 }

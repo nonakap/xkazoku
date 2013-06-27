@@ -8,17 +8,20 @@
 // -------------------------------------------------------------
 
 #include	"compiler.h"
+#include	"timemng.h"
+#include	"gamemsg.h"
 #include	"gamecore.h"
 #include	"arcfile.h"
-#include	"isf_cmd.h"
-#include	"gamemsg.h"
 #include	"savefile.h"
+#include	"isf_cmd.h"
 #ifndef DISABLE_DIALOG
 #include	"menubase.h"
+#include	"dlgcfg.h"
 #include	"dlgsave.h"
 #endif
 
-// TAGSET : ¥À¥¤¥¢¥í¥°¤Î¥¿¥°¤ÎÀßÄê
+
+// TAGSET : ƒ_ƒCƒAƒƒO‚Ìƒ^ƒO‚ÌÝ’è (T.Yui)
 int isfcmd_e0(SCR_OPE *op) {
 
 	_GCDLG	gcd;
@@ -34,7 +37,7 @@ int isfcmd_e0(SCR_OPE *op) {
 }
 
 
-// FRAMESET : ¥À¥¤¥¢¥í¥°¤Î¥Õ¥ì¡¼¥àÀßÄê
+// FRAMESET : ƒ_ƒCƒAƒƒO‚ÌƒtƒŒ[ƒ€Ý’è (T.Yui)
 int isfcmd_e1(SCR_OPE *op) {
 
 	_GCDLG	gcd;
@@ -51,7 +54,7 @@ int isfcmd_e1(SCR_OPE *op) {
 }
 
 
-// RBSET : ¥À¥¤¥¢¥í¥°¤Î¥é¥¸¥ª¥Ü¥¿¥óÀßÄê
+// RBSET : ƒ_ƒCƒAƒƒO‚Ìƒ‰ƒWƒIƒ{ƒ^ƒ“Ý’è (T.Yui)
 int isfcmd_e2(SCR_OPE *op) {
 
 	_GCDLG	gcd;
@@ -70,7 +73,7 @@ int isfcmd_e2(SCR_OPE *op) {
 }
 
 
-// CBSET : ¥À¥¤¥¢¥í¥°¤Î¥Á¥§¥Ã¥¯¥Ü¥Ã¥¯¥¹ÀßÄê
+// CBSET : ƒ_ƒCƒAƒƒO‚Ìƒ`ƒFƒbƒNƒ{ƒbƒNƒXÝ’è (T.Yui)
 int isfcmd_e3(SCR_OPE *op) {
 
 	_GCDLG	gcd;
@@ -89,7 +92,7 @@ int isfcmd_e3(SCR_OPE *op) {
 }
 
 
-// SLDRSET : ¥À¥¤¥¢¥í¥°¤Î¥¹¥é¥¤¥À¡¼ÀßÄê
+// SLDRSET : ƒ_ƒCƒAƒƒO‚ÌƒXƒ‰ƒCƒ_[Ý’è (T.Yui)
 int isfcmd_e4(SCR_OPE *op) {
 
 	_GCDLG	gcd;
@@ -118,7 +121,7 @@ int isfcmd_e4(SCR_OPE *op) {
 }
 
 
-// OPSL : SAVE¡¦LOAD¥À¥¤¥¢¥í¥°¤Î¥ª¡¼¥×¥ó (T.Yui)
+// OPSL : SAVEELOADƒ_ƒCƒAƒƒO‚ÌƒI[ƒvƒ“ (T.Yui)
 int isfcmd_e5(SCR_OPE *op) {
 
 	BYTE	cmd;
@@ -149,21 +152,68 @@ int isfcmd_e5(SCR_OPE *op) {
 }
 
 
-// ----
+// OPPROP : Ý’èƒ_ƒCƒAƒƒO‚ÌƒI[ƒvƒ“
+int isfcmd_e6(SCR_OPE *op) {
 
+#ifndef DISABLE_DIALOG
+	cfgdlg_open();
+	menubase_modalproc();
+#endif
+	(void)op;
+	return(GAMEEV_SUCCESS);
+}
+
+
+// DISABLE : ƒ_ƒCƒAƒƒOƒRƒ“ƒgƒ[ƒ‹‚ÌƒfƒBƒZƒCƒuƒ‹ (T.Yui)
+int isfcmd_e7(SCR_OPE *op) {
+
+	_GCDLGD	prm;
+
+	if ((scr_getbyte(op, &prm.page) != SUCCESS) ||
+		(scr_getbyte(op, &prm.group) != SUCCESS) ||
+		(scr_getbyte(op, &prm.num) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	prm.disable = 1;
+	gamecfg_setdisable(&prm);
+	return(GAMEEV_SUCCESS);
+}
+
+
+// ENABLE : ƒ_ƒCƒAƒƒOƒRƒ“ƒgƒ[ƒ‹‚ÌƒCƒlƒCƒuƒ‹ (T.Yui)
+int isfcmd_e8(SCR_OPE *op) {
+
+	_GCDLGD	prm;
+
+	if ((scr_getbyte(op, &prm.page) != SUCCESS) ||
+		(scr_getbyte(op, &prm.group) != SUCCESS) ||
+		(scr_getbyte(op, &prm.num) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	prm.disable = 0;
+	gamecfg_setdisable(&prm);
+	return(GAMEEV_SUCCESS);
+}
+
+
+// EXT : Šg’£ˆ— (T.Yui)
 static int isfcmd_ef1(SCR_OPE *op) {
 
 	SINT32	num;
 	SINT32	vnum;
 	SAVEHDL	sh;
 
-	if ((scr_getval(op, &num) != SUCCESS) ||
+	if (scr_getval(op, &num) != SUCCESS) {
+		return(GAMEEV_WRONGLENG);
+	}
+	vnum = 0;
+	if ((gamecore.sys.type & GAME_SAVEGRPH) &&
 		(scr_getval(op, &vnum) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
 	sh = savefile_open(TRUE);
-	savefile_writegame(sh, num, vnum);
-	savefile_close(sh);
+	sh->writegame(sh, num, vnum);
+	sh->close(sh);
 	return(GAMEEV_SUCCESS);
 }
 
@@ -176,15 +226,15 @@ static int isfcmd_ef2(SCR_OPE *op) {
 		return(GAMEEV_WRONGLENG);
 	}
 	sh = savefile_open(FALSE);
-	savefile_readgame(sh, num);
-	savefile_close(sh);
+	sh->readgame(sh, num);
+	sh->close(sh);
 	return(GAMEEV_SUCCESS);
 }
 
 static int isfcmd_ef3(SCR_OPE *op) {
 
 	BYTE	cmd;
-	SINT32	prm[4];
+	SINT32	prm[5];
 	int		cmds;
 	int		i;
 	SAVEHDL	sh;
@@ -193,6 +243,9 @@ static int isfcmd_ef3(SCR_OPE *op) {
 		return(GAMEEV_WRONGLENG);
 	}
 	switch(cmd) {
+		case 0:
+			cmds = 5;
+			break;
 		case 1:
 		case 2:
 			cmds = 4;
@@ -210,21 +263,26 @@ static int isfcmd_ef3(SCR_OPE *op) {
 	}
 	sh = savefile_open(FALSE);
 	switch(cmd) {
-		case 1:				// ??
+		case 0:				// ??
+			break;
+		case 1:				// get flags
+			if (prm[3] > 0) {
+				sh->readflags(sh, prm[1], prm[0], prm[2], prm[3]);
+			}
 			break;
 		case 2:
 			while(prm[2] > 0) {
-				scr_flagop(prm[0], (BYTE)(savefile_exist(sh, prm[1])?1:0));
+				scr_flagop(prm[0], (BYTE)(sh->exist(sh, prm[1])?1:0));
 				prm[0]++;
 				prm[1]++;
 				prm[2]--;
 			}
 			break;
 		case 3:
-			scr_valset(prm[0], savefile_getnewdate(sh));
+			scr_valset(prm[0], sh->getnewdate(sh));
 			break;
 	}
-	savefile_close(sh);
+	sh->close(sh);
 	return(GAMEEV_SUCCESS);
 }
 
@@ -233,7 +291,9 @@ static int isfcmd_ef4(SCR_OPE *op) {
 	SINT32		prm[7];
 	int			i;
 	SAVEHDL		sh;
-	SAVEINF_T	inf;
+	_SAVEINF	inf;
+	BOOL		r;
+	_SYSTIME	st;
 
 	for (i=0; i<7; i++) {
 		if (scr_getval(op, prm + i) != SUCCESS) {
@@ -242,9 +302,13 @@ static int isfcmd_ef4(SCR_OPE *op) {
 	}
 	ZeroMemory(&inf, sizeof(inf));
 	sh = savefile_open(FALSE);
-	savefile_readinf(sh, prm[0], &inf, 0, 0);
-	savefile_close(sh);
+	r = sh->readinf(sh, prm[0], &inf, 0, 0);
+	sh->close(sh);
 	vram_destroy((VRAMHDL)inf.preview);
+	if (r != SUCCESS) {
+		timemng_gettime(&st);
+		savefile_cnvdate(&inf.date, &st);
+	}
 	scr_valset(prm[1], inf.date.year);
 	scr_valset(prm[2], inf.date.month);
 	scr_valset(prm[3], inf.date.day);
@@ -260,7 +324,7 @@ static int isfcmd_ef5(SCR_OPE *op) {
 	SINT32		snum;
 	POINT_T		pt;
 	SAVEHDL		sh;
-	SAVEINF_T	inf;
+	_SAVEINF	inf;
 	TEXTCTRL	textctrl;
 
 	if ((scr_getval(op, &vnum) != SUCCESS) ||
@@ -271,8 +335,8 @@ static int isfcmd_ef5(SCR_OPE *op) {
 	if ((vnum >= 0) && (vnum < GAMECORE_MAXVRAM)) {
 		ZeroMemory(&inf, sizeof(inf));
 		sh = savefile_open(FALSE);
-		savefile_readinf(sh, snum, &inf, 0, 0);
-		savefile_close(sh);
+		sh->readinf(sh, snum, &inf, 0, 0);
+		sh->close(sh);
 		vram_destroy((VRAMHDL)inf.preview);
 #ifdef SIZE_QVGA
 		vramdraw_halfpoint(&pt);
@@ -281,11 +345,50 @@ static int isfcmd_ef5(SCR_OPE *op) {
 		textctrl_renewal(textctrl);
 		vrammix_text(gamecore.vram[vnum], textctrl->font, inf.comment,
 										textctrl->fontcolor[0], &pt, NULL);
+		effect_vramdraw(vnum, NULL);
 	}
 	return(GAMEEV_SUCCESS);
 }
 
-// EXT : ³ÈÄ¥½èÍý (T.Yui)
+static int isfcmd_ef6(SCR_OPE *op) {
+
+	int		r;
+	int		i;
+	SINT32	prm[5];
+	SCOMCFG	scomcfg;
+
+	r = 5;
+	for (i=0; i<r; i++) {
+		if (scr_getval(op, prm + i) != SUCCESS) {
+			return(GAMEEV_WRONGLENG);
+		}
+	}
+	if (r == 4) {
+		prm[4] = prm[3];
+		prm[3] = 80;
+	}
+	scomcfg = &gamecore.scomcfg;
+	scomcfg->width = prm[0];
+	scomcfg->indenty = prm[1];
+	scomcfg->indentx = prm[2];
+	scomcfg->length = prm[3];
+	scomcfg->flag = (prm[4] != 0);
+	return(GAMEEV_SUCCESS);
+}
+
+static int isfcmd_ef7(SCR_OPE *op) {
+
+	SINT32	prm1;
+	SINT32	prm2;
+
+	if ((scr_getval(op, &prm1) != SUCCESS) ||
+		(scr_getval(op, &prm2) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	TRACEOUT(("cmd ef 07 : %d %d", prm1, prm2));
+	return(GAMEEV_SUCCESS);
+}
+
 int isfcmd_ef(SCR_OPE *op) {
 
 	BYTE	cmd;
@@ -304,6 +407,10 @@ int isfcmd_ef(SCR_OPE *op) {
 			return(isfcmd_ef4(op));
 		case 5:
 			return(isfcmd_ef5(op));
+		case 6:
+			return(isfcmd_ef6(op));
+		case 7:
+			return(isfcmd_ef7(op));
 	}
 	return(GAMEEV_WRONGPARAM);
 }

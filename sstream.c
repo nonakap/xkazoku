@@ -1,33 +1,27 @@
 #include	"compiler.h"
-#include	"arcfile.h"
-#include	"sound.h"
-#include	"sstream.h"
 #include	"dosio.h"
+#include	"sound.h"
+#include	"arcfile.h"
+#include	"sstream.h"
 
+
+// ---- sound stream prepare
 
 #if defined(STREAM_BUFFERING)
 
-
-#define	SBUFCNTBIT	2
-#define	SBUFFERBIT	15
-
-#define	SBUFCNT		(1 << SBUFCNTBIT)
-
-#define	BUFFLAG_REQ	((1 << SBUFCNT) - 1)
-
 enum {
+	SBUFCNTBIT		= 2,
+	SBUFFERBIT		= 15,
+	SBUFCNT			= (1 << SBUFCNTBIT),
+	BUFFLAG_REQ		= ((1 << SBUFCNT) - 1),
+
 	BUFFLAG_EOF		= 0x01,
 	BUFFLAG_LOADING	= 0x02,
 	BUFFLAG_SEEK	= 0x04
 };
 
 typedef struct {
-	void		*hdl;
-
-	PCMSTREAM_READ	sread;
-	PCMSTREAM_SEEK	sseek;
-	PCMSTREAM_CLOSE	sclose;
-
+	_SNDSTREAM	ss;
 	UINT		readpos;
 	UINT		loadpos;
 	UINT		flag;
@@ -37,17 +31,15 @@ typedef struct {
 	long		fpos;
 	long		seekpos;
 	int			soundnum;
-} STREAMBUF;
+} _STREAMBUF, *STREAMBUF;
 
-static	STREAMBUF	*shdl_reg[4] = {NULL, NULL, NULL, NULL};
+static	STREAMBUF	shdl_reg[4] = {NULL, NULL, NULL, NULL};
 
-static void stream_load(STREAMBUF *stream) {
+static void streambuf_load(STREAMBUF stream) {
 
-	BOOL	stream_continue = FALSE;
+	BOOL	stream_continue;
 
-	if (!stream) {
-		return;
-	}
+	stream_continue = FALSE;
 	if (stream->flag & BUFFLAG_LOADING) {
 		return;
 	}
@@ -55,7 +47,8 @@ static void stream_load(STREAMBUF *stream) {
 
 	if (stream->flag & BUFFLAG_SEEK) {
 		stream->flag &= ~(BUFFLAG_SEEK | BUFFLAG_EOF);
-		stream->sseek(stream->hdl, stream->seekpos, 0);
+		stream->fpos = stream->ss.ssseek(&stream->ss,
+												stream->seekpos, SSSEEK_SET);
 		stream->avail = 0;
 		stream->loadpos = 0;
 		stream->readpos = 0;
@@ -68,7 +61,7 @@ static void stream_load(STREAMBUF *stream) {
 			if (stream->avail & bit) {
 				break;
 			}
-			rsize = stream->sread(stream->hdl,
+			rsize = stream->ss.ssread(&stream->ss,
 							(BYTE *)(stream + 1) +
 									(stream->loadpos << SBUFFERBIT),
 									(1 << SBUFFERBIT));
@@ -90,27 +83,27 @@ static void stream_load(STREAMBUF *stream) {
 			}
 		}
 	}
-
 	stream->flag &= ~BUFFLAG_LOADING;
 }
 
-static void regist_hdl(STREAMBUF *stream) {
+static BOOL streambuf_regist(STREAMBUF stream) {
 
 	int		i;
 
-	for (i=0; i<(int)((sizeof(shdl_reg)/sizeof(STREAMBUF *))); i++) {
+	for (i=0; i<(int)((sizeof(shdl_reg)/sizeof(STREAMBUF))); i++) {
 		if (shdl_reg[i] == NULL) {
 			shdl_reg[i] = stream;
-			break;
+			return(SUCCESS);
 		}
 	}
+	return(FAILURE);
 }
 
-static void unregist_hdl(STREAMBUF *stream) {
+static void streambuf_unregist(STREAMBUF stream) {
 
 	int		i;
 
-	for (i=0; i<(int)((sizeof(shdl_reg)/sizeof(STREAMBUF *))); i++) {
+	for (i=0; i<(int)((sizeof(shdl_reg)/sizeof(STREAMBUF))); i++) {
 		if (shdl_reg[i] == stream) {
 			shdl_reg[i] = NULL;
 			break;
@@ -118,87 +111,14 @@ static void unregist_hdl(STREAMBUF *stream) {
 	}
 }
 
+static UINT streambuf_ssread(SNDSTREAM stream, void *buf, UINT size) {
 
-// ----
-
-static void *arc_open(const void *arg, int num) {
-
-	STREAMBUF	*ret;
-	ARCFILEH	afh;
-
-	if (arg == NULL) {
-		return(NULL);
-	}
-	afh = arcfile_open(((const ARCSTREAMARG *)arg)->type,
-							((const ARCSTREAMARG *)arg)->fname);
-	if (afh == NULL) {
-		return(NULL);
-	}
-	ret = (STREAMBUF *)_MALLOC(sizeof(STREAMBUF)
-								+ (1 << (SBUFCNTBIT + SBUFFERBIT)),
-															"sound stream");
-	if (ret == NULL) {
-		arcfile_close(afh);
-		return(NULL);
-	}
-	ZeroMemory(ret, sizeof(STREAMBUF) + (1 << (SBUFCNTBIT + SBUFFERBIT)));
-	ret->hdl = (void *)afh;
-	ret->sread = (PCMSTREAM_READ)arcfile_read;
-	ret->sseek = (PCMSTREAM_SEEK)arcfile_seek;
-	ret->sclose = (PCMSTREAM_CLOSE)arcfile_close;
-	ret->soundnum = num;
-
-	stream_load(ret);
-	regist_hdl(ret);
-	return((void *)ret);
-}
-
-
-static void *mp3_open(const void *arg, int num) {
-
-	STREAMBUF	*ret;
-	FILEH		fh;
-
-	if (arg == NULL) {
-		return(NULL);
-	}
-	fh = file_open_rb((const char *)arg);
-	if (fh == FILEH_INVALID) {
-		return(NULL);
-	}
-	ret = (STREAMBUF *)_MALLOC(sizeof(STREAMBUF)
-								+ (1 << (SBUFCNTBIT + SBUFFERBIT)),
-															"sound stream");
-	if (ret == NULL) {
-		file_close(fh);
-		return(NULL);
-	}
-	ZeroMemory(ret, sizeof(STREAMBUF) + (1 << (SBUFCNTBIT + SBUFFERBIT)));
-	ret->hdl = (void *)fh;
-	ret->flag = 0;
-	ret->sread = (PCMSTREAM_READ)file_read;
-	ret->sseek = (PCMSTREAM_SEEK)file_seek;
-	ret->sclose = (PCMSTREAM_CLOSE)file_close;
-	ret->soundnum = num;
-
-	stream_load(ret);
-	regist_hdl(ret);
-	return((void *)ret);
-}
-
-
-static UINT arc_read(void *stream, void *buf, UINT size) {
-
-	STREAMBUF	*s;
+	STREAMBUF	s;
 	BYTE		*b;
 	UINT		pos;
 	UINT		ret;
 
-	s = (STREAMBUF *)stream;
-	if (s == NULL) {
-		return(0);
-	}
-
+	s = (STREAMBUF)stream->hdl;
 	b = (BYTE *)buf;
 	pos = (s->readpos >> SBUFFERBIT) & (SBUFCNT - 1);
 	ret = 0;
@@ -240,28 +160,27 @@ static UINT arc_read(void *stream, void *buf, UINT size) {
 	return(ret);
 }
 
+static long streambuf_ssseek(SNDSTREAM stream, long pos, int method) {
 
-static long arc_seek(void *stream, long pos, int method) {
-
-	STREAMBUF	*s;
+	STREAMBUF	s;
 	UINT		bpos;
 	long		chead;
 
-	s = (STREAMBUF *)stream;
-	if (s == NULL) {
-		return(-1);
-	}
-
+	s = (STREAMBUF)stream->hdl;
 	bpos = (s->readpos >> SBUFFERBIT) & (SBUFCNT - 1);
 	chead = s->pos[bpos];
 
 	switch(method) {
-		case 1:
+		case SSSEEK_SET:
+			break;
+
+		case SSSEEK_CUR:
 			pos += chead;
 			pos += (s->readpos & ((1 << SBUFFERBIT) - 1));
 			break;
 
-		case 2:				// unsupported
+		case SSSEEK_END:			// unsupported
+		default:
 			return(-1);
 	}
 	if ((!(s->avail & (1 << bpos))) ||
@@ -274,244 +193,252 @@ static long arc_seek(void *stream, long pos, int method) {
 	return(pos);
 }
 
-static void arc_close(void *stream) {
+static void streambuf_ssclose(SNDSTREAM stream) {
 
-	if (stream) {
-		unregist_hdl((STREAMBUF *)stream);
-		((STREAMBUF *)stream)->sclose(((STREAMBUF *)stream)->hdl);
-		_MFREE(stream);
+	STREAMBUF	s;
+
+	s = (STREAMBUF)stream->hdl;
+	streambuf_unregist(s);
+	if (s->ss.ssclose != NULL) {
+		s->ss.ssclose(&s->ss);
 	}
+	_MFREE(s);
+	stream->hdl = NULL;
+	stream->ssread = NULL;
+	stream->ssseek = NULL;
+	stream->ssclose = NULL;
+}
+
+int streambuf_attach(SNDSTREAM stream, int num) {
+
+	STREAMBUF	s;
+
+	if ((stream->ssseek == NULL) || (stream->ssread == NULL)) {
+		goto sba_err1;
+	}
+	s = (STREAMBUF)_MALLOC(sizeof(_STREAMBUF)
+										+ (1 << (SBUFCNTBIT + SBUFFERBIT)),
+															"sound stream");
+	if (s == NULL) {
+		goto sba_err1;
+	}
+	ZeroMemory(s, sizeof(_STREAMBUF) + (1 << (SBUFCNTBIT + SBUFFERBIT)));
+	s->ss = *stream;
+	s->soundnum = num;
+	s->fpos = s->ss.ssseek(&s->ss, 0, SSSEEK_CUR);
+	if (streambuf_regist(s) != SUCCESS) {
+		goto sba_err2;
+	}
+	stream->hdl = (void *)s;
+	stream->ssread = streambuf_ssread;
+	stream->ssseek = streambuf_ssseek;
+	stream->ssclose = streambuf_ssclose;
+	streambuf_load(s);
+	return(SNDMIX_SUCCESS);
+
+sba_err2:
+	_MFREE(s);
+
+sba_err1:
+	return(SNDMIX_FAILURE);
 }
 
 void stream_prepart_task(void) {
 
 	int		i;
 
-	for (i=0; i<(int)((sizeof(shdl_reg)/sizeof(STREAMBUF *))); i++) {
+	for (i=0; i<(int)((sizeof(shdl_reg)/sizeof(STREAMBUF))); i++) {
 		if (shdl_reg[i]) {
-			stream_load(shdl_reg[i]);
+			streambuf_load(shdl_reg[i]);
 		}
 	}
 }
-
-PCMSTREAM	arc_stream = {arc_open, arc_read, arc_seek, arc_close};
-PCMSTREAM	mp3_stream = {mp3_open, arc_read, arc_seek, arc_close};
-
-#else
-
-static void *arc_open(const void *arg, int num) {
-
-	if (arg) {
-		return(arcfile_open(((const ARCSTREAMARG *)arg)->type,
-							((const ARCSTREAMARG *)arg)->fname));
-	}
-	return(NULL);
-}
-
-static UINT arc_read(void *stream, void *buf, UINT size) {
-
-	return(arcfile_read((ARCFILEH)stream, buf, size));
-}
-
-static long arc_seek(void *stream, long pos, int method) {
-
-	return(arcfile_seek((ARCFILEH)stream, pos, method));
-}
-
-static void arc_close(void *stream) {
-
-	arcfile_close((ARCFILEH)stream);
-}
-
-static void *mp3_open(const void *arg) {
-
-	if (arg) {
-		return(file_open_rb((const char *)arg));
-	}
-	return((void *)FILEH_INVALID);
-}
-
-static UINT mp3_read(void *stream, void *buf, UINT size) {
-
-	if ((FILEH)stream != FILEH_INVALID) {
-		return(file_read((FILEH)stream, buf, size));
-	}
-	return(0);
-}
-
-static long mp3_seek(void *stream, long pos, int method) {
-
-	if ((FILEH)stream != FILEH_INVALID) {
-		return(file_seek((FILEH)stream, pos, method));
-	}
-	return(-1);
-}
-
-static void arc_close(void *stream) {
-
-	if ((FILEH)stream != FILEH_INVALID) {
-		file_close((FILEH)stream);
-	}
-}
-
-
-PCMSTREAM	arc_stream = {arc_open, arc_read, arc_seek, arc_close};
-PCMSTREAM	mp3_stream = {mp3_open, mp3_read, mp3_seek, mp3_close};
-
 #endif
 
 
-// ---- se
+// ---- file stream
 
-typedef struct {
-	UINT	size;
-	UINT	readpos;
-} SESTREAM;
+static UINT mp3_ssread(SNDSTREAM stream, void *buf, UINT size) {
 
-static void *se_open(const void *arg, int num) {
+	return(file_read((FILEH)stream->hdl, buf, size));
+}
 
-	SESTREAM	*ret;
+static long mp3_ssseek(SNDSTREAM stream, long pos, int method) {
+
+	int		fmethod;
+
+	switch(method) {
+		case SSSEEK_SET:
+			fmethod = FSEEK_SET;
+			break;
+
+		case SSSEEK_CUR:
+			fmethod = FSEEK_CUR;
+			break;
+
+		case SSSEEK_END:
+			fmethod = FSEEK_END;
+			break;
+
+		default:
+			return(-1);
+	}
+	return(file_seek((FILEH)stream->hdl, pos, fmethod));
+}
+
+static void mp3_ssclose(SNDSTREAM stream) {
+
+	file_close((FILEH)stream->hdl);
+	stream->hdl = NULL;
+	stream->ssread = NULL;
+	stream->ssseek = NULL;
+	stream->ssclose = NULL;
+}
+
+int mp3_ssopen(SNDSTREAM stream, void *arg, int num) {
+
+	FILEH	fh;
+
+	if (arg == NULL) {
+		goto m3o_err1;
+	}
+	fh = file_open_rb((char *)arg);
+	if (fh == FILEH_INVALID) {
+		goto m3o_err1;
+	}
+	stream->hdl = (void *)fh;
+	stream->ssread = mp3_ssread;
+	stream->ssseek = mp3_ssseek;
+	stream->ssclose = mp3_ssclose;
+#if defined(STREAM_BUFFERING)
+	return(streambuf_attach(stream, num));
+#else
+	return(SNDMIX_SUCCESS);
+#endif
+
+m3o_err1:
+	(void)num;
+	return(SNDMIX_FAILURE);
+}
+
+
+// ---- arc
+
+static UINT arc_ssread(SNDSTREAM stream, void *buf, UINT size) {
+
+	return(arcfile_read((ARCFILEH)stream->hdl, buf, size));
+}
+
+static long arc_ssseek(SNDSTREAM stream, long pos, int method) {
+
+	int		fmethod;
+
+	switch(method) {
+		case SSSEEK_SET:
+			fmethod = 0;
+			break;
+
+		case SSSEEK_CUR:
+			fmethod = 1;
+			break;
+
+		case SSSEEK_END:
+			fmethod = 2;
+			break;
+
+		default:
+			return(-1);
+	}
+	return(arcfile_seek((ARCFILEH)stream->hdl, pos, fmethod));
+}
+
+static void arc_ssclose(SNDSTREAM stream) {
+
+	arcfile_close((ARCFILEH)stream->hdl);
+	stream->hdl = NULL;
+	stream->ssread = NULL;
+	stream->ssseek = NULL;
+	stream->ssclose = NULL;
+}
+
+int arcraw_ssopen(SNDSTREAM stream, void *arg, int num) {
+
 	ARCFILEH	afh;
 
 	if (arg == NULL) {
-		return(NULL);
+		goto ao_err1;
 	}
-	afh = arcfile_open(((const ARCSTREAMARG *)arg)->type,
-							((const ARCSTREAMARG *)arg)->fname);
+	afh = arcfile_open(((ARCSTREAMARG *)arg)->type,
+							((ARCSTREAMARG *)arg)->fname);
 	if (afh == NULL) {
-		return(NULL);
+		goto ao_err1;
 	}
-	TRACEOUT(("S.E. buffer: %dbyte(s)", afh->size));
-	ret = (SESTREAM *)_MALLOC(sizeof(SESTREAM) + afh->size, "se stream");
-	if (ret) {
-		ret->size = afh->size;
-		ret->readpos = 0;
-		arcfile_read(afh, ret+1, afh->size);
-	}
-	arcfile_close(afh);
+	stream->hdl = (void *)afh;
+	stream->ssread = arc_ssread;
+	stream->ssseek = arc_ssseek;
+	stream->ssclose = arc_ssclose;
+	return(SNDMIX_SUCCESS);
+
+ao_err1:
 	(void)num;
-	return((void *)ret);
+	return(SNDMIX_FAILURE);
+}
+
+int arc_ssopen(SNDSTREAM stream, void *arg, int num) {
+
+	int		r;
+
+	r = arcraw_ssopen(stream, arg, num);
+#if defined(STREAM_BUFFERING)
+	if (r == SNDMIX_SUCCESS) {
+		r = streambuf_attach(stream, num);
+	}
+#endif
+	return(r);
 }
 
 
-static UINT se_read(void *stream, void *buf, UINT size) {
-
-	SESTREAM	*s;
-	UINT		ret;
-
-	s = (SESTREAM *)stream;
-	if (s == NULL) {
-		return(0);
-	}
-
-	ret = min(s->size - s->readpos, size);
-	if (ret) {
-		CopyMemory(buf, (BYTE *)(s + 1) + s->readpos, ret);
-		s->readpos += ret;
-	}
-	return(ret);
-}
-
-
-static long se_seek(void *stream, long pos, int method) {
-
-	SESTREAM	*s;
-
-	s = (SESTREAM *)stream;
-	if (s == NULL) {
-		return(-1);
-	}
-
-	switch(method) {
-		case 1:
-			pos += s->readpos;
-			break;
-
-		case 2:
-			pos += s->size;
-			break;
-	}
-	if (pos < 0) {
-		pos = 0;
-	}
-	else if (pos > (long)s->size) {
-		pos = s->size;
-	}
-	s->readpos = pos;
-	return(pos);
-}
-
-static void se_close(void *stream) {
-
-	if (stream) {
-		_MFREE(stream);
-	}
-}
-
-PCMSTREAM	se_stream = {se_open, se_read, se_seek, se_close};
-
-
-// ----
+// ---- on memory stream
 
 typedef struct {
-const	BYTE	*head;
-		UINT	size;
-		UINT	readpos;
-} ONMEMSTREAM;
+const BYTE	*ptr;
+	UINT	size;
+	UINT	readpos;
+} _MEMSTREAM, *MEMSTREAM;
 
-static void *onmem_open(const void *arg, int num) {
+static UINT onmem_ssread(SNDSTREAM stream, void *buf, UINT size) {
 
-	ONMEMSTREAM	*ret;
-
-	if (arg == NULL) {
-		return(NULL);
-	}
-	ret = (ONMEMSTREAM *)_MALLOC(sizeof(ONMEMSTREAM), "on memory stream");
-	if (ret) {
-		ret->head = ((ONMEMSTMARG *)arg)->ptr;
-		ret->size = ((ONMEMSTMARG *)arg)->size;
-		ret->readpos = 0;
-	}
-	(void)num;
-	return((void *)ret);
-}
-
-
-static UINT onmem_read(void *stream, void *buf, UINT size) {
-
-	ONMEMSTREAM	*s;
+	MEMSTREAM	s;
 	UINT		ret;
 
-	s = (ONMEMSTREAM *)stream;
-	if (s == NULL) {
-		return(0);
-	}
+	s = (MEMSTREAM)stream->hdl;
 	ret = min(s->size - s->readpos, size);
 	if (ret) {
-		CopyMemory(buf, s->head + s->readpos, ret);
+		CopyMemory(buf, s->ptr + s->readpos, ret);
 		s->readpos += ret;
 	}
 	return(ret);
 }
 
+static long onmem_ssseek(SNDSTREAM stream, long pos, int method) {
 
-static long onmem_seek(void *stream, long pos, int method) {
+	MEMSTREAM	s;
 
-	ONMEMSTREAM	*s;
-
-	s = (ONMEMSTREAM *)stream;
-	if (s == NULL) {
-		return(-1);
-	}
-
+	s = (MEMSTREAM)stream->hdl;
 	switch(method) {
-		case 1:
+		case SSSEEK_SET:
+			break;
+
+		case SSSEEK_CUR:
 			pos += s->readpos;
 			break;
 
-		case 2:
+		case SSSEEK_END:
 			pos += s->size;
 			break;
+
+		default:
+			return(-1);
 	}
 	if (pos < 0) {
 		pos = 0;
@@ -523,12 +450,74 @@ static long onmem_seek(void *stream, long pos, int method) {
 	return(pos);
 }
 
-static void onmem_close(void *stream) {
+static void onmem_ssclose(SNDSTREAM stream) {
 
-	if (stream) {
-		_MFREE(stream);
-	}
+	_MFREE(stream->hdl);
+	stream->hdl = NULL;
+	stream->ssread = NULL;
+	stream->ssseek = NULL;
+	stream->ssclose = NULL;
 }
 
-PCMSTREAM onmem_stream = {onmem_open, onmem_read, onmem_seek, onmem_close};
+int onmem_ssopen(SNDSTREAM stream, void *arg, int num) {
+
+	MEMSTREAM	s;
+
+	if (arg == NULL) {
+		goto oms_err1;
+	}
+	s = (MEMSTREAM)_MALLOC(sizeof(_MEMSTREAM), "on memory stream");
+	if (s == NULL) {
+		goto oms_err1;
+	}
+	s->ptr = ((ONMEMSTMARG *)arg)->ptr;
+	s->size = ((ONMEMSTMARG *)arg)->size;
+	s->readpos = 0;
+	stream->hdl = (void *)s;
+	stream->ssread = onmem_ssread;
+	stream->ssseek = onmem_ssseek;
+	stream->ssclose = onmem_ssclose;
+	return(SNDMIX_SUCCESS);
+
+oms_err1:
+	(void)num;
+	return(SNDMIX_FAILURE);
+}
+
+int arcse_ssopen(SNDSTREAM stream, void *arg, int num) {
+
+	ARCFILEH	afh;
+	MEMSTREAM	s;
+
+	if (arg == NULL) {
+		goto aso_err1;
+	}
+	afh = arcfile_open(((ARCSTREAMARG *)arg)->type,
+							((ARCSTREAMARG *)arg)->fname);
+	if (afh == NULL) {
+		goto aso_err1;
+	}
+	TRACEOUT(("S.E. buffer: %dbyte(s)", afh->size));
+	s = (MEMSTREAM)_MALLOC(sizeof(_MEMSTREAM) + afh->size, "se stream");
+	if (s == NULL) {
+		goto aso_err2;
+	}
+	s->ptr = (BYTE *)(s + 1);
+	s->size = afh->size;
+	s->readpos = 0;
+	arcfile_read(afh, s + 1, afh->size);
+	arcfile_close(afh);
+	stream->hdl = (void *)s;
+	stream->ssread = onmem_ssread;
+	stream->ssseek = onmem_ssseek;
+	stream->ssclose = onmem_ssclose;
+	return(SNDMIX_SUCCESS);
+
+aso_err2:
+	arcfile_close(afh);
+
+aso_err1:
+	(void)num;
+	return(SNDMIX_FAILURE);
+}
 

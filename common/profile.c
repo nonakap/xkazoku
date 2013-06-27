@@ -1,6 +1,7 @@
 #include	"compiler.h"
 #include	"dosio.h"
 #include	"textfile.h"
+#include	"profile.h"
 
 
 static int prof_spacedel(char *string, char **sep) {

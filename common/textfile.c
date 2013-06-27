@@ -1,7 +1,6 @@
 #include	"compiler.h"
 #include	"dosio.h"
 #include	"textfile.h"
-#include	"_memory.h"
 
 
 TEXTFILEH textfile_open(const char *filename, UINT buffersize) {

@@ -26,7 +26,7 @@ typedef struct {
 
 typedef struct {
 	SCRIPT_HDL	script;
-	BYTE		*ptr;
+const BYTE		*ptr;
 	UINT		pos;
 } SCENE_T, *SCENE_HDL;
 

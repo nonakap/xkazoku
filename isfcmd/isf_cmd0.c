@@ -5,7 +5,7 @@
 //		(c)2001-02, Nonaka.K / aw9k-nnk@asahi-net.or.jp
 //		(c)2002,    T.Yui    / myu@yui.ne.jp
 //
-//                                          ¢¨ ¥À¥á¤Ê¥Á¥È½ç
+//                                          ¦ ƒ_ƒ‚Èƒ`ƒg‡
 // -------------------------------------------------------------
 
 #include	"compiler.h"
@@ -14,7 +14,7 @@
 #include	"isf_cmd.h"
 
 
-// ED : ½ªÎ» (Nonaka.K)
+// ED : I—¹ (Nonaka.K)
 int isfcmd_00(SCR_OPE *op) {
 
 	(void)op;
@@ -22,15 +22,15 @@ int isfcmd_00(SCR_OPE *op) {
 }
 
 
-// LS : ¥·¥Ê¥ê¥ª¤Î¥í¡¼¥É¼Â¹Ô (Nonaka.K)
+// LS : ƒVƒiƒŠƒI‚Ìƒ[ƒhÀs (Nonaka.K)
 int isfcmd_01(SCR_OPE *op) {
 
-	char	label[ARCFILENAME_LEN];
+	char	label[ARCFILENAME_LEN+1];
 
 	if (scr_getlabel(op, label, sizeof(label)) != SUCCESS) {
 		return(GAMEEV_WRONGLENG);
 	}
-	src_scriptret();	// ¶¯À©¥ê¥¿¡¼¥ó
+	src_scriptret();	// ‹­§ƒŠƒ^[ƒ“
 	if (scr_scriptcall(label) != SUCCESS) {
 		return(GAMEEV_FILENOTFOUND);
 	}
@@ -38,10 +38,10 @@ int isfcmd_01(SCR_OPE *op) {
 }
 
 
-// LSBS : ¥µ¥Ö¥·¥Ê¥ê¥ª¤Î¥í¡¼¥É¼Â¹Ô (Nonaka.K)
+// LSBS : ƒTƒuƒVƒiƒŠƒI‚Ìƒ[ƒhÀs (Nonaka.K)
 int isfcmd_02(SCR_OPE *op) {
 
-	char	label[ARCFILENAME_LEN];
+	char	label[ARCFILENAME_LEN+1];
 
 	if (scr_getlabel(op, label, sizeof(label)) != SUCCESS) {
 		return(GAMEEV_WRONGLENG);
@@ -53,7 +53,7 @@ int isfcmd_02(SCR_OPE *op) {
 }
 
 
-// SRET : ¥µ¥Ö¥·¥Ê¥ê¥ª¤«¤é¤ÎÉüµ¢ (Nonaka.K)
+// SRET : ƒTƒuƒVƒiƒŠƒI‚©‚ç‚Ì•œ‹A (Nonaka.K)
 int isfcmd_03(SCR_OPE *op) {
 
 	if (src_scriptret()) {
@@ -65,7 +65,7 @@ int isfcmd_03(SCR_OPE *op) {
 }
 
 
-// JP : ¥¸¥ã¥ó¥× (Nonaka.K)
+// JP : ƒWƒƒƒ“ƒv (Nonaka.K)
 int isfcmd_04(SCR_OPE *op) {
 
 	UINT16	ptr;
@@ -80,7 +80,7 @@ int isfcmd_04(SCR_OPE *op) {
 }
 
 
-// JS : ¥µ¥Ö¥ë¡¼¥Á¥ó¥¸¥ã¥ó¥× (Nonaka.K)
+// JS : ƒTƒuƒ‹[ƒ`ƒ“ƒWƒƒƒ“ƒv (Nonaka.K)
 int isfcmd_05(SCR_OPE *op) {
 
 	UINT16	ptr;
@@ -95,7 +95,7 @@ int isfcmd_05(SCR_OPE *op) {
 }
 
 
-// RT : ¥µ¥Ö¥ë¡¼¥Á¥ó¤«¤éÉüµ¢ (Nonaka.K)
+// RT : ƒTƒuƒ‹[ƒ`ƒ“‚©‚ç•œ‹A (Nonaka.K)
 int isfcmd_06(SCR_OPE *op) {
 
 	if (scr_ret()) {
@@ -107,7 +107,7 @@ int isfcmd_06(SCR_OPE *op) {
 }
 
 
-// ONJP : ¾ò·ï¥¸¥ã¥ó¥× (Nonaka.K)
+// ONJP : ğŒƒWƒƒƒ“ƒv (Nonaka.K)
 int isfcmd_07(SCR_OPE *op) {
 
 	SINT32	val;
@@ -135,7 +135,7 @@ int isfcmd_07(SCR_OPE *op) {
 }
 
 
-// ONJS : ¾ò·ï¥µ¥Ö¥ë¡¼¥Á¥ó¸Æ¤Ó½Ğ¤· (Nonaka.K)
+// ONJS : ğŒƒTƒuƒ‹[ƒ`ƒ“ŒÄ‚Ño‚µ (Nonaka.K)
 int isfcmd_08(SCR_OPE *op) {
 
 	SINT32	val;
@@ -162,7 +162,8 @@ int isfcmd_08(SCR_OPE *op) {
 	return(GAMEEV_SUCCESS);
 }
 
-// CHILD : »Ò¥×¥í¥»¥¹¤Î¼Â¹Ô (T.Yui)
+
+// CHILD : qƒvƒƒZƒX‚ÌÀs (T.Yui)
 int isfcmd_09(SCR_OPE *op) {
 
 	char	label[ARCFILENAME_LEN+1];
@@ -171,7 +172,7 @@ int isfcmd_09(SCR_OPE *op) {
 		return(GAMEEV_WRONGLENG);
 	}
 
-	// Win32¥Í¥¤¥Æ¥£¥Ö¥³¡¼¥É¤òÂĞ±ş¤¹¤ë¤Ê¤é¡Ä
+	// Win32ƒlƒCƒeƒBƒuƒR[ƒh‚ğ‘Î‰‚·‚é‚È‚çc
 #if 0
 	if (!milstr_cmp(label, "PLANETOP")) {
 		return(GAMEEV_PLANETOP);
@@ -180,6 +181,15 @@ int isfcmd_09(SCR_OPE *op) {
 		return(GAMEEV_OPENDVD);
 	}
 #endif
+	return(GAMEEV_SUCCESS);
+}
+
+
+// URL : URLƒAƒhƒŒƒX‚ÌŒÄ‚Ño‚µ
+int isfcmd_0a(SCR_OPE *op) {
+
+	// ‚Á‚Ä‚Ç‚¤‚µ‚ë‚ÆH
+	(void)op;
 	return(GAMEEV_SUCCESS);
 }
 

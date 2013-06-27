@@ -9,13 +9,10 @@
 
 #include	"compiler.h"
 #include	"gamecore.h"
-#include	"arcfile.h"
 #include	"drs_cmd.h"
-#include	"fontmng.h"
-#include	"cgload.h"
 
 
-// HSG :  —øÙ§À§ﬁ§»§·§∆√Õ§Ú¬Â∆˛
+// HSG : ïœêîÇ…Ç‹Ç∆ÇﬂÇƒílÇë„ì¸
 int drscmd_42(SCR_OPE *op) {
 
 	UINT16	from;
@@ -41,7 +38,7 @@ int drscmd_42(SCR_OPE *op) {
 }
 
 
-// CALC : ∑◊ªª§π§Î
+// CALC : åvéZÇ∑ÇÈ
 int drscmd_46(SCR_OPE *op) {
 
 	UINT16	pos;
@@ -133,11 +130,91 @@ int drscmd_46(SCR_OPE *op) {
 	else {
 		val = 0;
 	}
-	TRACEOUT(("val[%d] = %d", pos, val));
 	scr_valset(pos, val);
 	return(GAMEEV_SUCCESS);
 
 dc46_err:
 	return(GAMEEV_WRONGLENG);
+}
+
+// IF : IF-THEN
+int drscmd_47(SCR_OPE *op) {
+
+	SINT32	val1;
+	SINT32	val2;
+	BYTE	cmd;
+	BYTE	cmd2;
+	BOOL	flag;
+
+	while(1) {
+		if ((scr_getval(op, &val1) != SUCCESS) ||
+			(scr_getbyte(op, &cmd) != SUCCESS) ||
+			(scr_getval(op, &val2) != SUCCESS)) {
+			return(GAMEEV_WRONGLENG);
+		}
+		flag = FALSE;
+		switch(cmd) {
+			case 0:		// e
+				if (val1 == val2) {
+					flag = TRUE;
+				}
+				break;
+
+			case 1:		// l
+				if (val1 < val2) {
+					flag = TRUE;
+				}
+				break;
+
+			case 2:		// le
+				if (val1 <= val2) {
+					flag = TRUE;
+				}
+				break;
+
+			case 3:		// g
+				if (val1 > val2) {
+					flag = TRUE;
+				}
+				break;
+
+			case 4:		// ge
+				if (val1 >= val2) {
+					flag = TRUE;
+				}
+				break;
+
+			case 5:		// ne
+				if (val1 != val2) {
+					flag = TRUE;
+				}
+				break;
+
+			default:
+				return(GAMEEV_FAILURE);
+		}
+		if (!flag) {
+			break;
+		}
+
+		if (scr_getbyte(op, &cmd2) != SUCCESS) {
+			return(GAMEEV_WRONGLENG);
+		}
+		if (cmd2 == 0x00) {
+			UINT16 ptr;
+			if (scr_getword(op, &ptr) != SUCCESS) {
+				return(GAMEEV_WRONGLENG);
+			}
+			scr_jump(ptr);
+			break;
+		}
+		else if (cmd2 == 0x01) {
+			return(drscmd_46(op));
+		}
+		else if (cmd2 == 0xff) {
+			break;
+		}
+	}
+	return(GAMEEV_SUCCESS);
 }
 

@@ -29,6 +29,9 @@ typedef struct {
 	UINT	pos;
 	BYTE	*ptr;
 	int		remain;
+	BYTE	*debug;
+	int		debugleng;
+	int		debugline;
 } _SCROPE, *SCROPE;
 
 

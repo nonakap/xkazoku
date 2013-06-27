@@ -34,7 +34,8 @@ enum {
 };
 
 enum {
-	SID_CAPTION			= 0x7ffe,
+	SID_CAPTION			= 0x7ffd,
+	SID_MINIMIZE		= 0x7ffe,
 	SID_CLOSE			= 0x7fff
 };
 
@@ -62,13 +63,15 @@ void menubase_destroy(void);
 
 BOOL menubase_open(int num);
 void menubase_close(void);
-void menubase_moving(int x, int y, int btn);
+BOOL menubase_moving(int x, int y, int btn);
+BOOL menubase_key(UINT key);
 
 void menubase_setrect(VRAMHDL vram, const RECT_T *rect);
 void menubase_clrrect(VRAMHDL vram);
 void menubase_draw(void (*draw)(VRAMHDL dst, const RECT_T *rect, void *arg),
 																void *arg);
 
+void menubase_proc(void);
 void menubase_modalproc(void);
 
 #ifdef __cplusplus

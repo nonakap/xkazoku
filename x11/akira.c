@@ -1,4 +1,4 @@
-/*	$Id: akira.c,v 1.3 2003/04/22 15:23:27 yui Exp $	*/
+/*	$Id: akira.c,v 1.10 2003/08/13 06:26:08 yui Exp $	*/
 
 #include "compiler.h"
 
@@ -16,8 +16,10 @@
 #include "audio.h"
 #include "sound.h"
 #include "sstream.h"
+#include "arcfile.h"
 
 #include "fontmng.h"
+#include "inputmng.h"
 #include "moviemng.h"
 
 /*
@@ -44,8 +46,7 @@ usage(void)
 	printf("Usage: %s [options]\n", progname);
 	printf("\t--help       [-h]       : print this message\n");
 	printf("\t--fullscreen [-f]       : full screen mode\n");
-	printf("\t--mplayer    [-m] <file>: specify MPlayer execute file\n");
-	printf("\t--suf        [-s] <file>: specify .SUP file\n");
+	printf("\t--suf        [-s] <file>: specify .SUF file\n");
 	printf("\t--ttfont     [-t] <file>: specify TrueType font file\n");
 	exit(1);
 }
@@ -61,7 +62,7 @@ main(int argc, char *argv[])
 		{ "help",	no_argument,		0,	'h' },
 		{ 0,		0,			0,	0   },
 	};
-	static char modulefile[MAX_PATH] = "system.suf";
+	static char suffile[MAX_PATH] = "system.suf";
 	int rv = 1;
 	int ch;
 
@@ -73,21 +74,12 @@ main(int argc, char *argv[])
 			fullscreen_flag = 1;
 			break;
 
-		case 'm':
-			if (access(optarg, X_OK) < 0) {
-				fprintf(stderr, "Can't access %s.\n", optarg);
-				exit(1);
-			}
-			milstr_ncpy(mplayer_cmd, optarg, sizeof(mplayer_cmd));
-			mplayer_flag = 1;
-			break;
-
 		case 's': 
 			if (access(optarg, R_OK) < 0) {
 				fprintf(stderr, "Can't access %s.\n", optarg);
 				exit(1);
 			}
-			milstr_ncpy(modulefile, optarg, sizeof(modulefile));
+			milstr_ncpy(suffile, optarg, sizeof(suffile));
 			break;
 
 		case 't':
@@ -109,18 +101,21 @@ main(int argc, char *argv[])
 	argv += optind;
 
 	dosio_init();
-	file_setcd(modulefile);
+
+	file_setcd(suffile);
 
 	TRACEINIT();
 
-	if (gamecore_init(modulefile) != SUCCESS)
+	if (fontmng_init() != SUCCESS)
+		goto gamecore_out;
+	inputmng_init();
+
+	archive_namingconv(ARCNAME_TOUPPER);
+	if (gamecore_init(suffile) != SUCCESS)
 		goto gamecore_out;
 
 	if (sysmenu_create() != SUCCESS)
 		goto sysmenu_out;
-
-	sound_init(AUDIO_RATE);
-	soundmix_create(AUDIO_RATE);
 
 	if (xdraws_init(SCREEN_WIDTH, SCREEN_HEIGHT) != SUCCESS)
 		goto draw_out;
@@ -128,13 +123,26 @@ main(int argc, char *argv[])
 	setup_signal(SIGINT, sighandler);
 	setup_signal(SIGTERM, sighandler);
 
+	sound_init(AUDIO_RATE);
+	soundmix_create(AUDIO_RATE);
+#if defined(VERMOUTH_LIB)
+	vermouth_init();
+#endif
 	sound_play();
+
+	taskmng_init();
 
 	gamecore_exec();
 	rv = 0;
 
+	taskmng_term();
+
 	sound_stop();
 	sound_term();
+#if defined(VERMOUTH_LIB)
+	vermouth_term();
+#endif
+
 draw_out:
 	xdraws_term();
 sysmenu_out:

@@ -4,7 +4,7 @@
 
 
 #define	DATACACHES		4
-#define	DATACACHESIZE	4096
+#define	DATACACHESIZE	8192
 #define	DATAINCACHE		0
 
 
@@ -74,11 +74,12 @@ static	ARCHIVE		arcptr[ARCTYPES][2];
 
 static	int			arcs = 0;
 static	ARCHIVE		arc[ARCHIVE_MAXFILES];
+static	UINT		arcname_type = 0;
 
 
 // ----
 
-#ifdef DATACACHES
+#if defined(DATACACHES)
 typedef struct {
 	UINT	type;
 	char	name[ARCFILENAME_LEN];
@@ -121,7 +122,6 @@ gaf_err1:
 	return(NULL);
 }
 
-
 static CACHE cache_sea(ARCFILEH af) {
 
 	int		i;
@@ -136,7 +136,6 @@ static CACHE cache_sea(ARCFILEH af) {
 	}
 	return(NULL);
 }
-
 
 static CACHE cache_open(UINT type, ARCFILEH af) {
 
@@ -193,7 +192,6 @@ static CACHE cache_open(UINT type, ARCFILEH af) {
 	return(ret);
 }
 
-
 static void cache_reset(UINT type) {
 
 	int		i;
@@ -207,7 +205,6 @@ static void cache_reset(UINT type) {
 		cc++;
 	}
 }
-
 
 static void cache_destroy(void) {
 
@@ -231,7 +228,8 @@ static void cache_destroy(void) {
 static BOOL fnamecmp(const char *string1, const char *string2) {
 
 	int		i;
-	BYTE	c1, c2;
+	BYTE	c1 = 0;		// for gcc
+	BYTE	c2 = 0;		// for gcc
 
 	for (i=0; i<ARCFILENAME_LEN; i++) {
 		c1 = *string1++;
@@ -256,7 +254,6 @@ static BOOL fnamecmp(const char *string1, const char *string2) {
 	return(SUCCESS);
 }
 
-
 static ARCHIVE arcnew(const char *path, const char *name,
 												UINT type, UINT files) {
 
@@ -275,7 +272,6 @@ static ARCHIVE arcnew(const char *path, const char *name,
 	}
 	return(r);
 }
-
 
 static ARCHIVE arcreg1(const char *path, const char *name, UINT type) {
 
@@ -333,7 +329,6 @@ ar1_err1:
 ar1_err0:
 	return(NULL);
 }
-
 
 static ARCHIVE arcreg2(const char *path, const char *name, UINT type) {
 
@@ -394,7 +389,6 @@ ar2_err0:
 	return(NULL);
 }
 
-
 static ARCHIVE arcreg(const char *path, const char *name, UINT type) {
 
 	ARCHIVE		r;
@@ -415,7 +409,6 @@ ar_exit:
 	return(r);
 }
 
-
 static char *arctestname(UINT type) {
 
 	if (type == ARCTYPE_VOICE) {
@@ -426,7 +419,6 @@ static char *arctestname(UINT type) {
 	}
 	return(NULL);
 }
-
 
 static int arctestfiles(ARCHIVE hdl, UINT type) {
 
@@ -454,9 +446,11 @@ atf_exit:
 
 static ARCHIVE archive_sea(const char *dir, const char *name, UINT type) {
 
-	ARCHIVE		r;
-	int			i;
-	char		path[MAX_PATH];
+	ARCHIVE	r;
+	int		i;
+	int		j;
+	char	arcname[MAX_PATH];
+	char	path[MAX_PATH];
 
 	for (i=0; i<arcs; i++) {
 		r = arc[i];
@@ -464,23 +458,55 @@ static ARCHIVE archive_sea(const char *dir, const char *name, UINT type) {
 			return(r);
 		}
 	}
-	milstr_ncpy(path, dir, sizeof(path));
-	plusyen(path, sizeof(path));
-	milstr_ncat(path, name, sizeof(path));
-	r = arcreg(path, name, type);
-#ifdef SUPPORT_PPCARC
-	if (r == NULL) {
+	for (i=0; i<4; i++) {
+		if (i == 0) {
+			if (arcname_type != 0) {
+				continue;
+			}
+		}
+		else {
+			if (!(arcname_type & (1 << (i - 1)))) {
+				continue;
+			}
+		}
+		milstr_ncpy(arcname, name, sizeof(arcname));
+		if (i) {
+			for (j=0; arcname[j]; j++) {
+				if ((((arcname[j] ^ 0x20) - 0xa1) & 0xff) < 0x3c) {
+					if (arcname[j] == '\0') {
+						break;
+					}
+					j++;
+				}
+				else if (((arcname[j] - 0x41) & 0xdf) < 26) {
+					if ((i == 1) || ((i == 3) && (j == 0))) {
+						arcname[j] &= 0xdf;
+					}
+					else {
+						arcname[j] |= 0x20;
+					}
+				}
+			}
+		}
 		milstr_ncpy(path, dir, sizeof(path));
 		plusyen(path, sizeof(path));
-		milstr_ncat(path, "_", sizeof(path));
-		milstr_ncat(path, name, sizeof(path));
-		r = arcreg(path, name, type);
-	}
+		milstr_ncat(path, arcname, sizeof(path));
+		r = arcreg(path, arcname, type);
+#ifdef SUPPORT_PPCARC
+		if (r == NULL) {
+			milstr_ncpy(path, dir, sizeof(path));
+			plusyen(path, sizeof(path));
+			milstr_ncat(path, "_", sizeof(path));
+			milstr_ncat(path, arcname, sizeof(path));
+			r = arcreg(path, arcname, type);
+		}
 #endif
-	if (r) {
-		r->testfiles = arctestfiles(r, type);
+		if (r) {
+			r->testfiles = arctestfiles(r, type);
+			return(r);
+		}
 	}
-	return(r);
+	return(NULL);
 }
 
 
@@ -491,7 +517,6 @@ BOOL archive_create(void) {
 	archive_destory();
 	return(SUCCESS);
 }
-
 
 void archive_destory(void) {
 
@@ -504,11 +529,10 @@ void archive_destory(void) {
 	}
 	arcs = 0;
 	ZeroMemory(arcptr, sizeof(arcptr));
-#ifdef DATACACHES
+#if defined(DATACACHES)
 	cache_destroy();
 #endif
 }
-
 
 BOOL archive_set(const char *dir, const char *name, UINT type, UINT num) {
 
@@ -517,7 +541,7 @@ BOOL archive_set(const char *dir, const char *name, UINT type, UINT num) {
 	if ((type >= ARCTYPES) || (num >= 2)) {
 		goto arcset_err;
 	}
-#ifdef DATACACHES
+#if defined(DATACACHES)
 	cache_reset(type);
 #endif
 	r = archive_sea(dir, name, type);
@@ -615,7 +639,7 @@ static ARCFILEH arcfile_get(UINT type, const char *fname) {
 		ftbl = (ARCFTBL)(tbl + 1);
 		hit = -1;
 		for (j=0; j<tbl->files; j++, ftbl++) {
-			// ≤»¬≤∑◊≤Ë§√§∆ TITLE.GG0§» TITLE.GGD§¨§¢§Î§Œ§Õ°ƒ(Œﬁ
+			// â∆ë∞åvâÊÇ¡Çƒ TITLE.GG0Ç∆ TITLE.GGDÇ™Ç†ÇÈÇÃÇÀÅc(ó‹
 			if (fnamecmp(ftbl->name, fname) == SUCCESS) {
 				hit = j;
 			}
@@ -626,7 +650,7 @@ static ARCFILEH arcfile_get(UINT type, const char *fname) {
 
 		ftbl = (ARCFTBL)(tbl + 1);
 		ftbl += hit;
-		if (ftbl->size <= 0) {
+		if ((ftbl->ptr == 0) || (ftbl->size <= 0)) {
 			break;
 		}
 		ret = (ARCFILEH)_MALLOC(sizeof(_ARCFILEH), "ARC");
@@ -665,7 +689,7 @@ ARCFILEH arcfile_open(UINT type, const char *fname) {
 		goto afopn_err1;
 	}
 
-#ifdef DATACACHES
+#if defined(DATACACHES)
 	if (ret->size <= DATACACHESIZE) {
 		CACHE cc;
 		cc = cache_open(type, ret);
@@ -693,13 +717,12 @@ afopn_err1:
 	return(NULL);
 }
 
-
 void arcfile_close(ARCFILEH hdl) {
 
 	if (hdl == NULL) {
 		goto afcls_exit;
 	}
-#ifdef DATACACHES
+#if defined(DATACACHES)
 	if (hdl->base == DATAINCACHE) {
 		CACHE cc;
 		cc = cache_sea(hdl);
@@ -720,7 +743,6 @@ afcls_exit:
 	return;
 }
 
-
 UINT arcfile_read(ARCFILEH hdl, void *buf, UINT size) {
 
 	UINT	ret;
@@ -734,7 +756,7 @@ UINT arcfile_read(ARCFILEH hdl, void *buf, UINT size) {
 		goto afrd_exit;
 	}
 
-#ifdef DATACACHES
+#if defined(DATACACHES)
 	if (hdl->base == DATAINCACHE) {
 		CopyMemory(buf, ((BYTE *)hdl->fh) + hdl->pos, ret);
 	}
@@ -748,7 +770,6 @@ UINT arcfile_read(ARCFILEH hdl, void *buf, UINT size) {
 afrd_exit:
 	return(ret);
 }
-
 
 long arcfile_seek(ARCFILEH hdl, long pos, int method) {
 
@@ -775,7 +796,7 @@ long arcfile_seek(ARCFILEH hdl, long pos, int method) {
 		ret = hdl->size;
 	}
 	hdl->pos = ret;
-#ifdef DATACACHES
+#if defined(DATACACHES)
 	if (hdl->base != DATAINCACHE)
 #endif
 	{
@@ -789,28 +810,44 @@ afsk_exit:
 
 // ----
 
-void archive_throwall(const char *dir) {
+void archive_namingconv(UINT type) {
 
-	// ≤»¬≤∑◊≤Ë, ¿±§◊§È(D.O.)
-	// §´§π§ﬂÕ∑µ∫, Lien(Purple)
-	archive_set(dir, "ISF", ARCTYPE_SCRIPT, 0);
-	archive_set(dir, "GGD", ARCTYPE_GRAPHICS, 0);
-	archive_set(dir, "OPCG", ARCTYPE_GRAPHICS, 1);		// ¿±§◊§È
-	archive_set(dir, "WMSC", ARCTYPE_SOUND, 0);
-	archive_set(dir, "MIDI", ARCTYPE_SOUND, 1);			// §´§π§ﬂÕ∑µ∫
-	archive_set(dir, "SE", ARCTYPE_SE, 0);
-	archive_set(dir, "VOICE", ARCTYPE_VOICE, 0);
-	archive_set(dir, "DATA", ARCTYPE_DATA, 0);
+	arcname_type = type;
+}
 
-	// §»§È§÷°º
-	archive_set(dir, "TRSNR", ARCTYPE_SCRIPT, 0);
-	archive_set(dir, "TRGRP", ARCTYPE_GRAPHICS, 0);
-	archive_set(dir, "TRSE", ARCTYPE_SE, 0);
-	archive_set(dir, "TRMSC", ARCTYPE_SOUND, 0);
+BOOL archive_throwall(const char *dir) {
 
-	// ≤√∆‡(D.O.)
-	archive_set(dir, "DRSSNR", ARCTYPE_SCRIPT, 0);
-	archive_set(dir, "DRSGRP", ARCTYPE_GRAPHICS, 0);
-	archive_set(dir, "DRSSEF", ARCTYPE_SE, 0);
+	BOOL	ret;
+
+	ret = FAILURE;
+
+	// â∆ë∞åvâÊ, êØÇ’ÇÁ(D.O.)
+	// Ç©Ç∑Ç›óVãY, Lien(Purple)
+	ret &= archive_set(dir, "ISF", ARCTYPE_SCRIPT, 0);
+	ret &= archive_set(dir, "GGD", ARCTYPE_GRAPHICS, 0);
+	ret &= archive_set(dir, "WMSC", ARCTYPE_SOUND, 0);
+	ret &= archive_set(dir, "MIDI", ARCTYPE_MIDI, 0);		// Ç©Ç∑Ç›óVãY
+	ret &= archive_set(dir, "SE", ARCTYPE_SE, 0);
+	ret &= archive_set(dir, "VOICE", ARCTYPE_VOICE, 0);
+	ret &= archive_set(dir, "DATA", ARCTYPE_DATA, 0);
+
+	// Ç∆ÇÁÇ‘Å[
+	ret &= archive_set(dir, "TRSNR", ARCTYPE_SCRIPT, 0);
+	ret &= archive_set(dir, "TRGRP", ARCTYPE_GRAPHICS, 0);
+	ret &= archive_set(dir, "TRSE", ARCTYPE_SE, 0);
+	ret &= archive_set(dir, "TRMSC", ARCTYPE_SOUND, 0);
+
+	// WILL
+	ret &= archive_set(dir, "RIO", ARCTYPE_SCRIPT, 0);
+	ret &= archive_set(dir, "CHIP", ARCTYPE_GRAPHICS, 0);
+	ret &= archive_set(dir, "WAV", ARCTYPE_SOUND, 0);
+
+	// â¡ìﬁ(D.O.)
+	ret &= archive_set(dir, "DRSSNR", ARCTYPE_SCRIPT, 0);
+	ret &= archive_set(dir, "DRSGRP", ARCTYPE_GRAPHICS, 0);
+	ret &= archive_set(dir, "DRSSEF", ARCTYPE_SE, 0);
+	ret &= archive_set(dir, "DRSDAT", ARCTYPE_DATA, 0);
+
+	return(ret);
 }
 

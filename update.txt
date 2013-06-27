@@ -1,98 +1,592 @@
 
-
-04/18/03 14:18:57
- - ¥Æ¥­¥¹¥È¼¡ÊÇ½èÍý¤Î½¤Àµ
- - fix cmd: 0x81 (å«È¢)
+2003/04/18 14:18:57
+ - ƒeƒLƒXƒgŽŸ•Åˆ—‚ÌC³
+ - fix cmd: 0x81 (ãJ” )
  - fix cmd: 0x84
- - add cmd: 0xef:0x03:0x03 (ºÇ¿·¥»¡¼¥Ö¼èÆÀ¥³¥Þ¥ó¥É)
+ - add cmd: 0xef:0x03:0x03 (ÅVƒZ[ƒuŽæ“¾ƒRƒ}ƒ“ƒh)
 
 
-04/18/03 15:30:51
- - win32´Ä¶­¤Î¥³¥Þ¥ó¥É¥é¥¤¥óÄÉ²Ã
+2003/04/18 15:30:51
+ - win32ŠÂ‹«‚ÌƒRƒ}ƒ“ƒhƒ‰ƒCƒ“’Ç‰Á
 
 
-04/19/03 03:34:19
- - ¥¢¥Ê¥é¥¤¥¶¤ÎÄÉ²Ã
+2003/04/19 03:34:19
+ - ƒAƒiƒ‰ƒCƒU‚Ì’Ç‰Á
 
 
-04/20/03 19:20:28
- - x11¤Ç¥³¥ó¥Ñ¥¤¥ë¤¬½ÐÍè¤ë¤è¤¦¤Ë½¤Àµ
- - add cmd: 0x1c (¤Õ¤¯¤é¤ß¤«¤±)
- - ¤Õ¤¯¤é¤ß¤«¤± ÄêµÁÄÉ²Ã
+2003/04/20 19:20:28
+ - x11‚ÅƒRƒ“ƒpƒCƒ‹‚ªo—ˆ‚é‚æ‚¤‚ÉC³
+ - add cmd: 0x1c (‚Ó‚­‚ç‚Ý‚©‚¯)
+ - ‚Ó‚­‚ç‚Ý‚©‚¯ ’è‹`’Ç‰Á
 
 
-04/20/03 22:05:26
- - ¥Æ¥­¥¹¥È¼¡ÊÇ½èÍý¤Î½¤Àµ
+2003/04/20 22:05:26
+ - ƒeƒLƒXƒgŽŸ•Åˆ—‚ÌC³
 
 
-04/21/03 01:28:01
- - »ä¤Ëº£Ìë°©¤¤¤ËÍè¤Æ£²¤ÎÄêµÁ¤òÊÑ¹¹(È¾³ÑÊ¸»ú¥Õ¥é¥°)
+2003/04/21 01:28:01
+ - Ž„‚É¡–éˆ§‚¢‚É—ˆ‚Ä‚Q‚Ì’è‹`‚ð•ÏX(”¼Šp•¶Žšƒtƒ‰ƒO)
 
 
-04/21/03 06:37:59
-¡¡- cygwin makefile¤òÄÉ²Ã
+2003/04/21 06:37:59
+@- cygwin makefile‚ð’Ç‰Á
 
 
-04/21/03 06:37:59
+2003/04/21 06:37:59
  - fix cmd: 0x2b
- - fix cmd: 0x55 (¥¯¥ì¥·¥§¥ó¥É)
- - fix cmd: 0x6f (»ä¤Ëº£Ìë°©¤¤¤ËÍè¤Æ£², ¥É¡¼¥¿¡¼¥á¡¼¥«¡¼)
- - ogg vorbis»ÈÍÑ»þ¤Î¥á¥â¥ê¥ê¡¼¥¯¤ò½¤Àµ
+ - fix cmd: 0x55 (ƒNƒŒƒVƒFƒ“ƒh)
+ - fix cmd: 0x6f (Ž„‚É¡–éˆ§‚¢‚É—ˆ‚Ä‚Q, ƒh[ƒ^[ƒ[ƒJ[)
+ - ogg vorbisŽg—pŽž‚Ìƒƒ‚ƒŠƒŠ[ƒN‚ðC³
 
 
-04/22/03 07:15:51
- - ¥Ñ¥¹½èÍý¤Î½¤Àµ(x11)
+2003/04/22 07:15:51
+ - ƒpƒXˆ—‚ÌC³(x11)
 
 
-04/22/03 08:27:26
- - ¥Ñ¥¹½èÍý¤Î½¤Àµ(Windows)
+2003/04/22 08:27:26
+ - ƒpƒXˆ—‚ÌC³(Windows)
 
 
-04/22/03 13:48:56
- - analyze¤Î EUC½ÐÎÏ
+2003/04/22 13:48:56
+ - analyze‚Ì EUCo—Í
 
 
-04/23/03 04:51:06
- - ¥Ñ¥¹½èÍý¤Î½¤Àµ(PPC, Mac)
+2003/04/23 04:51:06
+ - ƒpƒXˆ—‚ÌC³(PPC, Mac)
 
 
-04/24/03 23:03:36
- - CG load¸å¤Ë½èÍý¤¬É¬Í×¤Ë¤Ê¤ë¤Î¤Ç ÅÓÃæ¥Ö¥ì¥¤¥¯¤ò¤ä¤á¤¿
- - ¥¤¥Ù¥ó¥È½èÍý
-   - ¥¹¥¯¥ê¥×¥ÈÆâÉô¤Ç¤Ï inputmng_()¤Ç¤Ï¤Ê¤¯ event_()¤ò»ÈÍÑ¤·¤Æ²¼¤µ¤¤
- - ¥»¡¼¥Ö¤ÎÂÐ±þ¡Ä
-   - ¥¹¥¯¥ê¥×¥È¤ÎÂ¸ºß¤Ç¥»¡¼¥Ö¤ò¿¶¤êÊ¬¤±¤ë¤è¤¦¤Ë¤·¤¿
-   - GAME_SAVESYS¤ò ¥·¥¹¥Æ¥à¥»¡¼¥ÖÎÎ°è¤ÎÂ¸ºß¤ËÊÑ¹¹
- - ¥Ñ¥¿¡¼¥ó¥Õ¥é¥°¾ò·ï¥¸¥ã¥ó¥×¤Î½¤Àµ
- - textwin (¤»¤ó¤»¤¤£²)
- - fix cmd: 0x5f (¤Õ¤¯¤é¤ß¤«¤±)
- - fix cmd: 0x62 (¥¹¥¯¥í¡¼¥ëÉý¤Î½¤Àµ)
- - fix cmd: 0x71 (¤»¤ó¤»¤¤£²)
+2003/04/24 23:03:36
+ - CG loadŒã‚Éˆ—‚ª•K—v‚É‚È‚é‚Ì‚Å “r’†ƒuƒŒƒCƒN‚ð‚â‚ß‚½
+ - ƒCƒxƒ“ƒgˆ—
+   - ƒXƒNƒŠƒvƒg“à•”‚Å‚Í inputmng_()‚Å‚Í‚È‚­ event_()‚ðŽg—p‚µ‚Ä‰º‚³‚¢
+ - ƒZ[ƒu‚Ì‘Î‰žc
+   - ƒXƒNƒŠƒvƒg‚Ì‘¶Ý‚ÅƒZ[ƒu‚ðU‚è•ª‚¯‚é‚æ‚¤‚É‚µ‚½
+   - GAME_SAVESYS‚ð ƒVƒXƒeƒ€ƒZ[ƒu—Ìˆæ‚Ì‘¶Ý‚É•ÏX
+ - ƒpƒ^[ƒ“ƒtƒ‰ƒOðŒƒWƒƒƒ“ƒv‚ÌC³
+ - textwin (‚¹‚ñ‚¹‚¢‚Q)
+ - fix cmd: 0x5f (‚Ó‚­‚ç‚Ý‚©‚¯)
+ - fix cmd: 0x62 (ƒXƒNƒ[ƒ‹•‚ÌC³)
+ - fix cmd: 0x71 (‚¹‚ñ‚¹‚¢‚Q)
  - fix cmd: 0x90
  - fix cmd: 0xf9
- - fix effect : 0x0d, 0x0e (¥â¥¶¥¤¥¯¥Ñ¥¿¡¼¥ó)
+ - fix effect : 0x0d, 0x0e (ƒ‚ƒUƒCƒNƒpƒ^[ƒ“)
  - fix text cmd: 0x01
- - ¤»¤ó¤»¤¤£²ÂÎ¸³ÈÇ ÄêµÁÄÉ²Ã
+ - ‚¹‚ñ‚¹‚¢‚Q‘ÌŒ±”Å ’è‹`’Ç‰Á
 
 
-04/25/03 00:46:23
- - cygwinÍÑmakefile¤ò gcc3.2ÍÑ¤Ë¹¹¿·
+2003/04/25 00:46:23
+ - cygwin—pmakefile‚ð gcc3.2—p‚ÉXV
 
 
-04/25/03 05:54:48
- - ¥³¥Þ¥ó¥É¥¦¥£¥ó¥É¥¦¤Î½¤Àµ
- - fix cmd:15 (PPC only)
+2003/04/25 05:54:48
+ - ƒRƒ}ƒ“ƒhƒEƒBƒ“ƒhƒE‚ÌC³
+ - fix cmd: 0x15 (PPC only)
 
 
-04/25/03 20:12:04
+2003/04/25 20:12:04
  - fix cmd: 0x5b
  - fix cmd: 0xf8
 
 
-04/26/03 09:24:34
+2003/04/26 09:24:34
  - fix PPC convertor
 
 
-last commit
- - this file...
+release ver1.1 / tag: rel1-1
+
+
+2003/04/27 21:51:47
+ - add cmd: 0x54 (ƒp[ƒvƒ‹ƒtƒ@ƒ“ƒfƒBƒXƒN)
+ - add cmd: 0xb2 (“ñ–‡‚ÅŠÅŒì‚µ‚¿‚á‚¤‚¼—pƒ_ƒ~[)
+ - fix cmd: 0x28, 0xf8 (ƒeƒLƒXƒg‰eˆ—)
+ - fix cmd: 0x55
+ - fix effect : 0x0b, 0x0c (ƒY[ƒ€ƒpƒ^[ƒ“)
+ - fix effect : 0x15 (Œ‹‹ÇƒVƒXƒeƒ€‘¤‚Í—\”õƒRƒ}ƒ“ƒh‚ç‚µ‚¢?)
+
+
+2003/04/27 21:55:17
+ - analyze‚ÌƒhƒLƒ…ƒƒ“ƒgcŽv‚¢‚Á‚«‚èŠÔˆá‚Á‚Ä‚½B
+
+
+2003/04/27 23:01:44
+ - fix cmd: 0x63 (‚Ó‚Â[‚Ì‰æ–Ê—h‚ê)
+
+
+2003/04/27 23:06:44
+ - analyze ‚Ì KEYC³
+
+
+2003/05/01 00:13:01
+ - cmd: 0x2c‚ð 0x2b‚Æ‚µ‚Äˆ—‚·‚é‚æ‚¤‚É‚µ‚Ä‚Ý‚½B
+ - fix cmd: 0x15 (Shift-JIS‚Å‚µ‚½)
+ - fix cmd: 0xb3 (“ñ–‡‚ÅŠÅŒì‚µ‚¿‚á‚¤‚¼ •ÇŽ†‘I‘ðƒ_ƒCƒAƒƒO)
+ - ƒeƒLƒXƒg•\Ž¦‚Ì‘‚«’¼‚µc
+ - ƒGƒtƒFƒNƒg‚ð‘‚«’¼‚µc
+ - ƒƒjƒ…[—‚Ý‚ÌƒoƒOC³
+
+@–{ƒo[ƒWƒ‡ƒ“‚Å‚Í ƒeƒLƒXƒgˆ—‚Ì–¼‘O‚ªƒƒbƒZ[ƒWƒXƒLƒbƒvˆµ‚¢‚É‚È‚Á‚Ä‚Ü‚¹‚ñB
+
+
+2003/05/04 03:37:42
+ - ƒ^ƒCƒgƒ‹‚Ö–ß‚é‚Ìˆ—C³
+ - fix cmd: 0x1a
+ - fix cmd: 0x1c (‚Ó‚­‚ç‚Ý‚©‚¯‚Æ‚©c)
+ - fix cmd: 0x71 (ƒo[ƒWƒ‡ƒ“’è‹`ƒ~ƒX?)
+ - fix cmd: 0x85 (ƒJ[ƒ\ƒ‹ˆÊ’u‚Ìƒtƒ‰ƒO‚ðŠÔˆá‚¦‚Ä‚½c)
+ - ƒGƒ‰[‚ÌŽž‚É ƒRƒ}ƒ“ƒh”Ô†‚ð•\Ž¦‚³‚¹‚Ä‚Ý‚½...
+ - sound‚ÌƒQƒCƒ“ƒZƒbƒg‚Å”jŠü‚³‚ê‚½ƒnƒ“ƒhƒ‹‚ðŽg‚¤ƒoƒOC³(waffle‚à)
+
+
+2003/05/04 19:02:41
+ - PocketPC‚Ì ƒNƒŠƒeƒBƒJƒ‹ƒ}ƒbƒv‘Î‰ž (ƒRƒ“ƒo[ƒ^‚à)
+
+
+2003/05/06 03:04:29
+ - PocketPC‚ÌƒRƒ“ƒo[ƒ^‚Ì–³ˆÓ–¡‚Èfix ‚»‚Ì‚P
+
+
+2003/05/08 05:57:58
+ - PocketPC‚ÌƒRƒ“ƒo[ƒ^‚Ì–³ˆÓ–¡‚Èfix ‚»‚Ì‚Q
+
+
+2003/05/09 00:14:48
+ - fix cmd: 0x2a (ƒh[ƒ^[ƒ[ƒJ[)
+ - fix cmd: 0x8d (ƒh[ƒ^[ƒ[ƒJ[)
+
+
+2003/05/10 01:25:30
+ - ‚Æ‚ç‚Ô[Œn‚ÌƒZ[ƒu‚ÌƒvƒŒƒrƒ…[‰æ‘œ‚ð 240x180‚É‚µ‚½
+ - fix drs cmd: 0x2a, 0x2b, 0x2c
+ - fix drs cmd: 0x54
+
+
+2003/05/11 09:34:42
+ - ‰æ–Ê—h‚êƒGƒtƒFƒNƒgI—¹Žž‚É‰æ–Ê‚ª‰ó‚ê‚éƒoƒOC³
+ - ¯‚Õ‚çƒZ[ƒu‚Ì•ÏX (GAME_NOKID)
+ - ƒ}ƒEƒXƒJ[ƒ\ƒ‹”ÍˆÍ‚ðÅ‘å64‚É‚µ‚½ (purple fan disc)
+ - fix cmd: 0x5c, 0x5d, 0x65, 0x66, 0x68, 0x69 (¯‚Õ‚ç)
+
+
+2003/05/11 11:11:57
+ - analyze‚Å TRSNR“Ç‚Ý‚É‚¢‚­‚Ì–Y‚ê‚Ä‚½c
+
+
+2003/05/11 23:23:32
+ - animeˆ—‚ÌC³
+
+
+2003/05/15 00:30:21
+ - add cmd: 0xe7, 0xe8 (ˆú“àŠ´õ‚Q)
+ - add cmd: 0x67
+ - fix cmd: 0x83
+ - fix drs cmd: 0x11, 0x12
+ - fix drs cmd: 0x54
+
+
+2003/05/15 00:30:21
+ - GAMEDEF.TBL‚ð xkazoku‚Æanalyze‚Å“¯‚¶ƒtƒ@ƒCƒ‹‚ð“Ç‚Ý‚É‚¢‚­‚æ‚¤‚É‚µ‚½
+ - fix cmd: 0x29
+
+
+2003/05/18 02:17:52
+ - fix drs cmd: 0x0c 0x0d (ƒy[ƒWˆ—)
+ - fix drs cmd: 0x3c 0x3d (CG’B¬—¦ˆ—)
+ - fix drs cmd: 0x47
+ - save‰ñ‚èC³
+ - drs‚ÅƒOƒ[ƒoƒ‹ƒZ[ƒu‚ðƒ[ƒh‚·‚é‚æ‚¤‚É‚µ‚½B
+ - ƒeƒLƒXƒg•\Ž¦ƒRƒ}ƒ“ƒh’†‚ÌƒNƒŠƒbƒN‘Ò‚¿‚Å ƒXƒLƒbƒvEŠù“ÇƒXƒLƒbƒv‚ð”»’è‚µ‚Ä
+   ‚¢‚È‚¢•s‹ï‡C³
+ - Šù“Ç‚Å‚Í‚È‚¢‚Ì‚É ƒeƒLƒXƒg‚ªuŠÔ•\Ž¦‚É‚È‚Á‚Ä‚½‚Ì‚ðC³B
+ - ƒeƒLƒXƒg—Ìˆæ‚ÆƒtƒŒ[ƒ€—Ìˆæ‚ªˆá‚¤ê‡‚ÉƒSƒ~‚ªŽc‚Á‚Ä‚µ‚Ü‚¤‚Ì‚Ì‘Îô
+
+
+2003/05/20 18:16:47
+ - add cmd: 0x2f
+ - add cmd: 0x7c, 0x7d
+ - fix cmd: 0x70 (flag==2 / WAVEƒ‹[ƒv–³‚µÄ¶)
+ - fix cmd: 0x71 (WAVEƒ‹[ƒvÄ¶ƒtƒ‰ƒO‚ÌC³)
+ - ‹ŒƒZ[ƒuŒ^(GAME_SAVESYS)‚ÌƒZ[ƒu‚Ìˆµ‚¢‚ðC³(ˆÈ‘O‚Ì‚ÍŽg‚¦‚Ü‚¹‚ñE—víœ)
+ - ƒZ[ƒuƒ_ƒCƒAƒƒO‚ÅƒTƒ|[ƒg‚µ‚Ä‚¢‚È‚©‚Á‚½Œ^‚ÌƒŠƒ\[ƒX’Ç‰Á
+
+
+2003/05/22 06:09:22
+ - fix cmd: 0x50, 0x53 (•`‰æ”»’è)
+ - 256GŒ`Ž®‰æ‘œ‚Ì‘Î‰ž
+ - MSADPCM‚ÌÄ¶ƒoƒO‚ÌC³ (ƒRƒ“ƒo[ƒ^‚Í–³ŠÖŒW ‚Â‚©waffle‚à)
+ - ƒ”ƒFƒ‹ƒxƒbƒgƒGƒR[‚ÌƒZ[ƒu‚ðC³ (GAME.SAV + exa—Ìˆæƒ^ƒCƒvc)
+
+
+2003/05/22 14:15:55
+ - add cmd: 0x61
+ - fix cmd: 0x37, 0x3a (‰½‚Æ‚È‚­ˆÓ–¡‚Ì–³‚¢C³)
+ - EXEVER_KONYA ‚ÌƒL[ˆ—•s‹ï‡C³
+ - ŽŽ‚µ‚É EXEVER_TSUKU ‚Å ƒRƒ}ƒ“ƒhƒoƒCƒ“ƒh•ÏX
+
+
+2003/05/22 17:12:02
+ - PocketPCƒRƒ“ƒo[ƒ^‚Ì256GŒ`Ž®ƒ¿ƒvƒŒ[ƒ“‚ÌC³
+
+
+2003/05/22 19:47:14
+ - VRAM‚Ìˆµ‚¢‚ð•Ï‚¦‚½(í‚ÉalphaƒvƒŒ[ƒ“‚ðŽ‚Â)
+ - fix cmd: 0x6f (QVGA‚ÌƒTƒCƒYƒ~ƒX)
+
+
+2003/05/23 17:02:57
+ - fix cmd: 0x7b,0x7c,0x7d (s‚­‚µ‚Ä‚ ‚°‚¿‚á‚¤ƒeƒXƒgƒRƒ}ƒ“ƒh‚¸‚ê‚Ä‚½c)
+
+
+2003/05/23 17:29:13
+ - alphaƒvƒŒ[ƒ“‚ÌƒRƒs[‚Å ƒTƒCƒY‚ªˆá‚Á‚½ê‡ ƒ}ƒgƒ‚‚ÉƒRƒs[‚³‚ê‚È‚¢
+ @Åˆ«ƒƒ‚ƒŠ‚ð”j‰ó‚·‚é‚Ì‚ðC³
+ - ‘I‘ðŽˆ‚ÌƒeƒLƒXƒg•`‰æ‚ðC³(2003/05/22 19:47:14 ƒGƒ“ƒoƒO)
+
+
+2003/05/24 09:22:17
+ - 256Gƒ}ƒXƒN‚ªˆ—o—ˆ‚Ä‚¢‚È‚©‚Á‚½‚Ì‚ðC³(VGA”Å)
+ - CGˆê–‡‚ ‚½‚è‚ÌVRAMãŒÀ‚ð 4MB‚©‚ç16MB‚Ö•ÏX
+ - ƒCƒxƒ“ƒg‘Ò‚¿‚ÅGADˆ—‚ª‚³‚ê‚Ä‚¢‚È‚©‚Á‚½‚Ì‚ðC³
+ - ƒVƒXƒeƒ€ƒ_ƒCƒAƒƒO‚Ì“K—p‚ðC³
+
+
+2003/05/26 04:38:34
+ - fix cmd: 0xfd
+ - VOICEƒtƒ@ƒCƒ‹‚ÌƒRƒ“ƒo[ƒg‚ÅƒSƒ~ƒtƒ@ƒCƒ‹‚ð–³Ž‹‚·‚é‚æ‚¤‚É‚µ‚½B
+
+
+2003/05/26 08:08:59
+ - rolback cmd: 0x3a
+
+
+2003/06/01 23:52:08
+ - add cmd: 0xe6 (Â‚¢—Ü)
+ - ƒeƒLƒXƒg‰ñ‚è‚ÌC³
+ - ID3v2-Tag‚ÌƒoƒOC³
+
+
+2003/06/02 20:05:07
+ - add GAN format (VGA)
+ - fix cmd: 0x4b
+ - HPCƒoƒCƒiƒŠ‚ðì‚ê‚é‚æ‚¤C³B
+ - ‚»‚ê‚É”º‚¢ akira Win32ŠJ”­”Å‚Å DirectX‚ª•s—v‚É‚È‚è‚Ü‚µ‚½B
+
+
+2003/06/03 00:18:00
+ - fix cmd: 0x8d (ãJ–{)
+
+
+2003/06/03 02:34:29
+ - PocketPC‚Å ƒƒjƒ…[‚Ì‹ÖŽ~’†‚É‹­§“I‚ÉƒLƒƒƒvƒVƒ‡ƒ“‚ðo‚¹‚é‚æ‚¤C³
+   (TABƒL[ ‚à‚µ‚­‚Í vkB‚ð‚P•bˆÈã‰Ÿ‚·)
+ - vkB‚ÌƒŠƒŠ[ƒX‚ª”½‰f‚³‚ê‚¸ ‰EƒNƒŠƒbƒN‚µ‚Á‚Ï‚È‚µ‚Æ”»’è‚³‚ê‚é‘åƒoƒOC³B
+
+
+2003/06/03 18:30:56
+ - add GAN format (PPC)
+ - fix cmd: 0xef:04,06 (–G‚¦ƒb–ºƒi[ƒX)
+ - ‘I‘ð’†‚ÌƒL[“ü—Í‚ðC³
+
+
+2003/06/04 03:16:18
+ - add cmd: 0xb4 (lÈ•P‹äŠy•”)
+
+
+2003/06/04 21:59:23
+ - fix cmd: 0x3a (Â‚¢—Ü / 2003/05/26 08:08:59”ÅŠª‚«–ß‚µ•s‹ï‡‚ÌC³)
+ - fix cmd: 0x60 (–G‚¦ƒb–ºƒi[ƒX)
+ - fix cmd: 0x63 (–G‚¦ƒb–ºƒi[ƒX@Žb’èˆ’u)
+ - –G‚¦ƒb–ºƒi[ƒXˆÈ~‚ÌƒZ[ƒuƒ^ƒCƒv‚ÌƒTƒ|[ƒg
+@@@(–G‚¦ƒb–ºƒi[ƒXAÂ‚¢—ÜA‰Æ‘°Œv‰æ`ãJ–{`‚Ì‚¨’m‚ç‚¹)
+ - ƒZ[ƒuƒvƒŒƒrƒ…[‚ðC³ (Â‚¢—Ü)
+ - Purple‚Ì‹N“®notice‚ª•\Ž¦‚³‚ê‚È‚¢•s‹ï‡‚ðC³
+ - Purple‚Ì‘I‘ðŽˆ‚Ì•s‹ï‡C³
+
+ - “®ìŠm”F: MYU-, PLANET, MOEKKO, AOI, AMEIRO, BLEED
+
+
+2003/06/05 13:11:56
+ - fix cmd: 0x63 (–G‚¦ƒb–ºƒi[ƒX)
+ - ƒƒjƒ…[‰ñ‚è‚ðC³
+
+
+2003/06/05 18:33:23
+ - PocketPC‚Ìƒ^ƒXƒN‰ñ‚è‚ðC³
+
+
+2003/06/05 18:57:56
+ - EXEVER_DM‚Ì‹““®‚ðC³
+
+
+2003/06/05 23:36:12
+ - fix GAN
+@@ÅŒã‚Ì‚Pƒhƒbƒg‚Ìƒf[ƒ^‚ª“Ç‚ß‚Ä‚È‚©‚Á‚½Ž–‚ª‚ ‚Á‚½‚¾‚¯‚ÌC³‚È‚Ì‚Å
+@@PocketPC—pÄƒRƒ“ƒo[ƒg‚Í”÷–­c
+
+
+2003/06/06 03:21:19
+ - ƒQ[ƒ€ƒf[ƒ^‚ª suf‚Æ“¯‚¶ƒtƒHƒ‹ƒ_‚É‚È‚¢ê‡AƒQ[ƒ€ƒtƒHƒ‹ƒ_‚à
+   ŒŸõ‚·‚é‚æ‚¤‚ÉC³
+ - PocketPC—pƒRƒ“ƒo[ƒ^‚Å *.suf‚Ìƒtƒ@ƒCƒ‹–¼‚ðŒp³‚·‚é‚æ‚¤‚É‚µ‚½
+
+
+2003/06/06 18:33:55
+ - ƒ_ƒCƒAƒƒO‚ÌC³
+
+
+2003/06/06 19:13:52
+ - ƒVƒXƒeƒ€ƒŠƒZƒbƒg‚ªŠ|‚©‚Á‚½ê‡ ƒAƒjƒ‚ð’âŽ~‚³‚¹‚é‚æ‚¤‚É‚µ‚½ (Chain)
+
+
+2003/06/07 01:04:14
+ - ƒGƒtƒFƒNƒg‚ðC³ (Purple)
+
+
+release ver1.2(VGA) / tag: rel1-2
+
+
+2003/06/08 00:42:13
+ - ƒ¿ƒuƒŒƒ“ƒh‚ðC³ (16bpp)
+
+
+release ver1.21(QVGA) / tag: rel1-21
+
+
+2003/06/08 00:42:13
+ - fix cmd: 0x3c (ðŒ•ªŠòƒRƒ}ƒ“ƒh‚È‚ñ‚¾‚ªc(Š¾;
+ - ‘I‘ðƒtƒH[ƒJƒXC³ (‰Æ‘°Œv‰æˆÈŠO / GAME_SELECTEX)
+ - ƒGƒtƒFƒNƒg‚ÌC³ (Â‚¢—Ü / GAME_TEXTLAYER)
+ - ‘I‘ðŽˆ‚ÌC³ (Â‚¢—Ü / GAME_CMDWINNOBG)
+
+
+2003/06/09 06:12:03
+ - support mp2 wave
+
+
+2003/06/10 09:57:29
+ - fix cmd: 0x29 (Ži‘‚³‚ñ‚Æ‚¢‚Á‚µ‚å™)
+ - fix cmd: 0x3a (Ži‘‚³‚ñ‚Æ‚¢‚Á‚µ‚å™)
+ - fix convertor (‚Â[‚© RegCreateKeyExŽg‚Á‚Ä‚é‚æAƒ’ƒC
+
+
+release ver1.22(QVGA) / tag: rel1-22
+
+
+2003/06/13 04:51:53
+ - fix load vram (Ži‘‚³‚ñ‚Æ‚¢‚Á‚µ‚å™)
+
+
+2003/06/19 04:35:21
+- PocketPC—pƒRƒ“ƒo[ƒ^‚Å DATA‚àƒRƒ“ƒo[ƒg‚·‚é‚æ‚¤‚É‚µ‚½
+
+
+2003/06/19 10:42:12
+- ƒTƒEƒ“ƒh‚ÌC³
+
+
+2003/06/19 11:44:08
+- ƒTƒEƒ“ƒh‚ÌC³
+
+
+2003/06/21 15:31:26
+ - ƒTƒEƒ“ƒh‚ÌC³
+ - GAN‚ÌC³(16bpp)
+
+
+2003/06/21 19:18:43
+ - ƒCƒxƒ“ƒg‰ñ‚è‚ðC³ (Ži‘‚³‚ñ‚Æ‚¢‚Á‚µ‚å™“™)
+
+
+2003/06/23 12:31:44
+ - gamedef.tbl¨gamedef.c
+ - gamedef‚É ŠO•”ƒtƒ@ƒCƒ‹‚æ‚èƒpƒbƒ`‚ª“–‚Ä‚ç‚ê‚é‚æ‚¤‚É‚µ‚½B
+
+—á:
+gamedef.txt
+> [Ži‘‚³‚ñ‚Æ‚¢‚Á‚µ‚å™]
+> company = TRABULANCE
+> key = SHISYO
+> ver = EXEVER_HEART
+> type = GAME_SAVEMAX30+GAME_SAVEGRPH+GAME_SAVECOM
+> type = +GAME_TEXTASCII+GAME_VOICE
+
+@type = ‚ð•¡”s‚Å‹Lq‚·‚éê‡‚É‚Í +‚ÅŽn‚ß‚éŽ–
+
+
+2003/06/27 08:51:51
+ - ƒeƒLƒXƒg‰ñ‚è‚ðC³ (‚ê‚·‚Æ‚ )
+
+
+2003/06/27 17:06:09
+ - ƒeƒLƒXƒg‰ñ‚è‚ðC³ (‚ê‚·‚Æ‚ /—‚ÌŽq‚Ìƒqƒ~ƒc)
+
+
+2003/06/27 18:27:11
+ - X11”Å‚ÌC³
+
+
+2003/06/27 18:34:43
+ - X11”Å‚ÌC³
+
+
+2003/06/28 19:03:13
+ - ƒl[ƒ€‘‹‚ÌC³ (—‚ÌŽq‚Ìƒqƒ~ƒc)
+ - ƒLƒƒƒbƒVƒ…‚ð32KB‚É‚µ‚½
+
+
+2003/06/29 20:59:54
+ - ‚ê‚·‚Æ‚ ‚ÌEXE–„‚ßž‚Ýî•ñ‚ð”½‰f (ƒZ[ƒu‚ÌŒÝŠ·–³‚µ)
+
+
+2003/06/29 21:11:54
+ - abe‚³‚ñC³•ª (cmd 0x1c)
+
+
+2003/06/30 13:32:46
+ - vram‚Ìƒƒ‚ƒŠƒoƒEƒ“ƒ_ƒŠ‚ðl—¶‚µ‚Ä‚¢‚È‚©‚Á‚½•s“s‡C³
+
+
+2003/07/19 05:15:59
+ - ƒeƒLƒXƒgƒRƒ}ƒ“ƒh’Ç‰Á (ƒAƒLƒo‚Å‚¨’ƒ‚µ‚æ‚ÁI)
+
+
+2003/07/19 20:47:44
+ - ƒZ[ƒuC³
+ - Œø‰Ê‰¹C³
+
+
+2003/07/19 23:08:05
+ - ƒAƒLƒo‚Å‚¨’ƒ‚µ‚æ‚ÁI‚ÌEXE–„‚ßž‚Ýî•ñ‚ð”½‰f (ƒZ[ƒu‚ÌŒÝŠ·–³‚µ)
+
+
+2003/07/25 14:56:28
+ - ƒNƒŒFVC³
+ - ƒRƒ“ƒo[ƒ^
+
+
+2003/07/26 01:42:45
+ - ƒGƒtƒFƒNƒg‚ÌC³
+
+
+2003/07/27 05:25:14
+ - ƒAƒLƒo‚Å‚¨’ƒ‚µ‚æ‚ÁIAƒNƒŒƒVƒFƒ“ƒhFV‚ÌƒZ[ƒuƒf[ƒ^C³B
+
+
+2003/07/27 13:08:30
+ - ƒ{ƒCƒX‚ÌC³ (ƒAƒLƒo‚Å‚¨’ƒ‚µ‚æ‚ÁI)
+ - ƒGƒtƒFƒNƒg‚ÌC³ (ƒNƒŒƒVƒFƒ“ƒh)
+
+
+2003/07/28 03:36:39
+ - Šg’£ƒZ[ƒuƒRƒ}ƒ“ƒhC³ (ef:01) (ƒƒCƒh‚³‚ñ‚ÍƒAƒCƒVƒeƒ‹)
+
+
+2003/07/28 17:47:12
+ - MacOS”Å‚ÌƒCƒ“ƒ^ƒtƒFƒCƒXC³ (ƒAƒCƒRƒ“ƒhƒƒbƒv ‹y‚Ñ *.sufŒŸõ)
+
+
+2003/07/29 21:28:57
+ - ƒTƒEƒ“ƒh‰ñ‚è“ü‚ê‘Ö‚¦
+ - Šg’£ƒZ[ƒuƒRƒ}ƒ“ƒhC³ (ef:03:01) (ƒƒCƒh‚³‚ñ‚ÍƒAƒCƒVƒeƒ‹)
+
+
+2003/07/31 04:52:31
+ - MacOS‚Å PC-98•¶Žš‚ðMacƒR[ƒh‚Ö•ÏŠ·‚·‚é‚æ‚¤‚É‚µ‚½
+
+
+2003/08/02 08:33:03
+ - MacOSX Project Builder‚ÌƒvƒƒWƒFƒNƒg‚ðXV
+ - PocketPC‚ÌƒtƒHƒ“ƒgŽæ“¾‚Ì(‹C‹x‚ß‚È)‚‘¬‰»
+
+
+2003/08/03 07:21:50
+ - ‰æ‘œ•t‚«ƒZ[ƒu‚ÌBMP‚ÌŠg‘åk¬ˆ—‚ðC³
+
+
+2003/08/07 10:46:28
+ - ƒTƒEƒ“ƒh‰ñ‚è‚ÌC³
+
+
+2003/08/12 02:11:37
+ - Šg’£—p‚ÉFXC³
+ - analyze‚ÌC³
+ - ‚¨‚µ‚©‚¯ƒn[ƒŒƒ€Ý’èC³
+
+
+2003/08/12 02:53:19
+ - x11 usageC³
+
+
+2003/08/12 07:15:13 yui
+ - support SL-Zaurus
+
+
+2003/08/13 05:01:53 yui
+ - x11C³
+
+
+2003/08/13 06:26:08
+ - ƒA[ƒJƒCƒu–¼‚Ì•ÏŠ·‚ð‚·‚é‚æ‚¤‚É‚µ‚½B
+
+
+2003/08/13 07:21:10
+ - ‚è‚È‚´‚¤”ÅƒTƒEƒ“ƒhC³
+
+
+2003/08/13 10:24:55
+ - ‚è‚È‚´‚¤”ÅƒTƒEƒ“ƒhC³
+ - ƒGƒ‰[‰ñ‚è‚ðC³
+
+
+2003/08/13 15:41:54
+ - ‚è‚È‚´‚¤”Åƒ€[ƒr[
+@@ƒCƒ“ƒ^[ƒtƒFƒCƒX“ˆê‚Ìˆ×‚É Win9x/PocketPC/handheldPC—p‚Ìƒ‰ƒCƒuƒ‰ƒŠ‚à
+@@XV‚³‚ê‚Ä‚¢‚Ü‚·B(ƒAƒbƒvƒf[ƒg‚µ‚È‚¢‚ÆƒRƒ“ƒpƒCƒ‹ƒGƒ‰[‚ª‚Å‚Ü‚·c)
+
+
+2003/08/15 05:55:55
+ - ’²®B
+
+
+2003/08/15 07:25:12
+ - PocketPC”Å‚Ìƒ^ƒXƒN•ÏX‚ð SW_HIDE‚©‚ç ƒfƒXƒNƒgƒbƒv‚ð‘O–Ê•\Ž¦‚É•ÏXB
+
+
+2003/08/16 17:44:59
+ - ƒƒjƒ…[ƒL[‚Ì“®ì‚ðC³
+ - ƒVƒXƒeƒ€ƒƒjƒ…[‚Ì‚ÝƒL[ƒ{[ƒh‚ªŒø‚­‚æ‚¤‚É‚µ‚Ä‚Ý‚½B
+
+
+2003/08/16 19:43:29
+ - ƒL[C³
+ - ƒ|ƒbƒvƒAƒbƒvˆÊ’u‚ÍŽ©“®‚ÅÝ’è‚·‚éˆ× MENU_FIXPOPUP‚ÍˆÓ–¡‚ª‚È‚­‚È‚è‚Ü‚­‚µ‚½B
+
+
+2003/08/18 05:48:50
+ - add cmd 0xf6 (‚¨‚µ‚©‚¯ƒn[ƒŒƒ€‘ÌŒ±”Å)
+ - add cmd 0xef:0x07 (•‚Ì}‘ŠÙ‘ÌŒ±”Å)
+ - ƒeƒLƒXƒgƒT[ƒtƒFƒX‚ÌC³ (•‚Ì}‘ŠÙ)
+
+
+2003/08/18 15:02:21
+ - VGA”Å‚ÅƒA[ƒJƒCƒuƒI[ƒvƒ“‚Å‚«‚È‚­‚È‚Á‚Ä‚½(Š¾;
+
+
+2003/08/18 15:11:31
+ - ƒŠƒiƒUƒEŒü‚¯‚ÉƒRƒ“ƒo[ƒ^C³
+
+
+release ver1.3 / tag: rel1-3
+
+
+2003/12/01 06:42:11
+ - ƒRƒ}ƒ“ƒh‚Æ‚© ƒTƒEƒ“ƒh‰ñ‚è‚Æ‚©˜M‚Á‚Ä‚é‚Ý‚½‚¢‚È‚Ì‚Åˆê‰žXV
+
+
+2003/12/01 21:25:55
+ - cmd:0xad ‚µ‚ ‚í‚¹‚Ì‚©‚½‚¿—pƒ_ƒ~[
+ - vermouth‚Ìudpate(ver1.04)
+
+
+last commit: $Id: update.txt,v 1.96 2003/12/04 03:48:39 cvsdame Exp $
+ - ª cmd:0xad ‚¶‚á‚È‚­‚Ä cmd:0xda‚¾‚Á‚½c
 

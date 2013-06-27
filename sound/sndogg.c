@@ -122,7 +122,7 @@ static UINT ogg_dec(SMIXTRACK trk, SINT16 *dst) {
 				break;
 
 			case OVPHASE_CLOSE:
-				ov->phase = OVPHASE_HEAD;			// §Î°º§◊
+				ov->phase = OVPHASE_HEAD;			// ÇÈÅ[Ç’
 				return(0);
 		}
 	} while(1);
@@ -252,7 +252,7 @@ ovopn_next2:
 	_MFREE(ov);
 
 ovopn_next:
-	return(SNDMIX_NEXT);
+	return(SNDMIX_NOTSUPPORT);
 }
 
 #endif

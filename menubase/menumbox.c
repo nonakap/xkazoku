@@ -6,17 +6,17 @@
 
 
 static const char str0[] = "OK";
-static const BYTE str1[] = {		// ¥­¥ã¥ó¥»¥ë
+static const BYTE str1[] = {		// ƒLƒƒƒ“ƒZƒ‹
 		0xb7,0xac,0xdd,0xbe,0xd9,0x00};
-static const BYTE str2[] = {		// Ãæ»ß
+static const BYTE str2[] = {		// ’†Ž~
 		0x92,0x86,0x8e,0x7e,0x00};
-static const BYTE str3[] = {		// ºÆ»î¹Ô
+static const BYTE str3[] = {		// ÄŽŽs
 		0x8d,0xc4,0x8e,0x8e,0x8d,0x73,0x00};
-static const BYTE str4[] = {		// Ìµ»ë
+static const BYTE str4[] = {		// –³Ž‹
 		0x96,0xb3,0x8e,0x8b,0x00};
-static const BYTE str5[] = {		// ¤Ï¤¤
+static const BYTE str5[] = {		// ‚Í‚¢
 		0x82,0xcd,0x82,0xa2,0x00};
-static const BYTE str6[] = {		// ¤¤¤¤¤¨
+static const BYTE str6[] = {		// ‚¢‚¢‚¦
 		0x82,0xa2,0x82,0xa2,0x82,0xa6,0x00};
 
 static const char *menumbox_txt[7] = {str0,
@@ -137,6 +137,8 @@ static BOOL setmboxitem(MBOX *mb, const char *str, UINT type) {
 
 smbi_set:
 	mb->width += (MENUMBOX_SX + MENUMBOX_PXTEXT + MENUMBOX_LXTEXT);
+	fontmng_getsize(menubase.font, " ", &pt);
+	mb->fontsize = pt.y;
 	mb->height = mb->lines * mb->fontsize;
 	if (mb->icon) {
 		mb->width += MENUMBOX_CXICON;
@@ -144,8 +146,6 @@ smbi_set:
 			mb->height = MENUMBOX_CYICON;
 		}
 	}
-	fontmng_getsize(menubase.font, " ", &pt);
-	mb->fontsize = pt.y;
 	mb->height += MENUMBOX_SY +
 						MENUMBOX_SYBTN + MENUMBOX_CYBTN + MENUMBOX_LYBTN;
 
@@ -175,13 +175,14 @@ const BYTE	*btn;
 	int		btnid;
 
 	posx = MENUMBOX_SX + MENUMBOX_PXTEXT;
+	posy = 0;
 	if (mb->icon) {
 		menudlg_append(DLGTYPE_VRAM, 0, 0, mb->icon,
 										MENUMBOX_SX, MENUMBOX_SY,
 										MENUMBOX_CXICON, MENUMBOX_CYICON);
 		posx += MENUMBOX_CXICON;
+		posy = MENUMBOX_CYICON - (mb->lines * mb->fontsize);
 	}
-	posy = MENUMBOX_CYICON - (mb->lines * mb->fontsize);
 	if (posy > 0) {
 		posy /= 2;
 		posy += MENUMBOX_SY;

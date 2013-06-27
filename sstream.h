@@ -1,5 +1,5 @@
-#define STREAM_BUFFERING
 
+#define STREAM_BUFFERING
 
 typedef struct {
 	UINT	type;
@@ -16,14 +16,16 @@ const BYTE	*ptr;
 extern "C" {
 #endif
 
-extern	PCMSTREAM	arc_stream;
-extern	PCMSTREAM	mp3_stream;
-extern	PCMSTREAM	se_stream;
-extern	PCMSTREAM	onmem_stream;
-
 #ifdef STREAM_BUFFERING
+int streambuf_attach(SNDSTREAM stream, int num);
 void stream_prepart_task(void);
 #endif
+
+int mp3_ssopen(SNDSTREAM stream, void *arg, int num);
+int arc_ssopen(SNDSTREAM stream, void *arg, int num);
+int arcraw_ssopen(SNDSTREAM stream, void *arg, int num);
+int onmem_ssopen(SNDSTREAM stream, void *arg, int num);
+int arcse_ssopen(SNDSTREAM stream, void *arg, int num);
 
 #ifdef __cplusplus
 }

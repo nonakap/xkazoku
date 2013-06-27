@@ -10,48 +10,107 @@
 #include	"compiler.h"
 #include	"gamecore.h"
 #include	"arcfile.h"
-#include	"cgload.h"
-#include	"isf_cmd.h"
-#include	"bmpdata.h"
 #include	"savefile.h"
+#include	"bmpdata.h"
+#include	"isf_cmd.h"
 
 
-// GGE : •∞•Ï°º•π•±°º•Î§Úª»Õ—§∑§ø•®•’•ß•Ø•»
+// GGE : ÉOÉåÅ[ÉXÉPÅ[ÉãÇégópÇµÇΩÉGÉtÉFÉNÉg (T.Yui)
 int isfcmd_60(SCR_OPE *op) {
 
 	EFFECT	ef;
-	SINT32	cmd1, cmd2;
+	SINT32	type;
 	SINT32	num;
-	SINT32	cnt;
+	SINT32	dir;
 	SINT32	tick;
+	SINT32	leng;
 	char	label[ARCFILENAME_LEN+1];
 
-	if ((scr_getval(op, &cmd1) != SUCCESS) ||
+	if ((scr_getval(op, &type) != SUCCESS) ||
 		(scr_getval(op, &num) != SUCCESS) ||
 		(scr_getval(op, &tick) != SUCCESS) ||
-		(scr_getval(op, &cmd2) != SUCCESS) ||
-		(scr_getval(op, &cnt) != SUCCESS) ||
+		(scr_getval(op, &dir) != SUCCESS) ||
+		(scr_getval(op, &leng) != SUCCESS) ||
 		(scr_getlabel(op, label, sizeof(label)) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
-//	TRACEOUT(("cnt=%d", cnt));
-	if (cnt <= 0) {
-		cnt = 1;
+	if ((type < 0) || (type >= 3) ||
+		(num < 0) || (num >= GAMECORE_MAXVRAM) ||
+		((type == 2) && (leng <= 0))) {
+		goto cmd60_exit;
 	}
-	if ((num >= 0) && (num < GAMECORE_MAXVRAM)) {
-		ef = &gamecore.ef;
-		ZeroMemory(ef, sizeof(gamecore.ef));
-		ef->src = gamecore.vram[num];
-		ef->bmp = bmpdata_load8(label);
-		ef->param = tick * 2;
-		ef->param2 = cmd2 & 1;
-		return(GAMEEV_GRAYSCALE);
+
+	ef = &gamecore.ef;
+	ZeroMemory(ef, sizeof(gamecore.ef));
+	ef->src = gamecore.vram[num];
+	ef->bmp = bmpdata_load8(label);
+	ef->param = tick;
+	ef->ex.eg.type = type;
+	ef->ex.eg.dir = dir & 1;
+	ef->ex.eg.leng = leng;
+	return(GAMEEV_GRAYSCALE);
+
+cmd60_exit:
+	return(GAMEEV_SUCCESS);
+}
+
+
+// GPE : ägëÂÅEèkè¨èàóù (T.Yui)
+int isfcmd_61(SCR_OPE *op) {
+
+	BYTE	num;
+	SINT32	snum;
+	RECT_U	srect;
+	SINT32	dnum;
+	RECT_U	drect;
+
+	if ((scr_getbyte(op, &num) != SUCCESS) ||
+		(scr_getval(op, &snum) != SUCCESS) ||
+		(scr_getrect(op, &srect) != SUCCESS) ||
+		(scr_getval(op, &dnum) != SUCCESS) ||
+		(scr_getrect(op, &drect) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	if ((snum >= 0) && (snum < GAMECORE_MAXVRAM) &&
+		(dnum >= 0) && (dnum < GAMECORE_MAXVRAM)) {
+		vramdraw_scrn2rect(&srect.s, &srect.r);
+		vramdraw_scrn2rect(&drect.s, &drect.r);
+		vrammix_resize(gamecore.vram[dnum], &drect.r,
+						gamecore.vram[snum], &srect.r);
+		effect_vramdraw(dnum, &drect.r);
 	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// GSCRL : •π•Ø•Ì°º•ÎΩËÕ˝
+// GSCRL : ÉXÉNÉçÅ[Éãèàóù (T.Yui)
+static BOOL setscrpt(POINT_T *pt, const RECT_T *src, const RECT_T *dst) {
+
+	int		pos;
+
+	pos = src->right - (dst->right - dst->left);
+	if (pos < src->left) {
+		return(FAILURE);
+	}
+	if (pt->x < src->left) {
+		pt->x = src->left;
+	}
+	else if (pt->x > pos) {
+		pt->x = pos;
+	}
+	pos = src->bottom - (dst->bottom - dst->top);
+	if (pos < src->top) {
+		return(FAILURE);
+	}
+	if (pt->y < src->top) {
+		pt->y = src->top;
+	}
+	else if (pt->y > pos) {
+		pt->y = pos;
+	}
+	return(SUCCESS);
+}
+
 int isfcmd_62(SCR_OPE *op) {
 
 	EFFECT	ef;
@@ -59,19 +118,16 @@ int isfcmd_62(SCR_OPE *op) {
 	SINT32	num;
 	RECT_U	src;
 	RECT_U	dst;
-	SINT32	dummy;
-	SINT32	from;
-	SINT32	to;
+	POINT_T	from;
+	POINT_T	to;
 	SINT32	tick;
 
 	if ((scr_getbyte(op, &cmd) != SUCCESS) ||
 		(scr_getval(op, &num) != SUCCESS) ||
 		(scr_getrect(op, &src) != SUCCESS) ||
 		(scr_getrect(op, &dst) != SUCCESS) ||
-		(scr_getval(op, &dummy) != SUCCESS) ||
-		(scr_getval(op, &from) != SUCCESS) ||
-		(scr_getval(op, &dummy) != SUCCESS) ||
-		(scr_getval(op, &to) != SUCCESS) ||
+		(scr_getpt(op, &from) != SUCCESS) ||
+		(scr_getpt(op, &to) != SUCCESS) ||
 		(scr_getval(op, &tick) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
@@ -84,112 +140,162 @@ int isfcmd_62(SCR_OPE *op) {
 		ef->pt.x = ef->r2.left;
 		ef->pt.y = ef->r2.top;
 #ifdef SIZE_QVGA
-		from = vramdraw_half(from);
-		to = vramdraw_half(to);
+		vramdraw_halfpoint(&from);
+		vramdraw_halfpoint(&to);
 #endif
-		ef->param = from;
-		ef->param2 = to - from;
-		ef->param3 = tick & 0xffff;
-		ef->lastalpha = 0 - ef->param2;
-		ef->tick = GETTICK();
-		return(GAMEEV_SCROLL);
+		if ((setscrpt(&from, &ef->r, &ef->r2) == SUCCESS) &&
+			(setscrpt(&to, &ef->r, &ef->r2) == SUCCESS)) {
+			ef->param = tick & 0xffff;
+			ef->ex.es.start.x = from.x;
+			ef->ex.es.step.x = to.x - from.x;
+			ef->ex.es.last.x = 0 - ef->ex.es.step.x;
+			ef->ex.es.start.y = from.y;
+			ef->ex.es.step.y = to.y - from.y;
+			ef->ex.es.last.y = 0 - ef->ex.es.step.y;
+			ef->tick = GETTICK();
+			return(GAMEEV_SCROLL);
+		}
 	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// GV : ≤ËÃÃÕ…§È§∑ΩËÕ˝
+// GV : âÊñ óhÇÁÇµèàóù (T.Yui)
 int isfcmd_63(SCR_OPE *op) {
 
-	UINT16	num;
+	UINT16	count;
 	BYTE	x, y;
 	SINT32	tick;
+	EFFECT	ef;
 
-	if ((scr_getword(op, &num) != SUCCESS) ||
+	if ((scr_getword(op, &count) != SUCCESS) ||
 		(scr_getbyte(op, &x) != SUCCESS) ||
 		(scr_getbyte(op, &y) != SUCCESS) ||
 		(scr_getval(op, &tick) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
-
-	return(GAMEEV_FORCE);
-}
-
-
-// GAL : •¢•À•·°º•∑•Á•Û•Î°º•◊¿ﬂƒÍ (T.Yui)
-int isfcmd_64(SCR_OPE *op) {
-
-	(void)op;
+	if (count) {
+		ef = &gamecore.ef;
+		ZeroMemory(ef, sizeof(gamecore.ef));
+		ef->param = tick;
+		ef->ex.eq.cnt = count * 2;
+#ifdef SIZE_QVGA
+		ef->pt.x = x;
+		ef->pt.y = y;
+#else
+		ef->pt.x = vramdraw_half(x);
+		ef->pt.y = vramdraw_half(y);
+#endif
+		ef->progress = 0;
+		ef->tick = GETTICK();
+		ef->src = gamecore.vram[gamecore.dispwin.vramnum];
+		return(GAMEEV_QUAKE);
+	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// GAOPEN : •¢•À•·°º•∑•Á•Û•’•°•§•Î§Œ•™°º•◊•Û (T.Yui)
+// GAL : ÉAÉjÉÅÅ[ÉVÉáÉìÉãÅ[Évê›íË (T.Yui)
+int isfcmd_64(SCR_OPE *op) {
+
+	SINT32	num;
+	BYTE	loop;
+
+	if ((scr_getval(op, &num) != SUCCESS) ||
+		(scr_getbyte(op, &loop) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	anime_setloop(num, loop);
+	return(GAMEEV_SUCCESS);
+}
+
+
+// GAOPEN : ÉAÉjÉÅÅ[ÉVÉáÉìÉtÉ@ÉCÉãÇÃÉIÅ[ÉvÉì (T.Yui)
 int isfcmd_65(SCR_OPE *op) {
 
 	SINT32	num;
 	char	label[ARCFILENAME_LEN+1];
-	ANIME	anime;
-	GADHDL	gad;
 
 	if ((scr_getval(op, &num) != SUCCESS) ||
 		(scr_getlabel(op, label, sizeof(label)) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
-	milstr_ncat(label, ".gad", sizeof(label));
-	TRACEOUT(("anime load: %d %-12s", num, label));
-
-	anime = &gamecore.anime;
-	anime->enable = FALSE;
-	gad_destroy(anime->hdl);
-	gad = gad_create(ARCTYPE_GRAPHICS, label);
-	anime->hdl = gad;
-	if (gad) {
-		cgload_data(&gad->vram, ARCTYPE_GRAPHICS, label);
-	}
+	TRACEOUT(("anime open: %d %s", num, label));
+	anime_open(num, label);
 	return(GAMEEV_SUCCESS);
 }
 
 
-// GASET : •¢•À•·°º•∑•Á•Û•«°º•ø§Œ•ª•√•» (T.Yui)
+// GASET : ÉAÉjÉÅÅ[ÉVÉáÉìÉfÅ[É^ÇÃÉZÉbÉg (T.Yui)
 int isfcmd_66(SCR_OPE *op) {
 
-	(void)op;
+	SINT32	num;
+	SINT32	major;
+	SINT32	minor;
+	SINT32	reg;
+
+	if ((scr_getval(op, &num) != SUCCESS) ||
+		(scr_getval(op, &major) != SUCCESS) ||
+		(scr_getval(op, &minor) != SUCCESS) ||
+		(scr_getval(op, &reg) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	TRACEOUT(("anime data set %d %d %d %d", num, major, minor, reg));
+	anime_setdata(num, major, minor, reg);
 	return(GAMEEV_SUCCESS);
 }
 
 
-// GACLOSE : •¢•À•·°º•∑•Á•Û•’•°•§•Î§Œ•Ø•Ì°º•∫ (T.Yui)
+// GAPOS : ÉAÉjÉÅÅ[ÉVÉáÉìÇÃï\é¶à íuÇÃÉZÉbÉg (T.Yui)
+int isfcmd_67(SCR_OPE *op) {
+
+	SINT32	num;
+	UINT16	x;
+	UINT16	y;
+
+	if ((scr_getval(op, &num) != SUCCESS) ||
+		(scr_getword(op, &x) != SUCCESS) ||
+		(scr_getword(op, &y) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	// â∆ë∞åvâÊÇæÇ∆É_É~Å[Ç…Ç»Ç¡ÇƒÇÈÇÒÇæÇØÇ«Åcà íuÉZÉbÉgÇµÇ»Ç≠ÇƒÇ¢Ç¢ÇÃÅH
+	// anime_setloc(num, x, y);
+	return(GAMEEV_SUCCESS);
+}
+
+
+// GACLOSE : ÉAÉjÉÅÅ[ÉVÉáÉìÉtÉ@ÉCÉãÇÃÉNÉçÅ[ÉY (T.Yui)
 int isfcmd_68(SCR_OPE *op) {
 
+	anime_close();
 	(void)op;
 	return(GAMEEV_SUCCESS);
 }
 
 
-// GADELETE :•¢•À•·°º•∑•Á•Û§Œ∫ÔΩ¸ (T.Yui)
+// GADELETE :ÉAÉjÉÅÅ[ÉVÉáÉìÇÃçÌèú (T.Yui)
 int isfcmd_69(SCR_OPE *op) {
 
-	ANIME	anime;
+	SINT32	num;
 
-	anime = &gamecore.anime;
-	anime->enable = FALSE;
-	gad_destroy(anime->hdl);
-	anime->hdl = NULL;
-	(void)op;
-	return(GAMEEV_FORCE);
+	if (scr_getval(op, &num) != SUCCESS) {
+		return(GAMEEV_WRONGLENG);
+	}
+	TRACEOUT(("anime del %d", num));
+	anime_trush(num);
+	return(GAMEEV_SUCCESS);
 }
 
 
-// SGL : •ª°º•÷•§•·°º•∏§Ú∆…§ﬂπ˛§‡
+// SGL : ÉZÅ[ÉuÉCÉÅÅ[ÉWÇì«Ç›çûÇﬁ (T.Yui)
 int isfcmd_6f(SCR_OPE *op) {
 
 	SINT32		savenum;
 	SINT32		num;
 	POINT_T		pt;
 	VRAMHDL		dst;
-	SAVEHDL		fh;
-	SAVEINF_T	inf;
+	SAVEHDL		sh;
+	_SAVEINF	inf;
 	BOOL		r;
 
 	if ((scr_getval(op, &savenum) != SUCCESS) ||
@@ -205,12 +311,9 @@ int isfcmd_6f(SCR_OPE *op) {
 		goto cmd6f_exit;
 	}
 
-	fh = savefile_open(FALSE);
-#ifndef SIZE_QVGA
-	r = savefile_readinf(fh, savenum, &inf, 240, 180);
-#else
-	r = savefile_readinf(fh, savenum, &inf, 160, 90);
-#endif
+	sh = savefile_open(FALSE);
+	r = sh->readinf(sh, savenum, &inf, -1, -1);
+	sh->close(sh);
 	if (r == SUCCESS) {
 #ifdef SIZE_QVGA
 		vramdraw_halfpoint(&pt);
@@ -218,7 +321,6 @@ int isfcmd_6f(SCR_OPE *op) {
 		vramcpy_cpy(dst, (VRAMHDL)inf.preview, &pt, NULL);
 		vram_destroy((VRAMHDL)inf.preview);
 	}
-	savefile_close(fh);
 
 cmd6f_exit:
 	return(GAMEEV_SUCCESS);

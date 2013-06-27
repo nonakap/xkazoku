@@ -1,23 +1,21 @@
 #include	"compiler.h"
+#include	"taskmng.h"
+#include	"arcfile.h"
 #include	"vram.h"
 #include	"vramdraw.h"
-#include	"vrammix.h"
-#include	"arcfile.h"
 #include	"cgload.h"
 #include	"bmpdata.h"
-#include	"taskmng.h"
 
 
 #if defined(__GNUC__)
 typedef struct {
 	char	sig[4];
 	BYTE	pos[4];
-} __attribute__ ((packed)) GAD_HEAD;
+} __attribute__ ((packed)) GADHEAD;
 typedef struct {
-	char	type[4];
 	BYTE	width[2];
 	BYTE	height[2];
-} __attribute__ ((packed)) GGD_HEAD;
+} __attribute__ ((packed)) GGDFULL;
 typedef struct {
 	char	sig[8];
 	BYTE	width[2];
@@ -25,18 +23,17 @@ typedef struct {
 	BYTE	padding[4];
 	BYTE	data_off[4];
 	BYTE	datasize[4];
-} __attribute__ ((packed)) GG0_HEAD;
+} __attribute__ ((packed)) GG0HEAD;
 #else /* !__GNUC__ */
 #pragma pack(push, 1)
 typedef struct {
 	char	sig[4];
 	BYTE	pos[4];
-} GAD_HEAD;
+} GADHEAD;
 typedef struct {
-	char	type[4];
 	BYTE	width[2];
 	BYTE	height[2];
-} GGD_HEAD;
+} GGDFULL;
 typedef struct {
 	char	sig[8];
 	BYTE	width[2];
@@ -44,15 +41,15 @@ typedef struct {
 	BYTE	padding[4];
 	BYTE	data_off[4];
 	BYTE	datasize[4];
-} GG0_HEAD;
+} GG0HEAD;
 #pragma pack(pop)
 #endif /* __GNUC__ */
 
 enum {
 	CGTYPE_OTHER		= 0,
 	CGTYPE_GGD,
-	CGTYPE_GAD,
-	CGTYPE_GG0
+	CGTYPE_GG0,
+	CGTYPE_GAD
 };
 
 typedef struct {
@@ -62,7 +59,8 @@ typedef struct {
 	int			align;
 	int			cnt;
 	BYTE		*tmp;
-	BYTE		*pal;
+
+	BYTE		pal[256*4];
 
 	ARCFILEH	afh;
 	int			eof;
@@ -77,12 +75,12 @@ static int checkext(const char *ext) {
 		if ((!milstr_cmp(ext, "ggd")) || (!milstr_cmp(ext, "drg"))) {
 			return(CGTYPE_GGD);
 		}
-		else if (!milstr_cmp(ext, "gad")) {
-			return(CGTYPE_GAD);
-		}
 		else if ((!milstr_cmp(ext, "gg0")) || (!milstr_cmp(ext, "gg2")) ||
 				(!milstr_cmp(ext, "gg3"))) {
 			return(CGTYPE_GG0);
+		}
+		else if ((!milstr_cmp(ext, "dga")) || (!milstr_cmp(ext, "gad"))) {
+			return(CGTYPE_GAD);
 		}
 	}
 	return(CGTYPE_OTHER);
@@ -101,15 +99,10 @@ static CGLOAD cgload_prepare(VRAMHDL *vram, ARCFILEH afh,
 	VRAMHDL		tmp;
 	POINT_T		pt;
 	int			size;
-	BOOL		alpha;
 	BOOL		remake;
+	RECT_T		clr;
 
 	ret = NULL;
-	alpha = FALSE;
-	if (bpp == 32) {
-		bpp = 24;
-		alpha = TRUE;
-	}
 	if (bpp == 24) {
 		bpp = DEFAULT_BPP;
 	}
@@ -140,40 +133,38 @@ static CGLOAD cgload_prepare(VRAMHDL *vram, ARCFILEH afh,
 		else {
 			pt.y = hdl->height;
 		}
-		if (hdl->alpha) {
-			alpha = TRUE;
-		}
 	}
 	else {
 		remake = TRUE;
 	}
 	if (remake) {
-		tmp = vram_create(pt.x, pt.y, alpha, bpp);
+		tmp = vram_create(pt.x, pt.y, (bpp != 8)?TRUE:FALSE, bpp);
 		if (tmp == NULL) {
 			goto clpp_exit;
 		}
 		if (hdl) {
 			tmp->posx = hdl->posx;
 			tmp->posy = hdl->posy;
-			vrammix_cpyall(tmp, hdl, NULL);
 			vram_destroy(hdl);
 		}
 		hdl = tmp;
 		*vram = hdl;
 	}
 	else {
-		if ((hdl->alpha == NULL) && (alpha)) {
-			if (vram_allocalpha(hdl) != SUCCESS) {
-				goto clpp_exit;
-			}
-		}
+		clr.left = width;
+		clr.top = 0;
+		clr.right = hdl->width;
+		clr.bottom = height;
+		vram_zerofill(hdl, &clr);
+		clr.left = 0;
+		clr.top = height;
+		clr.right = hdl->width;
+		clr.bottom = hdl->height;
+		vram_zerofill(hdl, &clr);
 	}
 
 	size = sizeof(_CGLOAD);
 	size += CGLOADBUFFERS;
-	if (bpp == 8) {
-		size += 256 * 4;
-	}
 	ret = (CGLOAD)_MALLOC(size, "cgload");
 	if (ret) {
 		ZeroMemory(ret, size);
@@ -182,9 +173,6 @@ static CGLOAD cgload_prepare(VRAMHDL *vram, ARCFILEH afh,
 		ret->width = width;
 		ret->height = height;
 		ret->rptr = (BYTE *)(ret + 1);
-		if (bpp == 8) {
-			ret->pal = ret->rptr + CGLOADBUFFERS;
-		}
 	}
 clpp_exit:
 	return(ret);
@@ -245,9 +233,372 @@ static BOOL cgload_read(CGLOAD hdl, BYTE *buf, int size) {
 }
 
 
-// ---- ggd
+// ---- ggd 256g
 
-static BOOL ggdfull_phase0(CGLOAD hdl) {					// ½àÈ÷¡Á
+static BOOL ggd256g_check(ARCFILEH afh, int *width, int *height) {
+
+	BMPINFO	bmi;
+	UINT	tmp;
+
+	if (arcfile_read(afh, &bmi, sizeof(bmi)) != sizeof(bmi)) {
+		goto g2c_err;
+	}
+	tmp = LOADINTELDWORD(bmi.biSize);
+	if (tmp != sizeof(bmi)) {
+		goto g2c_err;
+	}
+	tmp = LOADINTELWORD(bmi.biPlanes);
+	if (tmp != 1) {
+		goto g2c_err;
+	}
+	tmp = LOADINTELWORD(bmi.biBitCount);
+	if (tmp != 8) {
+		goto g2c_err;
+	}
+	tmp = LOADINTELDWORD(bmi.biCompression);
+	if (tmp != 0) {
+		goto g2c_err;
+	}
+	*width = (SINT32)LOADINTELDWORD(bmi.biWidth);
+	*height = (SINT32)LOADINTELDWORD(bmi.biHeight);
+	return(SUCCESS);
+
+g2c_err:
+	return(FAILURE);
+}
+
+static BOOL ggd256g_phase0(CGLOAD hdl) {					// €”õ`
+
+	BYTE	*tmp;
+	int		align;
+	int		cnt;
+	BYTE	work[4];
+
+	if (cgload_read(hdl, hdl->pal, 256*4) != SUCCESS) {
+		goto g2p0_err;
+	}
+	cnt = 256;
+	tmp = hdl->pal;
+	do {
+		if (tmp[0] || tmp[1] || tmp[2]) {
+			tmp[3] = 0xff;
+		}
+		else {
+			tmp[3] = 0x00;
+		}
+		tmp += 4;
+	} while(--cnt);
+	if (cgload_read(hdl, work, 4) != SUCCESS) {
+		goto g2p0_err;
+	}
+	align = (hdl->width + 3) & (~3);
+	hdl->align = align;
+	cnt = hdl->height;
+	if (cnt < 0) {
+		cnt = 0 - cnt;
+	}
+	cnt *= align;
+	tmp = (BYTE *)_MALLOC(cnt, "ggd 256g tmp");
+	if (tmp == NULL) {
+		goto g2p0_err;
+	}
+	hdl->tmp = tmp;
+	ZeroMemory(tmp, cnt);
+	hdl->cnt = LOADINTELDWORD(work);
+	hdl->cnt = min(hdl->cnt, cnt);
+	return(SUCCESS);
+
+g2p0_err:
+	return(FAILURE);
+}
+
+static BOOL ggd256g_phase1(CGLOAD hdl) {					// ‰ð“€`
+
+	BYTE	ctrl;
+	int		cnt;
+	int		p;
+	int		breakp;
+	int		leng;
+	int		zero;
+	int		backword;
+	BYTE	*dst;
+	int		dstrem;
+
+	p = 0;
+	breakp = 1024 * 2;
+	dst = hdl->tmp;
+	dstrem = hdl->cnt;
+
+	while(dstrem) {
+		if (hdl->rrem < 17) {
+			cgload_preread(hdl);
+		}
+		hdl->rrem--;
+		if (hdl->rrem < 0) {
+			goto g2p1_done;
+		}
+		ctrl = *hdl->rptr++;
+
+		cnt = 8;
+		do {
+			if (ctrl & 1) {
+				hdl->rrem--;
+				if (hdl->rrem < 0) {
+					goto g2p1_done;
+				}
+				if (dstrem) {
+					dstrem--;
+					*dst++ = *hdl->rptr;
+					p++;
+				}
+				hdl->rptr++;
+			}
+			else {
+				hdl->rrem -= 2;
+				if (hdl->rrem < 0) {
+					goto g2p1_done;
+				}
+				backword = hdl->rptr[0];
+				backword |= (hdl->rptr[1] & 0xf0) << 4;
+				backword = (p - backword - 19) & 0xfff;
+				backword += 1;
+				leng = (hdl->rptr[1] & 0xf) + 3;
+				leng = min(leng, dstrem);
+				dstrem -= leng;
+				hdl->rptr += 2;
+				zero = backword - p;
+				p += leng;
+				if (zero > 0) {
+					zero = min(leng, zero);
+					leng -= zero;
+					ZeroMemory(dst, zero);
+					dst += zero;
+				}
+				while(leng--) {
+					*dst = *(dst - backword);
+					dst++;
+				}
+			}
+			ctrl >>= 1;
+		} while(--cnt);
+		if (p >= breakp) {
+			breakp += 1024 * 2;
+			taskmng_rol();
+		}
+	}
+
+g2p1_done:
+	return(SUCCESS);
+}
+
+#ifndef SIZE_QVGA
+static BOOL ggd256g_phase2(CGLOAD hdl) {					// ƒRƒs`
+
+	VRAMHDL	vram;
+const BYTE	*src;
+	BYTE	*dst;
+	BYTE	*alpha;
+const BYTE	*pal;
+	int		salign;
+	int		dalign;
+	int		aalign;
+	int		r;
+	int		height;
+
+	vram = hdl->vram;
+	src = hdl->tmp;
+	dst = vram->ptr;
+	alpha = vram->alpha;
+	height = hdl->height;
+	salign = hdl->align;
+	if (height < 0) {
+		height = 0 - height;
+	}
+	else {
+		src += hdl->align * (height - 1);
+		salign = 0 - salign;
+	}
+	salign -= hdl->width;
+	aalign = vram->width - hdl->width;
+#ifdef SUPPORT_16BPP
+	if (vram->bpp == 16) {
+		dalign = vram->yalign - (hdl->width * 2);
+		do {
+			r = hdl->width;
+			do {
+				UINT col;
+				pal = hdl->pal;
+				pal += (UINT)src[0] * 4;
+				col = MAKEPALETTE(pal[2], pal[1], pal[0]);
+				if (col) {
+					col = MAKE16PAL(col);
+					*alpha = 0xff;
+				}
+				else {
+					*alpha = 0x00;
+				}
+				*(UINT16 *)dst = (UINT16)col;
+				src += 1;
+				dst += 2;
+				alpha += 1;
+			} while(--r);
+			src += salign;
+			dst += dalign;
+			alpha += aalign;
+		} while(--height);
+	}
+#endif
+#ifdef SUPPORT_24BPP
+	if (vram->bpp == 24) {
+		dalign = vram->yalign - (hdl->width * 3);
+		do {
+			r = hdl->width;
+			do {
+				pal = hdl->pal;
+				pal += (UINT)src[0] * 4;
+				dst[0] = pal[0];
+				dst[1] = pal[1];
+				dst[2] = pal[2];
+				*alpha = pal[3];
+				src += 1;
+				dst += 3;
+				alpha += 1;
+			} while(--r);
+			src += salign;
+			dst += dalign;
+			alpha += aalign;
+		} while(--height);
+	}
+#endif
+	return(SUCCESS);
+}
+#else
+static BOOL ggd256g_phase2(CGLOAD hdl) {					// ƒRƒs`
+
+	VRAMHDL	vram;
+const BYTE	*src;
+	BYTE	*dst;
+	BYTE	*alpha;
+const BYTE	*pal;
+	int		salign;
+	int		dalign;
+	int		aalign;
+	int		width2;
+	int		height;
+	int		r;
+
+	src = hdl->tmp;
+	width2 = (hdl->width + 1) >> 1;
+	height = hdl->height;
+	salign = (hdl->align * 2);
+	if (height < 0) {
+		height = 0 - height;
+	}
+	else {
+		src += hdl->align * (height - 1);
+		salign = 0 - salign;
+	}
+	salign -= width2 * 2;
+	height = (height + 1) >> 1;
+	vram = hdl->vram;
+	dst = vram->ptr;
+	alpha = vram->alpha;
+	aalign = vram->width - width2;
+#ifdef SUPPORT_16BPP
+	if (vram->bpp == 16) {
+		dalign = vram->yalign - (width2 * 2);
+		do {
+			r = width2;
+			do {
+				UINT col;
+				pal = hdl->pal;
+				pal += (UINT)src[0] * 4;
+				col = MAKEPALETTE(pal[2], pal[1], pal[0]);
+				if (col) {
+					col = MAKE16PAL(col);
+					*alpha = 0xff;
+				}
+				else {
+					*alpha = 0x00;
+				}
+				*(UINT16 *)dst = (UINT16)col;
+				src += 2;
+				dst += 2;
+				alpha += 1;
+			} while(--r);
+			src += salign;
+			dst += dalign;
+			alpha += aalign;
+		} while(--height);
+	}
+#endif
+#ifdef SUPPORT_24BPP
+	if (vram->bpp == 24) {
+		dalign = vram->yalign - (width2 * 3);
+		do {
+			r = width2;
+			do {
+				pal = hdl->pal;
+				pal += (UINT)src[0] * 4;
+				dst[0] = pal[0];
+				dst[1] = pal[1];
+				dst[2] = pal[2];
+				*alpha = pal[3];
+				src += 2;
+				dst += 3;
+				alpha += 1;
+			} while(--r);
+			src += salign;
+			dst += dalign;
+			alpha += aalign;
+		} while(--height);
+	}
+#endif
+	return(SUCCESS);
+}
+#endif
+
+static BOOL ggd256g_abort(CGLOAD hdl) {
+
+	if (hdl->tmp) {
+		_MFREE(hdl->tmp);
+	}
+	return(SUCCESS);
+}
+
+static BOOL cgload_ggd256g(VRAMHDL *vram, ARCFILEH afh) {
+
+	int		width;
+	int		height;
+	CGLOAD	hdl;
+	BOOL	r;
+
+	if (ggd256g_check(afh, &width, &height) != SUCCESS) {
+		goto clgm_err;
+	}
+	hdl = cgload_prepare(vram, afh, width, height, 24);
+	if (hdl == NULL) {
+		goto clgm_err;
+	}
+	r = ggd256g_phase0(hdl);
+	if (r == SUCCESS) {
+		r = ggd256g_phase1(hdl);
+	}
+	if (r == SUCCESS) {
+		r = ggd256g_phase2(hdl);
+	}
+	ggd256g_abort(hdl);
+	_MFREE(hdl);
+	return(r);
+
+clgm_err:
+	return(FAILURE);
+}
+
+
+// ---- ggd full
+
+static BOOL ggdfull_phase0(CGLOAD hdl) {					// €”õ`
 
 	BYTE	*tmp;
 	int		align;
@@ -265,7 +616,7 @@ static BOOL ggdfull_phase0(CGLOAD hdl) {					// ½àÈ÷¡Á
 	return(SUCCESS);
 }
 
-static BOOL ggdfull_phase1(CGLOAD hdl) {					// ²òÅà¡Á
+static BOOL ggdfull_phase1(CGLOAD hdl) {					// ‰ð“€`
 
 	BYTE	*tmp;
 	BYTE	cmd;
@@ -385,22 +736,28 @@ gfp1_done:
 }
 
 #ifndef SIZE_QVGA
-static BOOL ggdfull_phase2(CGLOAD hdl) {					// ¥³¥Ô¡Á
+static BOOL ggdfull_phase2(CGLOAD hdl) {					// ƒRƒs`
 
-	BYTE	*src;
+	VRAMHDL	vram;
+const BYTE	*src;
 	BYTE	*dst;
+	BYTE	*alpha;
 	int		salign;
 	int		dalign;
-	int		r;
+	int		aalign;
 	int		height;
+	int		r;
 
 	src = hdl->tmp;
-	dst = hdl->vram->ptr;
+	vram = hdl->vram;
+	salign = hdl->align - (hdl->width * 3);
+	dst = vram->ptr;
+	alpha = vram->alpha;
+	aalign = vram->width - hdl->width;
+	height = hdl->height;
 #ifdef SUPPORT_16BPP
-	if (hdl->vram->bpp == 16) {
-		salign = hdl->align - (hdl->width * 3);
-		dalign = hdl->vram->yalign - (hdl->width * 2);
-		height = hdl->height;
+	if (vram->bpp == 16) {
+		dalign = vram->yalign - (hdl->width * 2);
 		do {
 			r = hdl->width;
 			do {
@@ -408,107 +765,119 @@ static BOOL ggdfull_phase2(CGLOAD hdl) {					// ¥³¥Ô¡Á
 				col = MAKEPALETTE(src[2], src[1], src[0]);
 				if (col) {
 					col = MAKE16PAL(col);
-					if (!col) {
-						col = 1;
-					}
+					*alpha = 0xff;
+				}
+				else {
+					*alpha = 0x00;
 				}
 				*(UINT16 *)dst = (UINT16)col;
 				src += 3;
 				dst += 2;
+				alpha += 1;
 			} while(--r);
 			src += salign;
 			dst += dalign;
+			alpha+= aalign;
 		} while(--height);
 	}
 #endif
 #ifdef SUPPORT_24BPP
-	if (hdl->vram->bpp == 24) {
-		r = hdl->width * 3;
-		salign = hdl->align;
-		dalign = hdl->vram->yalign;
-		height = hdl->height;
+	if (vram->bpp == 24) {
+		dalign = vram->yalign - (hdl->width * 3);
 		do {
-			CopyMemory(dst, src, r);
+			r = hdl->width;
+			do {
+				dst[0] = src[0];
+				dst[1] = src[1];
+				dst[2] = src[2];
+				if (src[0] || src[1] || src[2]) {
+					*alpha = 0xff;
+				}
+				else {
+					*alpha = 0x00;
+				}
+				src += 3;
+				dst += 3;
+				alpha += 1;
+			} while(--r);
 			src += salign;
 			dst += dalign;
+			alpha += aalign;
 		} while(--height);
 	}
 #endif
 	return(SUCCESS);
 }
 #else
-static BOOL ggdfull_phase2(CGLOAD hdl) {					// ¥³¥Ô¡Á
+static BOOL ggdfull_phase2(CGLOAD hdl) {					// ƒRƒs`
 
-	BYTE	*src;
+	VRAMHDL	vram;
+const BYTE	*src;
 	BYTE	*dst;
+	BYTE	*alpha;
 	int		salign;
 	int		dalign;
-	int		width;
+	int		aalign;
+	int		width2;
 	int		height;
+	int		r;
 
 	src = hdl->tmp;
-	dst = hdl->vram->ptr;
+	width2 = (hdl->width + 1) >> 1;
+	salign = (hdl->align * 2) - (width2 * 2 * 3);
+	height = (hdl->height + 1) >> 1;
+	vram = hdl->vram;
+	dst = vram->ptr;
+	alpha = vram->alpha;
+	aalign = vram->width - width2;
 #ifdef SUPPORT_16BPP
-	if (hdl->vram->bpp == 16) {
-		salign = (hdl->align * 2) - (hdl->width * 3);
-		dalign = hdl->vram->yalign - (((hdl->width + 1) >> 1) * 2);
-		height = (hdl->height + 1) >> 1;
+	if (vram->bpp == 16) {
+		dalign = vram->yalign - (width2 * 2);
 		do {
-			width = hdl->width >> 1;
-			while(width--) {
+			r = width2;
+			do {
 				UINT col;
 				col = MAKEPALETTE(src[2], src[1], src[0]);
 				if (col) {
 					col = MAKE16PAL(col);
-					if (!col) {
-						col = 1;
-					}
+					*alpha = 0xff;
+				}
+				else {
+					*alpha = 0x00;
 				}
 				*(UINT16 *)dst = (UINT16)col;
 				src += 6;
 				dst += 2;
-			}
-			if (hdl->width & 1) {
-				UINT col;
-				col = MAKEPALETTE(src[2], src[1], src[0]);
-				if (col) {
-					col = MAKE16PAL(col);
-					if (!col) {
-						col = 1;
-					}
-				}
-				*(UINT16 *)dst = (UINT16)col;
-				src += 3;
-				dst += 2;
-			}
+				alpha += 1;
+			} while(--r);
 			src += salign;
 			dst += dalign;
+			alpha += aalign;
 		} while(--height);
 	}
 #endif
 #ifdef SUPPORT_24BPP
-	if (hdl->vram->bpp == 24) {
-		salign = (hdl->align * 2) - (hdl->width * 3);
-		dalign = hdl->vram->yalign - (((hdl->width + 1) >> 1) * 3);
-		height = (hdl->height + 1) >> 1;
+	if (vram->bpp == 24) {
+		dalign = vram->yalign - (width2 * 3);
 		do {
-			width = hdl->width >> 1;
-			while(width--) {
+			r = width2;
+			do {
 				dst[0] = src[0];
 				dst[1] = src[1];
 				dst[2] = src[2];
+				if (src[0] || src[1] || src[2]) {
+					*alpha = 0xff;
+				}
+				else {
+					*alpha = 0x00;
+				}
 				src += 6;
 				dst += 3;
-			}
-			if (hdl->width & 1) {
-				dst[0] = src[0];
-				dst[1] = src[1];
-				dst[2] = src[2];
-				src += 3;
-				dst += 3;
-			}
+				alpha += 1;
+			} while(--r);
 			src += salign;
 			dst += dalign;
+			alpha += aalign;
 		} while(--height);
 	}
 #endif
@@ -516,7 +885,7 @@ static BOOL ggdfull_phase2(CGLOAD hdl) {					// ¥³¥Ô¡Á
 }
 #endif
 
-static BOOL ggd_abort(CGLOAD hdl) {
+static BOOL ggdfull_abort(CGLOAD hdl) {
 
 	if (hdl->tmp) {
 		_MFREE(hdl->tmp);
@@ -524,26 +893,19 @@ static BOOL ggd_abort(CGLOAD hdl) {
 	return(SUCCESS);
 }
 
-static BOOL cgload_ggd(VRAMHDL *vram, ARCFILEH afh) {
+static BOOL cgload_ggdfull(VRAMHDL *vram, ARCFILEH afh) {
 
-	GGD_HEAD	ggdhead;
-	CGLOAD		hdl;
-	BOOL		r;
+	GGDFULL	gf;
+	CGLOAD	hdl;
+	BOOL	r;
 
-	if (arcfile_read(afh, &ggdhead, sizeof(ggdhead)) != sizeof(ggdhead)) {
-		goto clggd_err;
+	if (arcfile_read(afh, &gf, sizeof(gf)) != sizeof(gf)) {
+		goto clgf_err;
 	}
-	ggdhead.type[0] ^= 0xff;
-	ggdhead.type[1] ^= 0xff;
-	ggdhead.type[2] ^= 0xff;
-	ggdhead.type[3] ^= 0xff;
-	if (memcmp(ggdhead.type, "FULL", 4)) {		// ¤È¤ê¤¢¤¨¤ºFULL¤Î¤ßÂÐ±þ
-		goto clggd_err;
-	}
-	hdl = cgload_prepare(vram, afh, LOADINTELWORD(ggdhead.width),
-										LOADINTELWORD(ggdhead.height), 24);
+	hdl = cgload_prepare(vram, afh, LOADINTELWORD(gf.width),
+									LOADINTELWORD(gf.height), 24);
 	if (hdl == NULL) {
-		goto clggd_err;
+		goto clgf_err;
 	}
 	r = ggdfull_phase0(hdl);
 	if (r == SUCCESS) {
@@ -552,9 +914,34 @@ static BOOL cgload_ggd(VRAMHDL *vram, ARCFILEH afh) {
 	if (r == SUCCESS) {
 		r = ggdfull_phase2(hdl);
 	}
-	ggd_abort(hdl);
+	ggdfull_abort(hdl);
 	_MFREE(hdl);
 	return(r);
+
+clgf_err:
+	return(FAILURE);
+}
+
+
+// --- ggd
+
+static BOOL cgload_ggd(VRAMHDL *vram, ARCFILEH afh) {
+
+	BYTE	type[4];
+
+	if (arcfile_read(afh, type, 4) != 4) {
+		goto clggd_err;
+	}
+	type[0] ^= 0xff;
+	type[1] ^= 0xff;
+	type[2] ^= 0xff;
+	type[3] ^= 0xff;
+	if (!memcmp(type, "FULL", 4)) {
+		return(cgload_ggdfull(vram, afh));
+	}
+	else if (!memcmp(type, "256G", 4)) {
+		return(cgload_ggd256g(vram, afh));
+	}
 
 clggd_err:
 	return(FAILURE);
@@ -562,8 +949,8 @@ clggd_err:
 
 static BOOL cgload_gad(VRAMHDL *vram, ARCFILEH afh) {
 
-	GAD_HEAD	gadhead;
-	long		pos;
+	GADHEAD	gadhead;
+	long	pos;
 
 	if (arcfile_read(afh, &gadhead, sizeof(gadhead)) != sizeof(gadhead)) {
 		goto clgad_err;
@@ -586,7 +973,7 @@ clgad_err:
 
 static const int delta[3] = {0, 1, -1};
 
-static BOOL gg0_phase0(CGLOAD hdl) {						// ½àÈ÷¡Á
+static BOOL gg0_phase0(CGLOAD hdl) {						// €”õ`
 
 	BYTE	*tmp;
 	int		cnt;
@@ -602,7 +989,7 @@ static BOOL gg0_phase0(CGLOAD hdl) {						// ½àÈ÷¡Á
 	return(SUCCESS);
 }
 
-static BOOL gg0_phase1(CGLOAD hdl) {						// ²òÅà¡Á
+static BOOL gg0_phase1(CGLOAD hdl) {						// ‰ð“€`
 
 	BYTE	*tmp;
 	BYTE	cmd;
@@ -748,26 +1135,26 @@ g0p1_done:
 }
 
 #ifndef SIZE_QVGA
-static BOOL gg0_phase2(CGLOAD hdl) {						// ¥³¥Ô¡Á
+static BOOL gg0_phase2(CGLOAD hdl) {						// ƒRƒs`
 
 	BYTE	*src;
 	BYTE	*dst;
 	BYTE	*alpha;
 	int		dalign;
 	int		aalign;
-	int		width;
 	int		height;
+	int		r;
 
 	src = hdl->tmp;
 	dst = hdl->vram->ptr;
 	alpha = hdl->vram->alpha;
+	aalign = hdl->vram->width - hdl->width;
+	height = hdl->height;
 #ifdef SUPPORT_16BPP
 	if (hdl->vram->bpp == 16) {
 		dalign = hdl->vram->yalign - (hdl->width * 2);
-		aalign = hdl->vram->width - hdl->width;
-		height = hdl->height;
 		do {
-			width = hdl->width;
+			r = hdl->width;
 			do {
 				UINT32 col;
 				col = MAKEPALETTE(src[2], src[1], src[0]);
@@ -776,7 +1163,7 @@ static BOOL gg0_phase2(CGLOAD hdl) {						// ¥³¥Ô¡Á
 				src += 4;
 				dst += 2;
 				alpha += 1;
-			} while(--width);
+			} while(--r);
 			dst += dalign;
 			alpha += aalign;
 		} while(--height);
@@ -785,10 +1172,8 @@ static BOOL gg0_phase2(CGLOAD hdl) {						// ¥³¥Ô¡Á
 #ifdef SUPPORT_24BPP
 	if (hdl->vram->bpp == 24) {
 		dalign = hdl->vram->yalign - (hdl->width * 3);
-		aalign = hdl->vram->width - hdl->width;
-		height = hdl->height;
 		do {
-			width = hdl->width;
+			r = hdl->width;
 			do {
 				dst[0] = src[0];
 				dst[1] = src[1];
@@ -797,7 +1182,7 @@ static BOOL gg0_phase2(CGLOAD hdl) {						// ¥³¥Ô¡Á
 				src += 4;
 				dst += 3;
 				alpha += 1;
-			} while(--width);
+			} while(--r);
 			dst += dalign;
 			alpha += aalign;
 		} while(--height);
@@ -806,7 +1191,7 @@ static BOOL gg0_phase2(CGLOAD hdl) {						// ¥³¥Ô¡Á
 	return(SUCCESS);
 }
 #else
-static BOOL gg0_phase2(CGLOAD hdl) {						// ¥³¥Ô¡Á
+static BOOL gg0_phase2(CGLOAD hdl) {						// ƒRƒs`
 
 	BYTE	*src;
 	BYTE	*dst;
@@ -814,21 +1199,23 @@ static BOOL gg0_phase2(CGLOAD hdl) {						// ¥³¥Ô¡Á
 	int		salign;
 	int		dalign;
 	int		aalign;
-	int		width;
+	int		width2;
 	int		height;
+	int		r;
 
 	src = hdl->tmp;
 	dst = hdl->vram->ptr;
 	alpha = hdl->vram->alpha;
+	width2 = (hdl->width + 1) >> 1;
+	salign = (hdl->width * 2 * 4) - (width2 * 2 * 4);
+	aalign = hdl->vram->width - width2;
+	height = (hdl->height + 1) >> 1;
 #ifdef SUPPORT_16BPP
 	if (hdl->vram->bpp == 16) {
-		salign = hdl->width * 4;
-		dalign = hdl->vram->yalign - (((hdl->width + 1) >> 1) * 2);
-		aalign = hdl->vram->width - ((hdl->width + 1) >> 1);
-		height = (hdl->height + 1) >> 1;
+		dalign = hdl->vram->yalign - (width2 * 2);
 		do {
-			width = hdl->width >> 1;
-			while(width--) {
+			r = width2;
+			do {
 				UINT32 col;
 				col = MAKEPALETTE(src[2], src[1], src[0]);
 				*(UINT16 *)dst = MAKE16PAL(col);
@@ -836,16 +1223,7 @@ static BOOL gg0_phase2(CGLOAD hdl) {						// ¥³¥Ô¡Á
 				src += 8;
 				dst += 2;
 				alpha += 1;
-			}
-			if (hdl->width & 1) {
-				UINT32 col;
-				col = MAKEPALETTE(src[2], src[1], src[0]);
-				*(UINT16 *)dst = MAKE16PAL(col);
-				*alpha = src[3];
-				src += 4;
-				dst += 2;
-				alpha += 1;
-			}
+			} while(--r);
 			src += salign;
 			dst += dalign;
 			alpha += aalign;
@@ -854,13 +1232,10 @@ static BOOL gg0_phase2(CGLOAD hdl) {						// ¥³¥Ô¡Á
 #endif
 #ifdef SUPPORT_24BPP
 	if (hdl->vram->bpp == 24) {
-		salign = hdl->width * 4;
-		dalign = hdl->vram->yalign - (((hdl->width + 1) >> 1) * 3);
-		aalign = hdl->vram->width - ((hdl->width + 1) >> 1);
-		height = (hdl->height + 1) >> 1;
+		dalign = hdl->vram->yalign - (width2 * 3);
 		do {
-			width = hdl->width >> 1;
-			while(width--) {
+			r = width2;
+			do {
 				dst[0] = src[0];
 				dst[1] = src[1];
 				dst[2] = src[2];
@@ -868,16 +1243,7 @@ static BOOL gg0_phase2(CGLOAD hdl) {						// ¥³¥Ô¡Á
 				src += 8;
 				dst += 3;
 				alpha += 1;
-			}
-			if (hdl->width & 1) {
-				dst[0] = src[0];
-				dst[1] = src[1];
-				dst[2] = src[2];
-				*alpha = src[3];
-				src += 4;
-				dst += 3;
-				alpha += 1;
-			}
+			} while(--r);
 			src += salign;
 			dst += dalign;
 			alpha += aalign;
@@ -897,10 +1263,10 @@ static void gg0_abort(CGLOAD hdl) {
 
 static BOOL cgload_gg0(VRAMHDL *vram, ARCFILEH afh) {
 
-	GG0_HEAD	gg0head;
-	long		pos;
-	CGLOAD		hdl;
-	BOOL		r;
+	GG0HEAD	gg0head;
+	long	pos;
+	CGLOAD	hdl;
+	BOOL	r;
 
 	if (arcfile_read(afh, &gg0head, sizeof(gg0head)) != sizeof(gg0head)) {
 		goto clgg0_err;
@@ -913,7 +1279,7 @@ static BOOL cgload_gg0(VRAMHDL *vram, ARCFILEH afh) {
 		goto clgg0_err;
 	}
 	hdl = cgload_prepare(vram, afh, LOADINTELWORD(gg0head.width),
-										LOADINTELWORD(gg0head.height), 32);
+										LOADINTELWORD(gg0head.height), 24);
 	if (hdl == NULL) {
 		goto clgg0_err;
 	}
@@ -935,118 +1301,8 @@ clgg0_err:
 
 // ----
 
-static BOOL gmask_phase0(CGLOAD hdl) {						// ½àÈ÷¡Á
-
-	BYTE	*tmp;
-	int		align;
-	int		cnt;
-	BYTE	work[4];
-
-	if (cgload_read(hdl, hdl->pal, 256*4) != SUCCESS) {
-		goto gmp0_err;
-	}
-	if (cgload_read(hdl, work, 4) != SUCCESS) {
-		goto gmp0_err;
-	}
-	align = (hdl->width + 3) & (~3);
-	hdl->align = align;
-	cnt = hdl->height;
-	if (cnt < 0) {
-		cnt = 0 - cnt;
-	}
-	cnt *= align;
-	tmp = (BYTE *)_MALLOC(cnt, "gmask tmp");
-	if (tmp == NULL) {
-		goto gmp0_err;
-	}
-	hdl->tmp = tmp;
-	ZeroMemory(tmp, cnt);
-	hdl->cnt = LOADINTELDWORD(work);
-	hdl->cnt = min(hdl->cnt, cnt);
-	return(SUCCESS);
-
-gmp0_err:
-	return(FAILURE);
-}
-
-static BOOL gmask_phase1(CGLOAD hdl) {					// ²òÅà¡Á
-
-	BYTE	ctrl;
-	int		cnt;
-	int		p;
-	int		breakp;
-	int		leng;
-	int		zero;
-	int		backword;
-	BYTE	*dst;
-	int		dstrem;
-
-	p = 0;
-	breakp = 1024 * 2;
-	dst = hdl->tmp;
-	dstrem = hdl->cnt;
-
-	while(dstrem) {
-		if (hdl->rrem < 17) {
-			cgload_preread(hdl);
-		}
-		hdl->rrem--;
-		if (hdl->rrem < 0) {
-			goto gmp1_done;
-		}
-		ctrl = *hdl->rptr++;
-
-		cnt = 8;
-		do {
-			if (ctrl & 1) {
-				hdl->rrem--;
-				if (hdl->rrem < 0) {
-					goto gmp1_done;
-				}
-				dstrem--;
-				*dst++ = *hdl->rptr++;
-				p++;
-			}
-			else {
-				hdl->rrem -= 2;
-				if (hdl->rrem < 0) {
-					goto gmp1_done;
-				}
-				backword = hdl->rptr[0];
-				backword |= (hdl->rptr[1] & 0xf0) << 4;
-				backword = (p - backword - 19) & 0xfff;
-				backword += 1;
-				leng = (hdl->rptr[1] & 0xf) + 3;
-				leng = min(leng, dstrem);
-				dstrem -= leng;
-				hdl->rptr += 2;
-				zero = backword - p;
-				p += leng;
-				if (zero > 0) {
-					zero = min(leng, zero);
-					leng -= zero;
-					ZeroMemory(dst, zero);
-					dst += zero;
-				}
-				while(leng--) {
-					*dst = *(dst - backword);
-					dst++;
-				}
-			}
-			ctrl >>= 1;
-		} while(--cnt);
-		if (p >= breakp) {
-			breakp += 1024 * 2;
-			taskmng_rol();
-		}
-	}
-
-gmp1_done:
-	return(SUCCESS);
-}
-
 #ifndef SIZE_QVGA
-static BOOL gmask_phase2(CGLOAD hdl) {					// ¥³¥Ô¡Á
+static BOOL gmask_phase2(CGLOAD hdl) {					// ƒRƒs`
 
 	BYTE	*src;
 	BYTE	*dst;
@@ -1072,17 +1328,19 @@ static BOOL gmask_phase2(CGLOAD hdl) {					// ¥³¥Ô¡Á
 	return(SUCCESS);
 }
 #else
-static BOOL gmask_phase2(CGLOAD hdl) {					// ¥³¥Ô¡Á
+static BOOL gmask_phase2(CGLOAD hdl) {					// ƒRƒs`
 
 	BYTE	*src;
 	BYTE	*dst;
-	int		width;
+	int		width2;
 	int		height;
 	int		salign;
+	int		r;
 
 	src = hdl->tmp;
-	salign = hdl->align;
 	dst = hdl->vram->ptr;
+	salign = hdl->align * 2;
+	width2 = (hdl->width + 1) >> 1;
 	height = hdl->height;
 	if (height > 0) {
 		src += (height - 1) * salign;
@@ -1091,18 +1349,15 @@ static BOOL gmask_phase2(CGLOAD hdl) {					// ¥³¥Ô¡Á
 	else {
 		height = 0 - height;
 	}
-	salign = (salign * 2) - hdl->width;
+	salign -= (width2 * 2);
 	height = (height + 1) >> 1;
 	do {
-		width = hdl->width >> 1;
-		while(width--) {
+		r = width2;
+		do {
 			dst[0] = src[0];
 			src += 2;
 			dst++;
-		}
-		if (hdl->width & 1) {
-			*dst++ = *src++;
-		}
+		} while(--r);
 		src += salign;
 	} while(--height);
 	return(SUCCESS);
@@ -1118,52 +1373,32 @@ static void gmask_abort(CGLOAD hdl) {
 
 static BOOL cgload_gmask(VRAMHDL *vram, ARCFILEH afh) {
 
-	BYTE	work[4];
-	BMPINFO	bmi;
-	UINT	tmp;
+	BYTE	type[4];
 	int		width;
 	int		height;
 	CGLOAD	hdl;
 	BOOL	r;
 
-	if (arcfile_read(afh, work, 4) != 4) {
+	if (arcfile_read(afh, type, 4) != 4) {
 		goto clgm_err;
 	}
-	work[0] ^= 0xff;
-	work[1] ^= 0xff;
-	work[2] ^= 0xff;
-	work[3] ^= 0xff;
-	if (memcmp(work, "256G", 4)) {
+	type[0] ^= 0xff;
+	type[1] ^= 0xff;
+	type[2] ^= 0xff;
+	type[3] ^= 0xff;
+	if (memcmp(type, "256G", 4)) {
 		goto clgm_err;
 	}
-	if (arcfile_read(afh, &bmi, sizeof(bmi)) != sizeof(bmi)) {
+	if (ggd256g_check(afh, &width, &height) != SUCCESS) {
 		goto clgm_err;
 	}
-	tmp = LOADINTELDWORD(bmi.biSize);
-	if (tmp != sizeof(bmi)) {
-		goto clgm_err;
-	}
-	tmp = LOADINTELWORD(bmi.biPlanes);
-	if (tmp != 1) {
-		goto clgm_err;
-	}
-	tmp = LOADINTELWORD(bmi.biBitCount);
-	if (tmp != 8) {
-		goto clgm_err;
-	}
-	tmp = LOADINTELDWORD(bmi.biCompression);
-	if (tmp != 0) {
-		goto clgm_err;
-	}
-	width = (int)LOADINTELDWORD(bmi.biWidth);
-	height = (int)LOADINTELDWORD(bmi.biHeight);
 	hdl = cgload_prepare(vram, afh, width, height, 8);
 	if (hdl == NULL) {
 		goto clgm_err;
 	}
-	r = gmask_phase0(hdl);
+	r = ggd256g_phase0(hdl);
 	if (r == SUCCESS) {
-		r = gmask_phase1(hdl);
+		r = ggd256g_phase1(hdl);
 	}
 	if (r == SUCCESS) {
 		r = gmask_phase2(hdl);
@@ -1194,11 +1429,11 @@ BOOL cgload_data(VRAMHDL *vram, UINT type, const char *name) {
 	if (cgtype == CGTYPE_GGD) {
 		ret = cgload_ggd(vram, afh);
 	}
-	else if (cgtype == CGTYPE_GAD) {
-		ret = cgload_gad(vram, afh);
-	}
 	else if (cgtype == CGTYPE_GG0) {
 		ret = cgload_gg0(vram, afh);
+	}
+	else if (cgtype == CGTYPE_GAD) {
+		ret = cgload_gad(vram, afh);
 	}
 	arcfile_close(afh);
 
@@ -1225,5 +1460,442 @@ BOOL cgload_mask(VRAMHDL *vram, UINT type, const char *name) {
 
 clmc_err:
 	return(ret);
+}
+
+
+// ----
+
+#ifdef SUPPORT_16BPP
+static void solvegan16a(BYTE *dst, int dstrem, const BYTE *src, int srcrem) {
+
+	UINT	cnt;
+	UINT32	col;
+	UINT32	last;
+
+	last = 0xffffffff;
+	while(1) {
+		srcrem -= 3;
+		if (srcrem < 0) {
+			break;
+		}
+		dstrem -= 1;
+		if (dstrem < 0) {
+			break;
+		}
+		col = MAKEPALETTE(src[2], src[1], src[0]);
+		col = MAKE16PAL(col);
+		*(UINT16 *)dst = (UINT16)col;
+		src += 3;
+		dst += 2;
+		if (last == col) {
+			srcrem -= 1;
+			if (srcrem < 0) {
+				break;
+			}
+			cnt = *src++;
+			if (cnt & 0x80) {
+				srcrem -= 1;
+				if (srcrem < 0) {
+					break;
+				}
+				cnt &= 0x7f;
+				cnt <<= 8;
+				cnt |= *src++;
+				if (cnt == 0x7fff) {
+					srcrem -= 4;
+					if (srcrem < 0) {
+						break;
+					}
+					cnt = LOADINTELDWORD(src);
+					src += 4;
+				}
+			}
+			if (cnt > 2) {
+				cnt = min(cnt - 2, (UINT)dstrem);
+				dstrem -= cnt;
+				while(cnt--) {
+					*(UINT16 *)dst = (UINT16)last;
+					dst += 2;
+				}
+			}
+		}
+		last = col;
+	}
+}
+
+static void solvegan16b(BYTE *dst, int dstrem, const BYTE *src, int srcrem) {
+
+const BYTE	*head;
+	int		headrem;
+	UINT	leng;
+	UINT	cnt;
+	UINT32	col;
+	UINT32	last;
+
+	srcrem -= 4;
+	if (srcrem < 0) {
+		return;
+	}
+	headrem = LOADINTELDWORD(src);
+	src += 4;
+	head = src;
+	headrem -= 4;
+	if (headrem < 0) {
+		return;
+	}
+	src += headrem;
+	srcrem -= headrem;
+	if (srcrem < 0) {
+		return;
+	}
+
+	cnt = 0;
+	last = 0xffffffff;
+
+	while(1) {
+		headrem -= 1;
+		if (headrem < 0) {
+			break;
+		}
+		leng = *head++;
+		if (leng & 0x80) {
+			headrem -= 1;
+			if (headrem < 0) {
+				break;
+			}
+			leng &= 0x7f;
+			leng <<= 8;
+			leng |= *head++;
+			if (leng == 0x7fff) {
+				headrem -= 4;
+				if (headrem < 0) {
+					break;
+				}
+				leng = LOADINTELDWORD(head);
+				head += 4;
+			}
+		}
+		while(leng--) {
+			dstrem -= 1;
+			if (dstrem < 0) {
+				break;
+			}
+			if (!cnt) {
+				srcrem -= 3;
+				if (srcrem < 0) {
+					break;
+				}
+				col = MAKEPALETTE(src[2], src[1], src[0]);
+				col = MAKE16PAL(col);
+				*(UINT16 *)dst = (UINT16)col;
+				src += 3;
+				dst += 2;
+				if (last == col) {
+					srcrem -= 1;
+					if (srcrem < 0) {
+						break;
+					}
+					cnt = *src++;
+					if (cnt & 0x80) {
+						srcrem -= 1;
+						if (srcrem < 0) {
+							break;
+						}
+						cnt &= 0x7f;
+						cnt <<= 8;
+						cnt |= *src++;
+						if (cnt == 0x7fff) {
+							srcrem -= 4;
+							if (srcrem < 0) {
+								break;
+							}
+							cnt = LOADINTELDWORD(src);
+							src += 4;
+						}
+					}
+					if (cnt > 2) {
+						cnt -= 2;
+					}
+					else {
+						cnt = 0;
+					}
+				}
+				last = col;
+			}
+			else {
+				cnt--;
+				*(UINT16 *)dst = (UINT16)last;
+				dst += 2;
+			}
+		}
+
+		headrem -= 1;
+		if (headrem < 0) {
+			break;
+		}
+		leng = *head++;
+		if (leng & 0x80) {
+			headrem -= 1;
+			if (headrem < 0) {
+				break;
+			}
+			leng &= 0x7f;
+			leng <<= 8;
+			leng |= *head++;
+			if (leng == 0x7fff) {
+				headrem -= 4;
+				if (headrem < 0) {
+					break;
+				}
+				leng = LOADINTELDWORD(head);
+				head += 4;
+				if (leng < 0) {
+					break;
+				}
+			}
+		}
+		leng = min(leng, (UINT)dstrem);
+		dstrem -= leng;
+		dst += leng * 2;
+	}
+}
+
+#endif
+#ifdef SUPPORT_24BPP
+static void solvegan24a(BYTE *dst, int dstrem, const BYTE *src, int srcrem) {
+
+	UINT	cnt;
+	UINT32	col;
+	UINT32	last;
+
+	last = 0xffffffff;
+	while(1) {
+		srcrem -= 3;
+		if (srcrem < 0) {
+			break;
+		}
+		dstrem -= 1;
+		if (dstrem < 0) {
+			break;
+		}
+		col = MAKEPALETTE(src[2], src[1], src[0]);
+		dst[0] = src[0];
+		dst[1] = src[1];
+		dst[2] = src[2];
+		src += 3;
+		dst += 3;
+		if (last == col) {
+			srcrem -= 1;
+			if (srcrem < 0) {
+				break;
+			}
+			cnt = *src++;
+			if (cnt & 0x80) {
+				srcrem -= 1;
+				if (srcrem < 0) {
+					break;
+				}
+				cnt &= 0x7f;
+				cnt <<= 8;
+				cnt |= *src++;
+				if (cnt == 0x7fff) {
+					srcrem -= 4;
+					if (srcrem < 0) {
+						break;
+					}
+					cnt = LOADINTELDWORD(src);
+					src += 4;
+				}
+			}
+			if (cnt > 2) {
+				cnt = min(cnt - 2, (UINT)dstrem);
+				dstrem -= cnt;
+				while(cnt--) {
+					*(dst+0) = *(dst-3);
+					*(dst+1) = *(dst-2);
+					*(dst+2) = *(dst-1);
+					dst += 3;
+				}
+			}
+		}
+		last = col;
+	}
+}
+
+static void solvegan24b(BYTE *dst, int dstrem, const BYTE *src, int srcrem) {
+
+const BYTE	*head;
+	int		headrem;
+	UINT	leng;
+	UINT	cnt;
+	UINT32	col;
+	UINT32	last;
+
+	srcrem -= 4;
+	if (srcrem < 0) {
+		return;
+	}
+	headrem = LOADINTELDWORD(src);
+	src += 4;
+	head = src;
+	headrem -= 4;
+	if (headrem < 0) {
+		return;
+	}
+	src += headrem;
+	srcrem -= headrem;
+	if (srcrem < 0) {
+		return;
+	}
+
+	cnt = 0;
+	last = 0xffffffff;
+
+	while(1) {
+		headrem -= 1;
+		if (headrem < 0) {
+			break;
+		}
+		leng = *head++;
+		if (leng & 0x80) {
+			headrem -= 1;
+			if (headrem < 0) {
+				break;
+			}
+			leng &= 0x7f;
+			leng <<= 8;
+			leng |= *head++;
+			if (leng == 0x7fff) {
+				headrem -= 4;
+				if (headrem < 0) {
+					break;
+				}
+				leng = LOADINTELDWORD(head);
+				head += 4;
+			}
+		}
+		while(leng--) {
+			dstrem -= 1;
+			if (dstrem < 0) {
+				break;
+			}
+			if (!cnt) {
+				srcrem -= 3;
+				if (srcrem < 0) {
+					goto g24b_done;
+				}
+				col = MAKEPALETTE(src[2], src[1], src[0]);
+				dst[0] = src[0];
+				dst[1] = src[1];
+				dst[2] = src[2];
+				src += 3;
+				dst += 3;
+				if (last == col) {
+					srcrem -= 1;
+					if (srcrem < 0) {
+						goto g24b_done;
+					}
+					cnt = *src++;
+					if (cnt & 0x80) {
+						srcrem -= 1;
+						if (srcrem < 0) {
+							goto g24b_done;
+						}
+						cnt &= 0x7f;
+						cnt <<= 8;
+						cnt |= *src++;
+						if (cnt == 0x7fff) {
+							srcrem -= 4;
+							if (srcrem < 0) {
+								goto g24b_done;
+							}
+							cnt = LOADINTELDWORD(src);
+							src += 4;
+						}
+					}
+					if (cnt > 2) {
+						cnt -= 2;
+					}
+					else {
+						cnt = 0;
+					}
+				}
+				last = col;
+			}
+			else {
+				cnt--;
+				dst[0] = (BYTE)last;
+				dst[1] = (BYTE)(last >> 8);
+				dst[2] = (BYTE)(last >> 16);
+				dst += 3;
+			}
+		}
+
+		headrem -= 1;
+		if (headrem < 0) {
+			break;
+		}
+		leng = *head++;
+		if (leng & 0x80) {
+			headrem -= 1;
+			if (headrem < 0) {
+				break;
+			}
+			leng &= 0x7f;
+			leng <<= 8;
+			leng += *head++;
+			if (leng == 0x7fff) {
+				headrem -= 4;
+				if (headrem < 0) {
+					break;
+				}
+				leng = LOADINTELDWORD(head);
+				head += 4;
+			}
+		}
+		leng = min(leng, (UINT)dstrem);
+		dstrem -= leng;
+		dst += leng * 3;
+	}
+
+g24b_done:
+	return;
+}
+#endif
+
+BOOL cgload_gan(VRAMHDL vram, int ref, const BYTE *ptr, int size) {
+
+	BYTE	*dst;
+	int		dstrem;
+
+	if (vram == NULL) {
+		goto clgn_err;
+	}
+	dst = vram->ptr;
+	dstrem = vram->width * vram->height;
+#ifdef SUPPORT_16BPP
+	if (vram->bpp == 16) {
+		if (!ref) {
+			solvegan16a(dst, dstrem, ptr, size);
+		}
+		else {
+			solvegan16b(dst, dstrem, ptr, size);
+		}
+	}
+#endif
+#ifdef SUPPORT_24BPP
+	if (vram->bpp == 24) {
+		if (!ref) {
+			solvegan24a(dst, dstrem, ptr, size);
+		}
+		else {
+			solvegan24b(dst, dstrem, ptr, size);
+		}
+	}
+#endif
+	return(SUCCESS);
+
+clgn_err:
+	return(FAILURE);
 }
 

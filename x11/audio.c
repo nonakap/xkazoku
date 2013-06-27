@@ -1,4 +1,4 @@
-/*	$Id: audio.c,v 1.2 2003/04/22 07:15:51 yui Exp $	*/
+/*	$Id: audio.c,v 1.3 2003/08/13 05:01:53 yui Exp $	*/
 
 /*
  * Redistribution and use in source and binary forms, with or without
@@ -82,7 +82,7 @@ sound_init(UINT rate)
 		return FAILURE;
 	}
 
-	bzero(&fmt, sizeof(fmt));
+	memset(&fmt, 0, sizeof(fmt));
 	fmt.freq = opna_rate;
 	fmt.format = AUDIO_S16SYS;
 	fmt.channels = 2;
@@ -105,7 +105,7 @@ sound_term(void)
 		SDL_PauseAudio(1);
 		SDL_CloseAudio();
 		nsndbuf = 0;
-		bzero(sndbuf, sizeof(sndbuf));
+		memset(sndbuf, 0, sizeof(sndbuf));
 		sound_opened = FALSE;
 	}
 	return SUCCESS;

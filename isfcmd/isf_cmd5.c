@@ -8,15 +8,15 @@
 // -------------------------------------------------------------
 
 #include	"compiler.h"
+#include	"cddamng.h"
 #include	"gamecore.h"
-#include	"isf_cmd.h"
+#include	"sound.h"
 #include	"arcfile.h"
 #include	"cgload.h"
-#include	"sound.h"
-#include	"cddamng.h"
+#include	"isf_cmd.h"
 
 
-// VSET : ²¾ÁÛ£Ö£Ò£Á£Í¤ÎÀßÄê Nonaka.K, T.Yui
+// VSET : ‰¼‘z‚u‚q‚`‚l‚ÌÝ’è Nonaka.K, T.Yui
 int isfcmd_50(SCR_OPE *op) {
 
 	SINT32	num;
@@ -35,13 +35,14 @@ int isfcmd_50(SCR_OPE *op) {
 #ifdef SIZE_QVGA
 		vramdraw_halfsize(&pt);
 #endif
-		*vram = vram_create(pt.x, pt.y, FALSE, DEFAULT_BPP);
+		*vram = vram_create(pt.x, pt.y, TRUE, DEFAULT_BPP);
+		effect_vramdraw(num, NULL);
 	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// GN : ¥°¥é¥Õ¥£¥Ã¥¯É½¼¨¥ª¥ó (Nonaka.K)
+// GN : ƒOƒ‰ƒtƒBƒbƒN•\Ž¦ƒIƒ“ (Nonaka.K)
 int isfcmd_51(SCR_OPE *op) {
 
 	SINT32	num;
@@ -69,7 +70,7 @@ int isfcmd_51(SCR_OPE *op) {
 }
 
 
-// GF : ¥°¥é¥Õ¥£¥Ã¥¯É½¼¨¥ª¥Õ (T.Yui)
+// GF : ƒOƒ‰ƒtƒBƒbƒN•\Ž¦ƒIƒt (T.Yui)
 int isfcmd_52(SCR_OPE *op) {
 
 	DISPWIN	dispwin;
@@ -84,7 +85,7 @@ int isfcmd_52(SCR_OPE *op) {
 }
 
 
-// GC : ¥°¥é¥Õ¥£¥Ã¥¯¥¯¥ê¥¢ (T.Yui)
+// GC : ƒOƒ‰ƒtƒBƒbƒNƒNƒŠƒA (T.Yui)
 int isfcmd_53(SCR_OPE *op) {
 
 	SINT32	num;
@@ -99,7 +100,7 @@ int isfcmd_53(SCR_OPE *op) {
 #if 1
 	col[3] = 0;
 #else
-	// Lien->24bit ²ÈÂ²·×²è->32bit? (¥Á¥§¥Ã¥¯¤¹¤ë»ö)
+	// Lien->24bit ‰Æ‘°Œv‰æ->32bit? (ƒ`ƒFƒbƒN‚·‚éŽ–)
 	if (scr_getbyte(op, &col[3]) != SUCCESS) {
 		col[3] = 0;
 	}
@@ -107,12 +108,31 @@ int isfcmd_53(SCR_OPE *op) {
 	if ((num >= 0) && (num < GAMECORE_MAXVRAM)) {
 		vram_fill(gamecore.vram[num], NULL,
 							MAKEPALETTE(col[0], col[1], col[2]), col[3]);
+		effect_vramdraw(num, NULL);
 	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// GO : ¥°¥é¥Õ¥£¥Ã¥¯¥Õ¥§¡¼¥É¥¢¥¦¥È (T.Yui)
+// GI : ƒOƒ‰ƒtƒBƒbƒNƒtƒF[ƒhƒCƒ“ (T.Yui)
+int isfcmd_54(SCR_OPE *op) {
+
+	SINT32	tick;
+	SINT32	num;
+	BYTE	col[3];
+
+	if ((scr_getval(op, &tick) != SUCCESS) ||
+		(scr_getval(op, &num) != SUCCESS) ||
+		(scr_getbyte(op, &col[0]) != SUCCESS) ||
+		(scr_getbyte(op, &col[1]) != SUCCESS) ||
+		(scr_getbyte(op, &col[2]) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	return(effect_fadeinset(tick, num, MAKEPALETTE(col[0], col[1], col[2])));
+}
+
+
+// GO : ƒOƒ‰ƒtƒBƒbƒNƒtƒF[ƒhƒAƒEƒg (T.Yui)
 int isfcmd_55(SCR_OPE *op) {
 
 	SINT32	tick;
@@ -131,21 +151,20 @@ int isfcmd_55(SCR_OPE *op) {
 			return(GAMEEV_WRONGLENG);
 		}
 	}
-
 	if (cmd) {
 		cddamng_stop(tick);
 		soundmix_stop(SOUNDTRK_CDDA, tick);
 	}
-	return(effect_fadeout(tick, col));
+	return(effect_fadeoutset(tick, gamecore.dispwin.vramnum,
+										MAKEPALETTE(col[0], col[1], col[2])));
 }
 
 
-// GL : ¥°¥é¥Õ¥£¥Ã¥¯¥í¡¼¥ÉÉ½¼¨ (Nonaka.K)							DRS cmd:55
+// GL : ƒOƒ‰ƒtƒBƒbƒNƒ[ƒh•\Ž¦ (Nonaka.K)
 int isfcmd_56(SCR_OPE *op) {
 
 	SINT32	num;
 	char	label[ARCFILENAME_LEN+1];
-	DISPWIN	dispwin;
 
 	if ((scr_getval(op, &num) != SUCCESS) ||
 		(scr_getlabel(op, label, sizeof(label)) != SUCCESS)) {
@@ -154,17 +173,13 @@ int isfcmd_56(SCR_OPE *op) {
 	TRACEOUT(("load: %d %-12s", num, label));
 	if ((num >= 0) && (num < GAMECORE_MAXVRAM)) {
 		cgload_data(&gamecore.vram[num], ARCTYPE_GRAPHICS, label);
-		dispwin = &gamecore.dispwin;
-		if ((dispwin->flag & DISPWIN_VRAM) && (dispwin->vramnum == num)) {
-			vramdraw_setrect(gamecore.vram[dispwin->vramnum], NULL);
-			vramdraw_draw();
-		}
+		effect_vramdraw(num, NULL);
 	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// GP : ¥°¥é¥Õ¥£¥Ã¥¯¤Î¥³¥Ô¡¼ Nonaka.K, T.Yui
+// GP : ƒOƒ‰ƒtƒBƒbƒN‚ÌƒRƒs[ Nonaka.K, T.Yui
 int isfcmd_57(SCR_OPE *op) {
 
 	BYTE	cmd;
@@ -208,7 +223,7 @@ int isfcmd_57(SCR_OPE *op) {
 }
 
 
-// GB : ¶ë·Á¤òÉÁ²è (T.Yui)
+// GB : ‹éŒ`‚ð•`‰æ (T.Yui)
 int isfcmd_58(SCR_OPE *op) {
 
 	SINT32	num;
@@ -227,12 +242,13 @@ int isfcmd_58(SCR_OPE *op) {
 		vramdraw_scrn2rect(&r.s, &r.r);
 		vram_fill(gamecore.vram[num], &r.r,
 							MAKEPALETTE(col[0], col[1], col[2]), col[3]);
+		effect_vramdraw(num, &r.r);
 	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// GPB : Ê¸»ú¥µ¥¤¥ºÀßÄê (T.Yui)
+// GPB : •¶ŽšƒTƒCƒYÝ’è (T.Yui)
 int isfcmd_59(SCR_OPE *op) {
 
 	SINT32	size;
@@ -241,11 +257,11 @@ int isfcmd_59(SCR_OPE *op) {
 		return(GAMEEV_WRONGLENG);
 	}
 	textctrl_setsize(&gamecore.textdraw, size);
-	return(GAMEEV_FORCE);
+	return(GAMEEV_SUCCESS);
 }
 
 
-// GPJ : Ê¸»ú·ÁÂÖ¤ÎÀßÄê (T.Yui)
+// GPJ : •¶ŽšŒ`‘Ô‚ÌÝ’è (T.Yui)
 int isfcmd_5a(SCR_OPE *op) {
 
 	BYTE	type;
@@ -254,11 +270,11 @@ int isfcmd_5a(SCR_OPE *op) {
 		return(GAMEEV_WRONGLENG);
 	}
 	textctrl_settype(&gamecore.textdraw, type);
-	return(GAMEEV_FORCE);
+	return(GAMEEV_SUCCESS);
 }
 
 
-// PR : Ê¸»úÉ½¼¨ (T.Yui)
+// PR : •¶Žš•\Ž¦ (T.Yui)
 int isfcmd_5b(SCR_OPE *op) {
 
 	SINT32	num;
@@ -273,64 +289,77 @@ int isfcmd_5b(SCR_OPE *op) {
 }
 
 
-// GASTART: ¥¢¥Ë¥á¡¼¥·¥ç¥ó¤Î¥¹¥¿¡¼¥È (T.Yui)
+// GASTART: ƒAƒjƒ[ƒVƒ‡ƒ“‚ÌƒXƒ^[ƒg (T.Yui)
 int isfcmd_5c(SCR_OPE *op) {
 
-	ANIME	anime;
+	BYTE	cmd;
+	SINT32	param1;
+	SINT32	param2;
 
-	TRACEOUT(("anime start"));
-
-	anime = &gamecore.anime;
-	if (!anime->enable) {
-		anime->enable = TRUE;
-		anime->frame = 0;
-		anime->basetick = GETTICK();
-		anime->nexttick = 0;
+	if ((scr_getbyte(op, &cmd) != SUCCESS) ||
+		(scr_getval(op, &param1) != SUCCESS) ||
+		(scr_getval(op, &param2) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
 	}
-	(void)op;
+	TRACEOUT(("anime start: %d %d %d", cmd, param1, param2));
+	anime_start(cmd, param1, param2);
 	return(GAMEEV_SUCCESS);
 }
 
 
-// GASTOP : ¥¢¥Ë¥á¡¼¥·¥ç¥ó¤Î¥¹¥È¥Ã¥× (T.Yui)
+// GASTOP : ƒAƒjƒ[ƒVƒ‡ƒ“‚ÌƒXƒgƒbƒv (T.Yui)
 int isfcmd_5d(SCR_OPE *op) {
 
-	ANIME	anime;
+	BYTE	cmd;
+	SINT32	param1;
+	SINT32	param2;
 
-	anime = &gamecore.anime;
-	anime->enable = FALSE;
-	(void)op;
+	if ((scr_getbyte(op, &cmd) != SUCCESS) ||
+		(scr_getval(op, &param1) != SUCCESS) ||
+		(scr_getval(op, &param2) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	TRACEOUT(("anime stop: %d %d %d", cmd, param1, param2));
+	anime_end(cmd, param1, param2);
 	return(GAMEEV_SUCCESS);
 }
 
 
-// GPI : ¥°¥é¥Õ¥£¥Ã¥¯¥¨¥Õ¥§¥¯¥È¤ÈBGM¤Î¥Õ¥§¡¼¥É¥¤¥ó
+// GPI : ƒOƒ‰ƒtƒBƒbƒNƒGƒtƒFƒNƒg‚ÆBGM‚ÌƒtƒF[ƒhƒCƒ“
 int isfcmd_5e(SCR_OPE *op) {
 
 	int		r;
 	SINT32	cmd;
 	SINT32	track;
+	UINT32	tick;
 
 	r = isfcmd_57(op);
 	if (r >= GAMEEV_SUCCESS) {
+		tick = 0;
+		if (r > GAMEEV_SUCCESS) {
+			tick = gamecore.ef.param;
+		}
 		if ((scr_getval(op, &cmd) == SUCCESS) &&
 			(scr_getval(op, &track) == SUCCESS)) {
-			sndplay_cddaplay(track, 0, gamecore.ef.param);
+			sndplay_cddaplay(track, 0, tick);
 		}
 	}
 	return(r);
 }
 
 
-// GPO : ¥°¥é¥Õ¥£¥Ã¥¯¥¨¥Õ¥§¥¯¥È¤ÈBGM¤Î¥Õ¥§¡¼¥É¥¢¥¦¥È (T.Yui)
+// GPO : ƒOƒ‰ƒtƒBƒbƒNƒGƒtƒFƒNƒg‚ÆBGM‚ÌƒtƒF[ƒhƒAƒEƒg (T.Yui)
 int isfcmd_5f(SCR_OPE *op) {
 
 	int		r;
+	UINT32	tick;
 
 	r = isfcmd_57(op);
-	if (r >= GAMEEV_SUCCESS) {
-		sndplay_cddastop(gamecore.ef.param);
+	tick = 0;
+	if (r > GAMEEV_SUCCESS) {
+		tick = gamecore.ef.param;
 	}
+	sndplay_cddastop(tick);
 	return(r);
 }
 

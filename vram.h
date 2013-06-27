@@ -68,10 +68,11 @@ void vram_filldat(VRAMHDL hdl, const RECT_T *rect, UINT32 color);
 void vram_fillalpha(VRAMHDL hdl, const RECT_T *rect, BYTE alpha);
 void vram_fillex(VRAMHDL hdl, const RECT_T *rect, UINT32 color, BYTE alpha);
 
-void vram_getrect(VRAMHDL hdl, RECT_T *rect);
+void vram_getrect(const VRAMHDL hdl, RECT_T *rect);
 
-VRAMHDL vram_copy(VRAMHDL src);
-BOOL vram_cliprect(RECT_T *clip, VRAMHDL vram, const RECT_T *rct);
+VRAMHDL vram_copy(const VRAMHDL hdl);
+BOOL vram_cliprect(RECT_T *clip, const VRAMHDL vram, const RECT_T *rct);
+BOOL vram_cliprectex(RECT_T *clip, const VRAMHDL vram, const RECT_T *rct);
 
 #ifdef __cplusplus
 }

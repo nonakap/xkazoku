@@ -379,7 +379,7 @@ static void dlgbtn_rel(MENUDLG dlg, DLGHDL hdl, int x, int y, int focus) {
 // ---- list
 
 static void *dlglist_setfont(DLGHDL hdl, void *font) {
-										// ¸å¤Ç¥¹¥¯¥í¡¼¥ë¥Ð¡¼¤ÎÄ´À°¤ò¤¹¤Ù¤·
+										// Œã‚ÅƒXƒNƒ[ƒ‹ƒo[‚Ì’²®‚ð‚·‚×‚µ
 	void	*ret;
 	POINT_T	pt;
 
@@ -477,7 +477,7 @@ static void dlglist_setbtn(DLGHDL hdl, int flg) {
 	RECT_T		rct;
 	POINT_T		pt;
 	UINT		mvc4;
-	MENURES2	*res;
+const MENURES2	*res;
 
 	res = menures_scrbtn;
 	rct.right = hdl->vram->width;
@@ -828,7 +828,7 @@ static void dlgslider_paint(MENUDLG dlg, DLGHDL hdl) {
 
 	RECT_U		rct;
 	POINT_T		pt;
-	MENURES2	*src;
+const MENURES2	*src;
 	int			ptr;
 
 	switch(hdl->flag & MSS_POSMASK) {
@@ -1237,7 +1237,7 @@ static void dlgframe_paint(MENUDLG dlg, DLGHDL hdl) {
 static void dlgradio_paint(MENUDLG dlg, DLGHDL hdl) {
 
 	POINT_T		pt;
-	MENURES2	*src;
+const MENURES2	*src;
 	int			pat;
 
 	vram_filldat(dlg->vram, &hdl->rect, menucolor[MVC_STATIC]);
@@ -1363,14 +1363,19 @@ static void dlgtext_paint(MENUDLG dlg, DLGHDL hdl) {
 
 	vram_filldat(dlg->vram, &hdl->rect, menucolor[MVC_STATIC]);
 	if (hdl->prm) {
-		if (hdl->type == DLGTYPE_LTEXT) {
-			getpt = getleft;
-		}
-		else if (hdl->type == DLGTYPE_RTEXT) {
-			getpt = getright;
-		}
-		else {
-			getpt = getcenter;
+		switch(hdl->flag & MST_POSMASK) {
+			case MST_LEFT:
+			default:
+				getpt = getleft;
+				break;
+
+			case MST_CENTER:
+				getpt = getcenter;
+				break;
+
+			case MST_RIGHT:
+				getpt = getright;
+				break;
 		}
 		getpt(&pt, &hdl->rect, &hdl->c.dt.pt);
 		dlg_text(dlg, hdl, &pt, &hdl->rect);
@@ -1520,9 +1525,7 @@ static const DLGCRE dlgcre[] = {
 		_cre_settext,				// DLGTYPE_CHECK
 		_cre_settext,				// DLGTYPE_FRAME
 		_cre_settext,				// DLGTYPE_EDIT
-		_cre_settext,				// DLGTYPE_LTEXT
-		_cre_settext,				// DLGTYPE_CTEXT
-		_cre_settext,				// DLGTYPE_RTEXT
+		_cre_settext,				// DLGTYPE_TEXT
 		dlgicon_create,				// DLGTYPE_VRAM
 		_cre,						// DLGTYPE_LINE
 		_cre						// DLGTYPE_BOX
@@ -1539,9 +1542,7 @@ static const DLGPAINT dlgpaint[] = {
 		dlgcheck_paint,				// DLGTYPE_CHECK
 		dlgframe_paint,				// DLGTYPE_FRAME
 		dlgedit_paint,				// DLGTYPE_EDIT
-		dlgtext_paint,				// DLGTYPE_LTEXT
-		dlgtext_paint,				// DLGTYPE_CTEXT
-		dlgtext_paint,				// DLGTYPE_RTEXT
+		dlgtext_paint,				// DLGTYPE_TEXT
 		dlgicon_paint,				// DLGTYPE_VRAM
 		dlgline_paint,				// DLGTYPE_LINE
 		dlgbox_paint				// DLGTYPE_BOX
@@ -1826,6 +1827,26 @@ BOOL menudlg_append(int type, MENUID id, MENUFLG flg, const void *arg,
 	if (flg & MENU_TABSTOP) {
 		dlg->group++;
 	}
+	switch(type) {
+		case DLGTYPE_LTEXT:
+			type = DLGTYPE_TEXT;
+			flg &= ~MST_POSMASK;
+			flg |= MST_LEFT;
+			break;
+
+		case DLGTYPE_CTEXT:
+			type = DLGTYPE_TEXT;
+			flg &= ~MST_POSMASK;
+			flg |= MST_CENTER;
+			break;
+
+		case DLGTYPE_RTEXT:
+			type = DLGTYPE_TEXT;
+			flg &= ~MST_POSMASK;
+			flg |= MST_RIGHT;
+			break;
+	}
+
 	ZeroMemory(&dhdl, sizeof(dhdl));
 	dhdl.type = type;
 	dhdl.id = id;
@@ -2007,9 +2028,7 @@ void *menudlg_msg(int ctrl, MENUID id, void *arg) {
 				case DLGTYPE_RADIO:
 				case DLGTYPE_CHECK:
 				case DLGTYPE_EDIT:
-				case DLGTYPE_LTEXT:
-				case DLGTYPE_CTEXT:
-				case DLGTYPE_RTEXT:
+				case DLGTYPE_TEXT:
 					dlgtext_itemset(dlg, hdl, arg);
 					drawctrls(dlg, hdl);
 					break;
@@ -2038,6 +2057,19 @@ void *menudlg_msg(int ctrl, MENUID id, void *arg) {
 			}
 			break;
 
+		case DMSG_GETRECT:
+			ret = &hdl->rect;
+			break;
+
+		case DMSG_SETRECT:
+			ret = &hdl->rect;
+			if ((hdl->type == DLGTYPE_TEXT) && (arg)) {
+				drawctrls(dlg, hdl);
+				hdl->rect = *(RECT_T *)arg;
+				drawctrls(dlg, hdl);
+			}
+			break;
+
 		case DMSG_SETFONT:
 			if (hdl->type == DLGTYPE_LIST) {
 				ret = dlglist_setfont(hdl, arg);
@@ -2047,7 +2079,25 @@ void *menudlg_msg(int ctrl, MENUID id, void *arg) {
 				ret = dlgtablist_setfont(hdl, arg);
 				drawctrls(dlg, hdl);
 			}
+			else if (hdl->type == DLGTYPE_TEXT) {
+				ret = hdl->c.dt.font;
+				hdl->c.dt.font = arg;
+				drawctrls(dlg, hdl);
+			}
 			break;
+
+		case DMSG_GETFONT:
+			if (hdl->type == DLGTYPE_LIST) {
+				ret = hdl->c.dl.font;
+			}
+			else if (hdl->type == DLGTYPE_TABLIST) {
+				ret = hdl->c.dtl.font;
+			}
+			else if (hdl->type == DLGTYPE_TEXT) {
+				ret = hdl->c.dt.font;
+			}
+			break;
+
 	}
 	drawlock(FALSE);
 

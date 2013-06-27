@@ -1,9 +1,10 @@
 #include	"compiler.h"
+#include	"fontmng.h"
+#include	"inputmng.h"
 #include	"vram.h"
 #include	"vrammix.h"
 #include	"menudeco.inc"
 #include	"menubase.h"
-#include	"fontmng.h"
 
 
 typedef struct _mhdl {
@@ -15,7 +16,6 @@ struct _mhdl	*child;
 		RECT_T	rct;
 		char	string[32];
 } _MENUHDL, *MENUHDL;
-
 
 typedef struct {
 	VRAMHDL		vram;
@@ -35,6 +35,8 @@ typedef struct {
 	int			opened;
 	int			lastdepth;
 	int			lastpos;
+	int			popupx;
+	int			popupy;
 	char		title[128];
 } MENUSYS;
 
@@ -42,34 +44,41 @@ typedef struct {
 static MENUSYS	menusys;
 
 
-static const BYTE str_sysr[] = {		// ¸µ¤Î¥µ¥¤¥º¤ËÌá¤¹
+static const BYTE str_sysr[] = {		// Œ³‚ÌƒTƒCƒY‚É–ß‚·
 		0x8c,0xb3,0x82,0xcc,0x83,0x54,0x83,0x43,0x83,0x59,0x82,0xc9,0x96,
 		0xdf,0x82,0xb7,0x00};
-static const BYTE str_sysm[] = {		// °ÜÆ°
+static const BYTE str_sysm[] = {		// ˆÚ“®
 		0x88,0xda,0x93,0xae,0x00};
-static const BYTE str_syss[] = {		// ¥µ¥¤¥ºÊÑ¹¹
+static const BYTE str_syss[] = {		// ƒTƒCƒY•ÏX
 		0x83,0x54,0x83,0x43,0x83,0x59,0x95,0xcf,0x8d,0x58,0x00};
-static const BYTE str_sysn[] = {		// ºÇ¾®²½
+static const BYTE str_sysn[] = {		// Å¬‰»
 		0x8d,0xc5,0x8f,0xac,0x89,0xbb,0x00};
-static const BYTE str_sysx[] = {		// ºÇÂç²½
+static const BYTE str_sysx[] = {		// Å‘å‰»
 		0x8d,0xc5,0x91,0xe5,0x89,0xbb,0x00};
-static const BYTE str_sysc[] = {		// ÊÄ¤¸¤ë
+static const BYTE str_sysc[] = {		// •Â‚¶‚é
 		0x95,0xc2,0x82,0xb6,0x82,0xe9,0x00};
 
 
 static const MSYSITEM s_exit[] = {
-			{(char *)str_sysr,	NULL,		0,			MENU_GRAY},
-			{(char *)str_sysm,	NULL,		0,			MENU_GRAY},
-			{(char *)str_syss,	NULL,		0,			MENU_GRAY},
-			{(char *)str_sysn,	NULL,		0,			MENU_GRAY},
-			{(char *)str_sysx,	NULL,		0,			MENU_GRAY},
-			{NULL,				NULL,		0,			MENU_SEPARATOR},
-			{(char *)str_sysc,	NULL,		SID_CLOSE,	MENU_DELETED}};
+		{(char *)str_sysr,	NULL,		0,				MENU_GRAY},
+		{(char *)str_sysm,	NULL,		0,				MENU_GRAY},
+		{(char *)str_syss,	NULL,		0,				MENU_GRAY},
+#if defined(MENU_TASKMINIMIZE)
+		{(char *)str_sysn,	NULL,		SID_MINIMIZE,	0},
+#else
+		{(char *)str_sysn,	NULL,		0,				MENU_GRAY},
+#endif
+		{(char *)str_sysx,	NULL,		0,				MENU_GRAY},
+		{NULL,				NULL,		0,				MENU_SEPARATOR},
+		{(char *)str_sysc,	NULL,		SID_CLOSE,		MENU_DELETED}};
 
-static const MSYSITEM s_root[2] = {
-			{NULL,				s_exit,		0,			MENUS_SYSTEM},
-			{NULL,				NULL,		SID_CLOSE,	MENUS_CLOSE
-														| MENU_DELETED}};
+static const MSYSITEM s_root[] = {
+		{NULL,				s_exit,		0,				MENUS_SYSTEM},
+#if defined(MENU_TASKMINIMIZE)
+		{NULL,				NULL,		SID_MINIMIZE,	MENUS_MINIMIZE},
+#endif
+		{NULL,				NULL,		SID_CLOSE,		MENUS_CLOSE |
+														MENU_DELETED}};
 
 
 // ---- regist
@@ -82,7 +91,6 @@ static BOOL seaempty(void *vpItem, void *vpArg) {
 	(void)vpArg;
 	return(FALSE);
 }
-
 
 static MENUHDL append1(MENUSYS *sys, const MSYSITEM *item) {
 
@@ -110,7 +118,6 @@ static MENUHDL append1(MENUSYS *sys, const MSYSITEM *item) {
 	}
 	return(ret);
 }
-
 
 static MENUHDL appends(MENUSYS *sys, const MSYSITEM *item) {
 
@@ -158,7 +165,6 @@ static void draw(VRAMHDL dst, const RECT_T *rect, void *arg) {
 	(void)arg;
 }
 
-
 static MENUHDL getitem(MENUSYS *sys, int depth, int pos) {
 
 	MENUHDL	ret;
@@ -184,7 +190,6 @@ gi_err:
 	return(NULL);
 }
 
-
 static void wndclose(MENUSYS *sys, int depth) {
 
 	MSYSWND		wnd;
@@ -199,7 +204,6 @@ static void wndclose(MENUSYS *sys, int depth) {
 		depth++;
 	}
 }
-
 
 static void bitemdraw(VRAMHDL vram, MENUHDL menu, int flag) {
 
@@ -243,6 +247,12 @@ static void bitemdraw(VRAMHDL vram, MENUHDL menu, int flag) {
 	}
 }
 
+enum {
+	MEXIST_SYS		= 0x01,
+	MEXIST_MINIMIZE	= 0x02,
+	MEXIST_CLOSE	= 0x04,
+	MEXIST_ITEM		= 0x08
+};
 
 static BOOL wndopenbase(MENUSYS *sys) {
 
@@ -250,7 +260,7 @@ static BOOL wndopenbase(MENUSYS *sys) {
 	RECT_T	mrect;
 	int		items;
 	int		posx;
-	int		rootflg;
+	UINT	rootflg;
 	int		menutype;
 	int		height;
 	POINT_T	pt;
@@ -259,22 +269,26 @@ static BOOL wndopenbase(MENUSYS *sys) {
 
 	rootflg = 0;
 	menu = sys->root;
-	while(menu) {					// ¥á¥Ë¥å¡¼ÆâÍÆ¤òÄ´¤Ù¤ë¡£
+	while(menu) {					// ƒƒjƒ…[“à—e‚ğ’²‚×‚éB
 		if (!(menu->flag & (MENU_DISABLE | MENU_SEPARATOR))) {
 			switch(menu->flag & MENUS_CTRLMASK) {
 				case MENUS_POPUP:
 					break;
 
 				case MENUS_SYSTEM:
-					rootflg |= 1;
+					rootflg |= MEXIST_SYS;
+					break;
+
+				case MENUS_MINIMIZE:
+					rootflg |= MEXIST_MINIMIZE;
 					break;
 
 				case MENUS_CLOSE:
-					rootflg |= 2;
+					rootflg |= MEXIST_CLOSE;
 					break;
 
 				default:
-					rootflg |= 4;
+					rootflg |= MEXIST_ITEM;
 					break;
 			}
 		}
@@ -286,7 +300,7 @@ static BOOL wndopenbase(MENUSYS *sys) {
 	mrect.right = menubase.width - (MENU_FBORDER + MENU_BORDER);
 	mrect.bottom = (MENU_FBORDER + MENU_BORDER) + MENUSYS_CYCAPTION;
 	height = ((MENU_FBORDER + MENU_BORDER) * 2) + MENUSYS_CYCAPTION;
-	if (rootflg & 4) {
+	if (rootflg & MEXIST_ITEM) {
 		height += (MENUSYS_BCAPTION * 3) + MENUSYS_CYSYS;
 		mrect.left += MENUSYS_BCAPTION;
 		mrect.top += MENUSYS_BCAPTION;
@@ -316,14 +330,20 @@ static BOOL wndopenbase(MENUSYS *sys) {
 				menu->rct.top = mrect.top + MENU_PYCAPTION;
 				menu->rct.bottom = menu->rct.top;
 				if (sys->icon) {
-#ifndef SIZE_QVGA
 					menu->rct.right += sys->icon->width;
 					menu->rct.bottom += sys->icon->height;
-#else
-					menu->rct.right += sys->icon->width * 2;
-					menu->rct.bottom += sys->icon->height * 2;
-#endif
 				}
+			}
+			else if (menutype == MENUS_MINIMIZE) {
+				menu->rct.right = mrect.right - MENU_PXCAPTION;
+				if (rootflg & MEXIST_CLOSE) {
+					menu->rct.right -= MENUSYS_CXCLOSE + (MENU_LINE * 2);
+				}
+				menu->rct.left = menu->rct.right - MENUSYS_CXCLOSE;
+				menu->rct.top = mrect.top +
+								((MENUSYS_CYCAPTION - MENUSYS_CYCLOSE) / 2);
+				menu->rct.bottom = menu->rct.top + MENUSYS_CYCLOSE;
+				menuvram_minimizebtn(sys->wnd[0].vram, &menu->rct, 0);
 			}
 			else if (menutype == MENUS_CLOSE) {
 				menu->rct.right = mrect.right - MENU_PXCAPTION;
@@ -362,7 +382,7 @@ wopn0_err:
 
 static void citemdraw2(VRAMHDL vram, MENUHDL menu, UINT mvc, int pos) {
 
-	MENURES2	*res;
+const MENURES2	*res;
 	POINT_T		pt;
 
 	res = menures_sys;
@@ -377,7 +397,6 @@ static void citemdraw2(VRAMHDL vram, MENUHDL menu, UINT mvc, int pos) {
 		menuvram_res3put(vram, res+1, &pt, mvc);
 	}
 }
-
 
 static void citemdraw(VRAMHDL vram, MENUHDL menu, int flag) {
 
@@ -421,8 +440,7 @@ static void citemdraw(VRAMHDL vram, MENUHDL menu, int flag) {
 	}
 }
 
-
-static void childopn(MENUSYS *sys, int depth, int pos) {
+static BOOL childopn(MENUSYS *sys, int depth, int pos) {
 
 	MENUHDL	menu;
 	int		posx;
@@ -437,28 +455,28 @@ static void childopn(MENUSYS *sys, int depth, int pos) {
 	menu = getitem(sys, depth, pos);
 	if ((menu == NULL) || (menu->child == NULL)) {
 		TRACEOUT(("child not found."));
-		goto copn_end;
+		goto copn_err;
 	}
 	wnd = sys->wnd + depth;
-	posx = wnd->vram->posx;
-	posy = wnd->vram->posy;
-	if (!depth) {
-		if ((menu->flag & MENUS_CTRLMASK) == MENUS_POPUP) {
-			posx = 0;
-			posy = wnd->vram->height;
-		}
-		else {
+	if ((menu->flag & MENUS_CTRLMASK) == MENUS_POPUP) {
+		posx = sys->popupx;
+		posy = max(sys->popupy, wnd->vram->height);
+	}
+	else {
+		posx = wnd->vram->posx;
+		posy = wnd->vram->posy;
+		if (!depth) {
 			posx += menu->rct.left;
 			posy += menu->rct.bottom;
 		}
-	}
-	else {
-		posx += menu->rct.right;
-		posy += menu->rct.top;
+		else {
+			posx += menu->rct.right;
+			posy += menu->rct.top;
+		}
 	}
 	if (depth >= (MENUSYS_MAX - 1)) {
 		TRACEOUT(("menu max."));
-		goto copn_end;
+		goto copn_err;
 	}
 	wnd++;
 	width = 0;
@@ -504,7 +522,7 @@ static void childopn(MENUSYS *sys, int depth, int pos) {
 	wnd->vram = menuvram_create(width, height);
 	if (wnd->vram == NULL) {
 		TRACEOUT(("sub menu vram couldn't create"));
-		goto copn_end;
+		goto copn_err;
 	}
 	wnd->vram->posx = min(posx, menubase.width - width);
 	wnd->vram->posy = min(posy, menubase.height - height);
@@ -521,11 +539,11 @@ static void childopn(MENUSYS *sys, int depth, int pos) {
 		menu = menu->next;
 	}
 	menubase_setrect(wnd->vram, NULL);
+	return(SUCCESS);
 
-copn_end:
-	return;
+copn_err:
+	return(FAILURE);
 }
-
 
 static int openpopup(MENUSYS *sys) {
 
@@ -538,6 +556,7 @@ static int openpopup(MENUSYS *sys) {
 		while(menu) {
 			if (!(menu->flag & (MENU_DISABLE | MENU_SEPARATOR))) {
 				if ((menu->flag & MENUS_CTRLMASK) == MENUS_POPUP) {
+					sys->wnd[0].focus = pos;
 					childopn(sys, 0, pos);
 					return(1);
 				}
@@ -548,7 +567,6 @@ static int openpopup(MENUSYS *sys) {
 	}
 	return(0);
 }
-
 
 static void itemdraw(MENUSYS *sys, int depth, int pos, int flag) {
 
@@ -628,7 +646,6 @@ static void defcmd(MENUID id) {
 	(void)id;
 }
 
-
 BOOL menusys_create(const MSYSITEM *item, VRAMHDL icon,
 								void (*cmd)(MENUID id), const char *title) {
 
@@ -668,7 +685,6 @@ mscre_err:
 	return(FAILURE);
 }
 
-
 void menusys_destroy(void) {
 
 	MENUSYS	*sys;
@@ -680,8 +696,7 @@ void menusys_destroy(void) {
 	}
 }
 
-
-BOOL menusys_open(void) {
+BOOL menusys_open(int x, int y) {
 
 	MENUSYS	*sys;
 
@@ -696,6 +711,8 @@ BOOL menusys_open(void) {
 	if (wndopenbase(sys) != SUCCESS) {
 		goto msopn_err;
 	}
+	sys->popupx = x;
+	sys->popupy = y;
 	sys->opened = openpopup(sys);
 	menubase_draw(draw, sys);
 	return(SUCCESS);
@@ -705,7 +722,6 @@ msopn_err:
 	return(FAILURE);
 }
 
-
 void menusys_close(void) {
 
 	MENUSYS	*sys;
@@ -713,7 +729,6 @@ void menusys_close(void) {
 	sys = &menusys;
 	wndclose(sys, 0);
 }
-
 
 void menusys_moving(int x, int y, int btn) {
 
@@ -724,7 +739,7 @@ void menusys_moving(int x, int y, int btn) {
 	sys = &menusys;
 	getposinfo(sys, &cur, x, y);
 
-	// ¥á¥Ë¥å¡¼¤òÊÄ¤¸¤ë¡Á
+	// ƒƒjƒ…[‚ğ•Â‚¶‚é`
 	if (cur.depth < 0) {
 		if (btn == 2) {
 			menubase_close();
@@ -783,7 +798,142 @@ void menusys_moving(int x, int y, int btn) {
 		}
 	}
 	menubase_draw(draw, sys);
-	return;
+}
+
+static void focusmove(MENUSYS *sys, int depth, int dir) {
+
+	MSYSWND	wnd;
+	MENUHDL	menu;
+	int		pos;
+	MENUHDL	target;
+	int		tarpos;
+
+	wnd = sys->wnd + depth;
+	target = NULL;
+	tarpos = 0;
+	pos = 0;
+	menu = wnd->menu;
+	while(menu) {
+		if (pos == wnd->focus) {
+			if ((dir < 0) && (target != NULL)) {
+				break;
+			}
+		}
+		else if (((menu->flag & MENUS_CTRLMASK) <= MENUS_SYSTEM) &&
+				(!(menu->flag &
+							(MENU_DISABLE | MENU_GRAY | MENU_SEPARATOR)))) {
+			if (dir < 0) {
+				target = menu;
+				tarpos = pos;
+			}
+			else {
+				if (pos < wnd->focus) {
+					if (target == NULL) {
+						target = menu;
+						tarpos = pos;
+					}
+				}
+				else {
+					target = menu;
+					tarpos = pos;
+					break;
+				}
+			}
+		}
+		pos++;
+		menu = menu->next;
+	}
+	if (target == NULL) {
+		return;
+	}
+	itemdraw(sys, depth, wnd->focus, 0);
+	itemdraw(sys, depth, tarpos, 2 - sys->opened);
+	wnd->focus = tarpos;
+//	TRACEOUT(("focus = %d", tarpos));
+	if (depth == 0) {
+		if (sys->opened) {
+			wndclose(sys, 1);
+			childopn(sys, 0, tarpos);
+		}
+	}
+	else {
+		if (depth != (sys->depth - 1)) {
+			wndclose(sys, depth + 1);
+		}
+	}
+}
+
+static void focusenter(MENUSYS *sys, int depth, BOOL exec) {
+
+	MENUHDL	menu;
+	MSYSWND	wnd;
+
+	wnd = sys->wnd + depth;
+	menu = getitem(sys, depth, wnd->focus);
+	if ((menu) && (!(menu->flag & MENU_GRAY)) &&
+		(menu->child != NULL)) {
+		if (depth == 0) {
+			wndclose(sys, 1);
+			itemdraw(sys, 0, wnd->focus, 1);
+			sys->opened = 1;
+		}
+		childopn(sys, depth, wnd->focus);
+	}
+	else if (exec) {
+		if ((menu) && (menu->id)) {
+			menubase_close();
+			sys->cmd(menu->id);
+		}
+	}
+	else {
+		focusmove(sys, 0, 1);
+	}
+}
+
+void menusys_key(UINT key) {
+
+	MENUSYS	*sys;
+	int		topwnd;
+
+	sys = &menusys;
+	topwnd = sys->depth - 1;
+	if (topwnd == 0) {
+		if (key & KEY_LEFT) {
+			focusmove(sys, 0, -1);
+		}
+		if (key & KEY_RIGHT) {
+			focusmove(sys, 0, 1);
+		}
+		if (key & KEY_DOWN) {
+			focusenter(sys, 0, FALSE);
+		}
+		if (key & KEY_ENTER) {
+			focusenter(sys, 0, TRUE);
+		}
+	}
+	else {
+		if (key & KEY_UP) {
+			focusmove(sys, topwnd, -1);
+		}
+		if (key & KEY_DOWN) {
+			focusmove(sys, topwnd, 1);
+		}
+		if (key & KEY_LEFT) {
+			if (topwnd >= 2) {
+				wndclose(sys, topwnd);
+			}
+			else {
+				focusmove(sys, 0, -1);
+			}
+		}
+		if (key & KEY_RIGHT) {
+			focusenter(sys, topwnd, FALSE);
+		}
+		if (key & KEY_ENTER) {
+			focusenter(sys, topwnd, TRUE);
+		}
+	}
+	menubase_draw(draw, sys);
 }
 
 
@@ -803,7 +953,6 @@ static BOOL _itemsea(void *vpItem, void *vpArg) {
 	return(FALSE);
 }
 
-
 static MENUHDL itemsea(MENUSYS *sys, MENUID id) {
 
 	ITEMSEA		sea;
@@ -813,7 +962,6 @@ static MENUHDL itemsea(MENUSYS *sys, MENUID id) {
 	listarray_enum(sys->res, _itemsea, &sea);
 	return(sea.ret);
 }
-
 
 static void menusys_setflag(MENUID id, MENUFLG flag, MENUFLG mask) {
 
@@ -835,7 +983,7 @@ static void menusys_setflag(MENUID id, MENUFLG flag, MENUFLG mask) {
 	}
 	itm->flag ^= flag;
 
-	// ¥ê¥É¥í¡¼¤¬É¬Í×¡©
+	// ƒŠƒhƒ[‚ª•K—vH
 	depth = 0;
 	while(depth < sys->depth) {
 		itm = sys->wnd[depth].menu;
@@ -862,7 +1010,6 @@ mssf_end:
 	return;
 }
 
-
 static void menusys_settxt(MENUID id, void *arg) {
 
 	MENUSYS	*sys;
@@ -884,7 +1031,7 @@ static void menusys_settxt(MENUID id, void *arg) {
 		itm->string[0] = '\0';
 	}
 
-	// ¥ê¥É¥í¡¼¤¬É¬Í×¡© (ToDo: ºÆ¥ª¡¼¥×¥ó¤¹¤Ù¤·)
+	// ƒŠƒhƒ[‚ª•K—vH (ToDo: ÄƒI[ƒvƒ“‚·‚×‚µ)
 	depth = 0;
 	while(depth < sys->depth) {
 		itm = sys->wnd[depth].menu;
@@ -910,7 +1057,6 @@ static void menusys_settxt(MENUID id, void *arg) {
 msst_end:
 	return;
 }
-
 
 void *menusys_msg(int ctrl, MENUID id, void *arg) {
 

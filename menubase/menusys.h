@@ -16,8 +16,9 @@ enum {
 enum {
 	MENUS_POPUP			= 0x0010,
 	MENUS_SYSTEM		= 0x0020,
-	MENUS_CLOSE			= 0x0030,
-	MENUS_CTRLMASK		= 0x0030
+	MENUS_MINIMIZE		= 0x0030,
+	MENUS_CLOSE			= 0x0040,
+	MENUS_CTRLMASK		= 0x0070
 };
 
 typedef struct _smi {
@@ -36,10 +37,11 @@ BOOL menusys_create(const MSYSITEM *item, VRAMHDL icon,
 								void (*cmd)(MENUID id), const char *title);
 void menusys_destroy(void);
 
-BOOL menusys_open(void);
+BOOL menusys_open(int x, int y);
 void menusys_close(void);
 
 void menusys_moving(int x, int y, int btn);
+void menusys_key(UINT key);
 
 void *menusys_msg(int ctrl, MENUID id, void *arg);
 

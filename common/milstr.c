@@ -8,7 +8,7 @@ BOOL milstr_cmp(const char *str, const char *cmp) {
 
 	while(1) {
 		s = (BYTE)*str++;
-		if ((unsigned)((s ^ 0x20) - 0xa1) < 0x3c) {
+		if ((((s ^ 0x20) - 0xa1) & 0xff) < 0x3c) {
 			if (s != (BYTE)*cmp++) {
 				goto mscp_err;
 			}
@@ -16,11 +16,11 @@ BOOL milstr_cmp(const char *str, const char *cmp) {
 			c = (BYTE)*cmp++;
 		}
 		else {
-			if ((unsigned)(s - 'A') < 0x1a) {
+			if (((s - 'A') & 0xff) < 0x1a) {
 				s |= 0x20;
 			}
 			c = (BYTE)*cmp++;
-			if ((unsigned)(c - 'A') < 0x1a) {
+			if (((c - 'A') & 0xff) < 0x1a) {
 				c |= 0x20;
 			}
 		}
@@ -36,7 +36,6 @@ BOOL milstr_cmp(const char *str, const char *cmp) {
 mscp_err:
 	return(1);
 }
-
 
 BOOL milstr_memcmp(const char *str, const char *cmp) {
 
@@ -67,7 +66,6 @@ BOOL milstr_memcmp(const char *str, const char *cmp) {
 	} while(s == c);
 	return(1);
 }
-
 
 BOOL milstr_extendcmp(const char *str, const char *cmp) {
 
@@ -107,7 +105,6 @@ BOOL milstr_extendcmp(const char *str, const char *cmp) {
 	return(0);
 }
 
-
 int milstr_kanji1st(const char *str, int pos) {
 
 	int		ret;
@@ -120,7 +117,6 @@ int milstr_kanji1st(const char *str, int pos) {
 	return(ret);
 }
 
-
 int milstr_kanji2nd(const char *str, int pos) {
 
 	int		ret = 0;
@@ -130,7 +126,6 @@ int milstr_kanji2nd(const char *str, int pos) {
 	}
 	return(ret);
 }
-
 
 void milstr_ncpy(char *dst, const char *src, int maxlen) {
 
@@ -148,7 +143,6 @@ void milstr_ncpy(char *dst, const char *src, int maxlen) {
 		dst[i] = '\0';
 	}
 }
-
 
 void milstr_ncat(char *dst, const char *src, int maxlen) {
 
@@ -170,7 +164,6 @@ void milstr_ncat(char *dst, const char *src, int maxlen) {
 		dst[i] = '\0';
 	}
 }
-
 
 int milstr_getarg(char *str, char *arg[], int maxarg) {
 
@@ -206,7 +199,6 @@ int milstr_getarg(char *str, char *arg[], int maxarg) {
 	return(ret);
 }
 
-
 long milstr_solveHEX(const char *str) {
 
 	long	ret;
@@ -233,7 +225,6 @@ long milstr_solveHEX(const char *str) {
 	}
 	return(ret);
 }
-
 
 long milstr_solveINT(const char *str) {
 
@@ -262,20 +253,5 @@ long milstr_solveINT(const char *str) {
 		}
 	}
 	return(ret * s);
-}
-
-
-void milstr_mkstr255(BYTE *dst, const char *src) {
-
-	int		len;
-
-	len = strlen(src);
-	if (len >= 255) {
-		len = 255;
-	}
-	dst[0] = (BYTE)len;
-	if (len) {
-		CopyMemory((char *)dst+1, src, len);
-	}
 }
 

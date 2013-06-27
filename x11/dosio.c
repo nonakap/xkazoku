@@ -1,4 +1,4 @@
-/*	$Id: dosio.c,v 1.3 2003/04/22 15:23:27 yui Exp $	*/
+/*	$Id: dosio.c,v 1.6 2003/06/26 17:58:31 yui Exp $	*/
 
 #include "compiler.h"
 
@@ -27,7 +27,7 @@ dosio_term(void)
 	/* Nothing to do. */
 }
 
-/* ¥Õ¥¡¥¤¥ëÁàºî */
+/* ƒtƒ@ƒCƒ‹‘€ì */
 FILEH
 file_open(const char *filename)
 {
@@ -87,6 +87,32 @@ file_close(FILEH handle)
 	return 0;
 }
 
+UINT
+file_getsize(FILEH handle)
+{
+	struct stat sb;
+
+	if (fstat(fileno(handle), &sb) == 0)
+		return sb.st_size;
+	return 0;
+}
+
+short
+file_attr(const char *filename)
+{
+	struct stat sb;
+	short attr = FILE_ATTRIBUTE_NORMAL;
+
+	if (stat(filename, &sb) == 0) {
+		if (S_ISDIR(sb.st_mode))
+			return FILE_ATTRIBUTE_DIRECTORY;
+		if (!(sb.st_mode & S_IWUSR))
+			attr |= FILE_ATTRIBUTE_READONLY;
+		return attr;
+	}
+	return -1;
+}
+
 short
 file_getdatetime(FILEH handle, DOSDATE *dosdate, DOSTIME *dostime)
 {
@@ -119,16 +145,13 @@ file_delete(const char *filename)
 	return -1;
 }
 
-/* ¥«¥ì¥ó¥È¥Õ¥¡¥¤¥ëÁàºî */
+/* ƒJƒŒƒ“ƒgƒtƒ@ƒCƒ‹‘€ì */
 void
 file_setcd(const char *exename)
 {
-	int len = strlen(exename);
 
-	strncpy(curpath, exename, sizeof(curpath));
-	if (len > 0 && curpath[0] == '/')
-		plusyen(curpath, sizeof(curpath));
-	curfilep = curpath + strlen(curpath) + 1;
+	milstr_ncpy(curpath, exename, sizeof(curpath));
+	curfilep = getFileName(curpath);
 	*curfilep = '\0';
 }
 
@@ -136,7 +159,7 @@ char *
 file_getcd(const char *filename)
 {
 
-	strncpy(curfilep, filename, curfilep - curpath);
+	milstr_ncpy(curfilep, filename, sizeof(curpath) - (curfilep - curpath));
 	return curpath;
 }
 
@@ -144,7 +167,7 @@ FILEH
 file_open_c(const char *filename)
 {
 
-	strncpy(curfilep, filename, curfilep - curpath);
+	milstr_ncpy(curfilep, filename, sizeof(curpath) - (curfilep - curpath));
 	return file_open(curpath);
 }
 
@@ -152,7 +175,7 @@ FILEH
 file_open_rb_c(const char *filename)
 {
 
-	strncpy(curfilep, filename, curfilep - curpath);
+	milstr_ncpy(curfilep, filename, sizeof(curpath) - (curfilep - curpath));
 	return file_open_rb(curpath);
 }
 
@@ -160,7 +183,7 @@ FILEH
 file_create_c(const char *filename)
 {
 
-	strncpy(curfilep, filename, curfilep - curpath);
+	milstr_ncpy(curfilep, filename, sizeof(curpath) - (curfilep - curpath));
 	return file_create(curpath);
 }
 
@@ -168,8 +191,16 @@ short
 file_delete_c(const char *filename)
 {
 
-	strncpy(curfilep, filename, curfilep - curpath);
+	milstr_ncpy(curfilep, filename, sizeof(curpath) - (curfilep - curpath));
 	return file_delete(curpath);
+}
+
+short
+file_attr_c(const char *filename)
+{
+
+	milstr_ncpy(curfilep, filename, sizeof(curpath) - (curfilep - curpath));
+	return file_attr_c(curpath);
 }
 
 char *
@@ -229,62 +260,6 @@ cutExtName(char *filename)
 		*q = '\0';
 }
 
-int
-kanji1st(char *str, int pos)
-{
-	int ret = 0;
-	BYTE c;
-
-	for (; pos > 0; pos--) {
-		c = (BYTE)str[pos];
-		if (!((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xfc)))
-			break;
-		ret ^= 1;
-	}
-	return ret;
-}
-
-int
-kanji2nd(char *str, int pos)
-{
-	int ret = 0;
-	BYTE c;
-
-	while (pos-- > 0) {
-		c = (BYTE)str[pos];
-		if (!((0x81 <= c && c <= 0x9f) || (0xe0 <= c && c <= 0xfc)))
-			break;
-		ret ^= 1;
-	}
-	return ret;
-}
-
-
-int
-ex_a2i(const char *str, int min, int max)
-{
-	int	ret = 0;
-	char	c;
-
-	if (str == NULL)
-		return(min);
-
-	for (;;) {
-		c = *str++;
-		if (c == ' ')
-			continue;
-		if ((c < '0') || (c > '9'))
-			break;
-		ret = ret * 10 + (c - '0');
-	}
-
-	if (ret < min)
-		return min;
-	else if (ret > max)
-		return max;
-	return ret;
-}
-
 void
 cutyen(char *str)
 {
@@ -310,52 +285,3 @@ plusyen(char *str, int len)
 	}
 }
 
-
-void
-fname_mix(char *str, char *mix, int size)
-{
-	char *p;
-	int len;
-	char c;
-	char check;
-
-	cutFileName(str);
-	if (mix[0] == '/')
-		str[0] = '\0';
-
-	len = strlen(str);
-	p = str + len;
-	check = '.';
-	while (len < size) {
-		c = *mix++;
-		if (c == '\0')
-			break;
-
-		if (c == check) {
-			/* current dir */
-			if (mix[0] == '/') {
-				mix++;
-				continue;
-			}
-			/* parent dir */
-			if (mix[0] == '.' && mix[1] == '/') {
-				mix += 2;
-				cutyen(str);
-				cutFileName(str);
-				len = strlen(str);
-				p = str + len;
-				continue;
-			}
-		}
-		if (c == '/')
-			check = '.';
-		else
-			check = 0;
-		*p++ = c;
-		len++;
-	}
-	if (p < str + len)
-		*p = '\0';
-	else
-		str[len - 1] = '\0';
-}

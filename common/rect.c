@@ -11,7 +11,6 @@ BOOL rect_in(const RECT_T *rect, int x, int y) {
 	return(FALSE);
 }
 
-
 int rect_num(const RECT_T *rect, int cnt, int x, int y) {
 
 	int		i;
@@ -27,7 +26,6 @@ int rect_num(const RECT_T *rect, int cnt, int x, int y) {
 	return(-1);
 }
 
-
 BOOL rect_isoverlap(const RECT_T *r1, const RECT_T *r2) {
 
 	if ((r1->left >= r2->right) ||
@@ -39,6 +37,47 @@ BOOL rect_isoverlap(const RECT_T *r1, const RECT_T *r2) {
 	return(TRUE);
 }
 
+void rect_enumout(const RECT_T *tag, const RECT_T *base,
+				void *arg, void (*outcb)(void *arg, const RECT_T *rect)) {
+
+	RECT_T	rect;
+
+	if ((tag != NULL) && (base != NULL) && (outcb != NULL)) {
+		// base.top -> tag.top
+		rect.top = base->top;
+		rect.bottom = min(tag->top, base->bottom);
+		if (rect.top < rect.bottom) {
+			rect.left = base->left;
+			rect.right = base->right;
+			outcb(arg, &rect);
+				rect.top = rect.bottom;
+		}
+
+		// -> tag.bottom
+		rect.bottom = min(tag->bottom, base->bottom);
+		if (rect.top < rect.bottom) {
+			rect.left = base->left;
+			rect.right = min(tag->left, base->right);
+			if (rect.left < rect.right) {
+				outcb(arg, &rect);
+			}
+			rect.left = max(tag->right, base->left);
+			rect.right = base->right;
+			if (rect.left < rect.right) {
+				outcb(arg, &rect);
+			}
+			rect.top = rect.bottom;
+		}
+
+		// -> base.bottom
+		rect.bottom = base->bottom;
+		if (rect.top < rect.bottom) {
+			rect.left = base->left;
+			rect.right = base->right;
+			outcb(arg, &rect);
+		}
+	}
+}
 
 void rect_add(RECT_T *dst, const RECT_T *src) {
 
@@ -56,14 +95,12 @@ void rect_add(RECT_T *dst, const RECT_T *src) {
 	}
 }
 
-
 void unionrect_rst(UNIRECT *unirct) {
 
 	if (unirct) {
 		unirct->type = 0;
 	}
 }
-
 
 void unionrect_add(UNIRECT *unirct, const RECT_T *rct) {
 
@@ -105,7 +142,6 @@ void unionrect_add(UNIRECT *unirct, const RECT_T *rct) {
 ura_end:
 	return;
 }
-
 
 const RECT_T *unionrect_get(const UNIRECT *unirct) {
 

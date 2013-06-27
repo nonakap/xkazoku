@@ -1,141 +1,111 @@
 
-ˇビルドコ〖ド
+丒價儖僪僐乕僪
 
-　common/*.c
-　sound/*.c
-　menu/*.c
-　menubase/*.c
-　isfcmd/*.c
-　*.c
+丂common/*.c
+丂sound/*.c
+丂menu/*.c
+丂menubase/*.c
+丂isfcmd/*.c
+丂*.c
 
-　と OS巴赂婶をビルドして布さい。
+丂偲 OS埶懚晹傪價儖僪偟偰壓偝偄丅
 
-　QVGA惹を侯るには SIZE_QVGAを年盗して布さい。
+丂QVGA斉傪嶌傞偵偼 SIZE_QVGA傪掕媊偟偰壓偝偄丅
 
 
 
-ˇ蝗脱コンパイラ
+丒巊梡僐儞僷僀儔
 
-　Win9x/akira.dsw      VC++6.0
-　WinCE/akira.dsw      VC++5.0
+丂Win9x/akira.dsw      VC++6.0
+丂WinCE/akira.dsw      VC++5.0
   WinCE/akiraCE.vcw    eVC++3
-　MacOSX/Akira PPC     Code Warrior5
-　MacOSX/Akira Carbon  Code Warrior6
+丂MacOSX/Akira PPC     Code Warrior5
+丂MacOSX/Akira Carbon  Code Warrior6
 
 
 
-ˇOS巴赂婶
+丒OS埶懚晹
 
 compiler.h
 
-　ogg vorbisを蝗脱するには OGGVORBIS_LIB を年盗して スタティックライブラリ
-をリンクして布さい。
+丂ogg vorbis傪巊梡偡傞偵偼 OGGVORBIS_LIB 傪掕媊偟偰 僗僞僥傿僢僋儔僀僽儔儕
+傪儕儞僋偟偰壓偝偄丅
 
-　その戮のライブラリ蝗脱のdefineは笆布の奶り
-　Amethyst - AMETHSYT_OVL もしくは AMETHYST_LIB
-　LEN - LEN_LIB
-　DAME - DAMEDEC_LIB
+丂偦偺懠偺儔僀僽儔儕巊梡偺define偼埲壓偺捠傝
+丂Amethyst - AMETHSYT_OVL 傕偟偔偼 AMETHYST_LIB
+丂LEN - LEN_LIB
+丂DAME - DAMEDEC_LIB
 
 
 
-ˇ败竣
+丒堏怉
 
-　タ〖ゲットマシンには笆布のデバイスが涩寇です。
+丂僞乕僎僢僩儅僔儞偵偼埲壓偺僨僶僀僗偑昁恵偱偡丅
 
-　ˇQVGA笆惧の１绥のサ〖フェス
-　ˇ１チャンネルのサウンドストリ〖ム
-　ˇポインティングデバイス
+丂丒QVGA埲忋偺侾枃偺僒乕僼僃僗
+丂丒侾僠儍儞僱儖偺僒僂儞僪僗僩儕乕儉
+丂丒億僀儞僥傿儞僌僨僶僀僗
 
 
 scrnmng:
 
 	void scrnmng_draw(const RECT_T *rct);
-	ⅹ mainvram婶尸を闪茶
-	ⅹ menuvramが赂哼(menuvram != NULL)した眷圭、
-		αプレ〖ンによって笆布の借妄を乖なう
-			0: mainvram婶尸を闪茶
-			1 or 2: 部もしない(scrnmng_menudrawでの闪茶婶尸)
+	仺 mainvram晹暘傪昤夋
+	仺 menuvram偑懚嵼(menuvram != NULL)偟偨応崌丄
+		兛僾儗乕儞偵傛偭偰埲壓偺張棟傪峴側偆
+			0: mainvram晹暘傪昤夋
+			1 or 2: 壗傕偟側偄(scrnmng_menudraw偱偺昤夋晹暘)
 
 	void scrnmng_menudraw(const RECT_T *rct);
-	ⅹ menuvramのαが∧
-			0: 部もしない (mainvram闪茶婶尸)
-			1: mainvramを闪茶し menuvramのαを0にする (menuvram deleted mark)
-			2: menuvramを闪茶 (menuvram闪茶婶尸)
+	仺 menuvram偺兛偑乧
+			0: 壗傕偟側偄 (mainvram昤夋晹暘)
+			1: mainvram傪昤夋偟 menuvram偺兛傪0偵偡傞 (menuvram deleted mark)
+			2: menuvram傪昤夋 (menuvram昤夋晹暘)
 
 
 
 fontmng:
 
 	BOOL fontmng_getsize(void *hdl, const char *string, POINT_T *pt);
-	ⅹ 回年フォントのサイズを手す
-	ⅹ stringはSJIS、提り猛は pt
+	仺 巜掕僼僅儞僩偺僒僀僘傪曉偡
+	仺 string偼SJIS丄栠傝抣偼 pt
 
 	BOOL fontmng_getdrawsize(void *hdl, const char *string, POINT_T *pt);
-	ⅹ 回年フォントの闪茶サイズを手す
-	ⅹ stringはSJIS、提り猛は pt
+	仺 巜掕僼僅儞僩偺昤夋僒僀僘傪曉偡
+	仺 string偼SJIS丄栠傝抣偼 pt
 
 	FNTDAT fontmng_get(void *hdl, const char *string);
-	ⅹ 回年フォントデ〖タを手す
-	ⅹ stringはSJISで 涩ず染逞/链逞１矢机
+	仺 巜掕僼僅儞僩僨乕僞傪曉偡
+	仺 string偼SJIS偱 昁偢敿妏/慡妏侾暥帤
 
 	typedef struct {
-		int		width;		// フォントバッファサイズ玻升
-		int		height;		// フォントバッファサイズ侥升
-		int		pitch;		// フォントピッチ
+		int		width;		// 僼僅儞僩僶僢僼傽僒僀僘墶暆
+		int		height;		// 僼僅儞僩僶僢僼傽僒僀僘廲暆
+		int		pitch;		// 僼僅儞僩僺僢僠
 	} _FNTDAT, *FNTDAT;
-	このストラクチャの木稿にフォントデ〖タが FNTDAT.width * FNTDAT.height
-	バイト尸赂哼する。
+	偙偺僗僩儔僋僠儍偺捈屻偵僼僅儞僩僨乕僞偑 FNTDAT.width * FNTDAT.height
+	僶僀僩暘懚嵼偡傞丅
 
 
 
 inputmng:
 
 	DWORD inputmng_getmouse(int *x, int *y);
-	ⅹ マウス觉轮を手す
+	仺 儅僂僗忬懺傪曉偡
 
 	void inputmng_resetmouse(DWORD mask);
-	ⅹ マウス觉轮のリセット
+	仺 儅僂僗忬懺偺儕僙僢僩
 
 	DWORD inputmng_getkey(void);
-	ⅹ　キ〖ボ〖ド攫鼠を手す
+	仺丂僉乕儃乕僪忣曬傪曉偡
 
 	void inputmng_resetkey(DWORD mask);
-	ⅹ　キ〖ボ〖ド攫鼠をリセット
+	仺丂僉乕儃乕僪忣曬傪儕僙僢僩
 
-　　手り猛のビットマップはヘッダを徊救して布さい。
-
-
-
-その戮のファイル
-　丹蜗ないでつ∧ソ〖スを斧て布さい
+丂丂曉傝抣偺價僢僩儅僢僾偼僿僢僟傪嶲徠偟偰壓偝偄丅
 
 
+偦偺懠偺僼傽僀儖
+丂婥椡側偄偱偮乧僜乕僗傪尒偰壓偝偄
 
-
-
-* LP64滦炳步...
-
-　WORD, DWORDを undef
-
-
-long file_seek(FILEH handle, long pointer, int method);
-UINT file_read(FILEH handle, void *data, UINT length);
-UINT file_write(FILEH handle, const void *data, UINT length);
-
-void *fontmng_create(int size, UINT type, const TCHAR *fontface);
-
-UINT inputmng_getmouse(int *x, int *y);
-void inputmng_resetmouse(UINT mask);
-UINT inputmng_getkey(void);
-void inputmng_resetkey(UINT mask);
-
-BOOL taskmng_sleep(UINT32 tick);
-
-int gamemsg_send(UINT msg, long param);
-
-
-
-// その戮恃构
-void moviemng_play(const char *path, SCRN_T *scrn);
-簇眶叹恃构
 

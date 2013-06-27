@@ -3,71 +3,93 @@
 #include	"analyze.h"
 #include	"arccheck.h"
 #include	"isfcheck.h"
-#include	"gamedef.tbl"
+#include	"savcheck.h"
 
 
-typedef struct {
-	char	company[64];
-	char	title[64];
-	char	key[64];
-} _SUF, *SUF;
+// ----
 
-static BOOL sufload(void *arg, const char *para,
-									const char *key, const char *data) {
+enum {
+	MODE_LIST	= 0x01,
+	MODE_CHECK	= 0x02,
+	MODE_DUMP	= 0x04,
+	MODE_SAVE	= 0x08
+};
 
-	SUF		suf;
+static const char usage[] =									\
+			"Usage: analyze [option] archive [filename]\n";
 
-	suf = (SUF)arg;
-	if (!milstr_cmp(para, "StartUpInfo")) {
-		if (!milstr_cmp(key, "COMPANY")) {
-			milstr_ncpy(suf->company, data, sizeof(suf->company));
-		}
-		else if (!milstr_cmp(key, "TITLE")) {
-			milstr_ncpy(suf->title, data, sizeof(suf->title));
-		}
-		else if (!milstr_cmp(key, "KEY")) {
-			milstr_ncpy(suf->key, data, sizeof(suf->key));
-		}
-	}
-	return(FALSE);
-}
+static const char *isfname[] = {"DRSSNR", "TRSNR", "ISF"};
 
-static const GAMEDEF *readsuf(const char *path) {
 
-	_SUF		suf;
-	UINT		cnt;
-const GAMEDEF	*r;
 
-	if (path == NULL) {
-		log_disp("%s: couldn't open.", path);
-		goto rs_err;
-	}
 
-	profile_enum(path, &suf, sufload);
-	log_disp("COMPANY: %s", suf.company);
-	log_disp("TITLE: %s", suf.title);
-	log_disp("KEY: %s", suf.key);
+// ---- set default dir
 
-	r = gamedef;
-	cnt = sizeof(gamedef) / sizeof(GAMEDEF);
-	do {
-		if (((r->company == NULL) ||
-				(!milstr_cmp(r->company, suf.company))) &&
-			((r->key == NULL) || (!milstr_cmp(r->key, suf.key)))) {
-			return(r);
-		}
-		r++;
-	} while(--cnt);
+static void setcd(const char *arc) {
 
-rs_err:
-	return(NULL);
+#if defined(WIN32)
+
+	char	module[MAX_PATH];
+
+#if !defined(UNICODE)
+	GetModuleFileName(NULL, module, sizeof(module));
+#else
+	TCHAR	module2[MAX_PATH];
+	GetModuleFileName(NULL, module2, sizeof(module2)/sizeof(TCHAR));
+	WideCharToMultiByte(CP_ACP, 0, module2, -1,
+										module, sizeof(module), NULL, NULL);
+#endif
+	file_setcd(module);
+	(void)arc;
+
+#elif defined(MACOS)
+
+#ifdef AKIRAGCC
+	file_setcd("::::");
+#endif
+	(void)arc;
+
+#elif defined(X11)
+
+	file_setcd(arc);
+
+#else
+
+	(void)arc;
+
+#endif
 }
 
 
 // ----
 
-static const char usage[] =									\
-			"Usage: analyze [option] archive [filename]\n";
+static BOOL getisfname(const char *suf, const char *key,
+											char *path, int size) {
+
+	int		i;
+	BOOL	subdir;
+
+	milstr_ncpy(path, suf, size);
+	subdir = FALSE;
+	while(1) {
+		for (i=0; i<(int)(sizeof(isfname)/sizeof(char *)); i++) {
+			cutFileName(path);
+			milstr_ncat(path, isfname[i], size);
+			if (file_attr(path) != -1) {
+				return(SUCCESS);
+			}
+		}
+		if ((subdir) || (!key[0])) {
+			break;
+		}
+		subdir = TRUE;
+		cutFileName(path);
+		milstr_ncat(path, key, size);
+		plusyen(path, size);
+	}
+	return(FAILURE);
+}
+
 
 int main(int argc, char **argv) {
 
@@ -76,16 +98,46 @@ int main(int argc, char **argv) {
 	char		*arc;
 	char		*file;
 	char		isf[MAX_PATH];
-const GAMEDEF	*def;
 	int			warnlevel = 0;
+	int			mode = 0;
+	char		c;
+	SUF_T		suf;
+	SYS_T		sys;
 
 	arc = NULL;
 	file = NULL;
 	for (i=1; i<argc; i++) {
 		ptr = argv[i];
-		if ((ptr[0] == '/') || (ptr[0] == '-')) {
-			if ((ptr[1] == 'w') || (ptr[1] == 'W')) {
-				warnlevel = ptr[2] - 0x30;
+#if defined(_WIN32)
+		if ((ptr[0] == '/') || (ptr[0] == '-'))
+#else
+		if (ptr[0] == '-')
+#endif
+		{
+			ptr++;
+			c = *ptr++;
+			if ((c == 'w') || (c == 'W')) {
+				warnlevel = ptr[0] - 0x30;
+			}
+			else {
+				while(1) {
+					if (c == '\0') {
+						break;
+					}
+					if ((c == 'l') || (c == 'L')) {
+						mode |= MODE_LIST;
+					}
+					else if ((c == 'c') || (c == 'C')) {
+						mode |= MODE_CHECK;
+					}
+					else if ((c == 'd') || (c == 'D')) {
+						mode |= MODE_DUMP;
+					}
+					else if ((c == 's') || (c == 'S')) {
+						mode |= MODE_SAVE;
+					}
+					c = *ptr++;
+				}
 			}
 		}
 		else if (arc == NULL) {
@@ -101,32 +153,45 @@ const GAMEDEF	*def;
 		return(1);
 	}
 
+	setcd(arc);
+
+	gamedef_create();
 	log_open();
 	ptr = getExtName(arc);
 	if (!milstr_cmp(ptr, "SUF")) {
-		def = readsuf(arc);
-		if (def != NULL) {
-			milstr_ncpy(isf, arc, sizeof(isf));
-			cutFileName(isf);
-			milstr_ncat(isf, "ISF", sizeof(isf));
-			if (file == NULL) {
-//				isfcheck_cmdlist(isf);
-				isfcheck_cmdcheck(isf, def->exever, def->gametype, warnlevel);
+		gamedef_loadsuf(arc, &suf, &sys);
+		log_disp("COMPANY: %s", suf.company);
+		log_disp("TITLE: %s", suf.title);
+		log_disp("KEY: %s", suf.key);
+		if (getisfname(arc, suf.key, isf, sizeof(isf)) == SUCCESS) {
+			if (!mode) {
+				mode = MODE_CHECK;
 			}
-			else {
+			if (mode & MODE_LIST) {
+				isfcheck_cmdlist(isf, file);
+			}
+			if (mode & MODE_CHECK) {
+				isfcheck_cmdcheck(isf, file,
+										sys.version, sys.type, warnlevel);
+			}
+			if (mode & MODE_DUMP) {
 				isfcheck_dump(isf, file);
+			}
+			if (mode & MODE_SAVE) {
+				savcheck(isf, arc, suf.key, sys.defbits, sys.defflags);
 			}
 		}
 	}
 	else {
 		if (file == NULL) {
-			arccheck_list(arc);
+			arccheck_list(arc, mode & MODE_CHECK);
 		}
 		else {
 			arccheck_get(arc, file);
 		}
 	}
 	log_close();
+	gamedef_destroy();
 
 	return(0);
 }

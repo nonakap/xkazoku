@@ -56,19 +56,27 @@ typedef struct {
 extern "C" {
 #endif
 
-UINT bmpdata_getalign(BMPINFO *bi);
-UINT bmpdata_getdatasize(BMPINFO *bi);
+UINT bmpdata_getalignex(BMPINFO *bi, BOOL pad);
+UINT bmpdata_getdatasizeex(BMPINFO *bi, BOOL pad);
 
-void bmpdata_setinfo(BMPINFO *bi, const BMPDATA *inf);
+void bmpdata_setinfo(BMPINFO *bi, const BMPDATA *inf, BOOL setsize);
 BOOL bmpdata_getinfo(const BMPINFO *bi, BMPDATA *inf);
 
 VRAMHDL bmpdata_load8(const char *name);
 
-VRAMHDL bmpdata_vram24cnv(int width, int height,
-											BMPINFO *bi, const BYTE *data);
-BYTE *bmpdata_bmp24cnv(BMPINFO *bi, VRAMHDL vram);
+VRAMHDL bmpdata_vram24cnvex(int width, int height,
+							BMPINFO *bi, const BYTE *data, BOOL pad);
+BYTE *bmpdata_bmp24cnvex(BMPINFO *bi, VRAMHDL vram, BOOL pad);
 
 #ifdef __cplusplus
 }
 #endif
+
+
+// ---- Macro
+
+#define	bmpdata_getalign(a)				bmpdata_getalignex(a, TRUE)
+#define	bmpdata_getdatasize(a)			bmpdata_getdatasizeex(a, TRUE)
+#define	bmpdata_vram24cnv(a, b, c, d)	bmpdata_vram24cnvex(a, b, c, d, TRUE)
+#define	bmpdata_bmp24cnv(a, b)			bmpdata_bmp24cnvex(a, b, TRUE)
 

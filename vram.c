@@ -7,6 +7,7 @@ VRAMHDL vram_create(int width, int height, BOOL alpha, int bpp) {
 	int			size;
 	int			allocsize;
 	int			xalign;
+	int			alphasize;
 	VRAMHDL		ret;
 
 	if (bpp == DEFAULT_BPP) {
@@ -14,14 +15,16 @@ VRAMHDL vram_create(int width, int height, BOOL alpha, int bpp) {
 	}
 	size = width * height;
 	xalign = (bpp + 7) >> 3;
-	if ((width <= 0) || (size <= 0) || (size > 0x400000) ||
+	if ((width <= 0) || (size <= 0) || (size > 0x1000000) ||
 		(xalign <= 0) || (xalign > 4)) {
 		return(NULL);
 	}
 	allocsize = sizeof(_VRAMHDL);
 	allocsize += size * xalign;
+	alphasize = 0;
 	if (alpha) {
-		allocsize += size;
+		alphasize = (size + 7) & (~7);				// boundary!!
+		allocsize += alphasize;
 	}
 #ifdef TRACE
 	{
@@ -42,7 +45,7 @@ VRAMHDL vram_create(int width, int height, BOOL alpha, int bpp) {
 		ret->scrnsize = size;
 		if (alpha) {
 			ret->alpha = (BYTE *)(ret + 1);
-			ret->ptr = ret->alpha + size;
+			ret->ptr = ret->alpha + alphasize;
 		}
 		else {
 			ret->ptr = (BYTE *)(ret + 1);
@@ -343,15 +346,13 @@ void vram_fillalpha(VRAMHDL hdl, const RECT_T *rect, BYTE alpha) {
 	int		remain;
 	BYTE	*p;
 
-	if (hdl == NULL) {
+	if ((hdl == NULL) || (hdl->alpha == NULL)) {
 		return;
 	}
 	if (rect == NULL) {
 		p = hdl->ptr;
 		remain = hdl->scrnsize;
-		if (hdl->alpha) {
-			FillMemory(hdl->alpha, hdl->scrnsize, alpha);
-		}
+		FillMemory(hdl->alpha, hdl->scrnsize, alpha);
 	}
 	else {
 		pos = max(rect->left, 0);
@@ -361,14 +362,12 @@ void vram_fillalpha(VRAMHDL hdl, const RECT_T *rect, BYTE alpha) {
 		ptr += pos * hdl->width;
 		height = min(rect->bottom, hdl->height) - pos;
 		if ((width > 0) && (height > 0)) {
-			if (hdl->alpha) {
-				p = hdl->alpha + ptr;
-				remain = height;
-				do {
-					FillMemory(p, width, alpha);
-					p += hdl->width;
-				} while(--remain);
-			}
+			p = hdl->alpha + ptr;
+			remain = height;
+			do {
+				FillMemory(p, width, alpha);
+				p += hdl->width;
+			} while(--remain);
 		}
 	}
 }
@@ -492,7 +491,7 @@ void vram_fillex(VRAMHDL hdl, const RECT_T *rect, UINT32 color, BYTE alpha) {
 	}
 }
 
-void vram_getrect(VRAMHDL hdl, RECT_T *rct) {
+void vram_getrect(const VRAMHDL hdl, RECT_T *rct) {
 
 	int		x, y;
 
@@ -506,7 +505,7 @@ void vram_getrect(VRAMHDL hdl, RECT_T *rct) {
 	}
 }
 
-VRAMHDL vram_copy(VRAMHDL hdl) {
+VRAMHDL vram_copy(const VRAMHDL hdl) {
 
 	VRAMHDL		ret = NULL;
 	int			size;
@@ -540,7 +539,7 @@ vc_exit:
 	return(ret);
 }
 
-BOOL vram_cliprect(RECT_T *clip, VRAMHDL vram, const RECT_T *rct) {
+BOOL vram_cliprect(RECT_T *clip, const VRAMHDL vram, const RECT_T *rct) {
 
 	if (vram == NULL) {
 		return(FAILURE);
@@ -561,6 +560,25 @@ BOOL vram_cliprect(RECT_T *clip, VRAMHDL vram, const RECT_T *rct) {
 	clip->right = min(rct->right, vram->width);
 	clip->bottom = min(rct->bottom, vram->height);
 	if ((clip->top >= clip->bottom) || (clip->left >= clip->right)) {
+		return(FAILURE);
+	}
+	return(SUCCESS);
+}
+
+BOOL vram_cliprectex(RECT_T *clip, const VRAMHDL vram, const RECT_T *rct) {
+
+	if ((vram == NULL) || (clip == NULL)) {
+		return(FAILURE);
+	}
+	vram_getrect(vram, clip);
+	if (rct == NULL) {
+		return(SUCCESS);
+	}
+	clip->left = max(clip->left, rct->left);
+	clip->top = max(clip->top, rct->top);
+	clip->right = min(clip->right, rct->right);
+	clip->bottom = min(clip->bottom, rct->bottom);
+	if ((clip->left >= clip->right) || (clip->top >= clip->bottom)) {
 		return(FAILURE);
 	}
 	return(SUCCESS);

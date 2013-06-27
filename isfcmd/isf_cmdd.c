@@ -12,7 +12,7 @@
 #include	"isf_cmd.h"
 
 
-// MPM : Ê£¿ô¹ÔÆ±»şÉ½¼¨¤Î¼Â¹Ô (T.Yui)
+// MPM : •¡”s“¯•\¦‚ÌÀs (T.Yui)
 int isfcmd_d6(SCR_OPE *op) {
 
 	BYTE	num;
@@ -26,7 +26,7 @@ int isfcmd_d6(SCR_OPE *op) {
 }
 
 
-// MPC : ÅĞÏ¿¹Ô¤ÎÇË´ş (T.Yui)		// °ì±ş¤ä¤Ã¤È¤¯
+// MPC : “o˜^s‚Ì”jŠü (T.Yui)		// ˆê‰‚â‚Á‚Æ‚­
 int isfcmd_d7(SCR_OPE *op) {
 
 	textdisp_multireset();

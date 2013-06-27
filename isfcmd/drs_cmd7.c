@@ -9,25 +9,36 @@
 
 #include	"compiler.h"
 #include	"gamecore.h"
-#include	"arcfile.h"
 #include	"drs_cmd.h"
-#include	"sound.h"
-#include	"sstream.h"
 
 
-// SEP : ¸ú²Ì²»¤ÎºÆÀ¸ (T.Yui)
+// SEP : Œø‰Ê‰¹‚ÌÄ¶
 int drscmd_77(SCR_OPE *op) {
 
 	SINT32	num;
+	BYTE	cmd;
 
-	if (scr_getval(op, &num) != SUCCESS) {
+	if ((scr_getval(op, &num) != SUCCESS) ||
+		(scr_getbyte(op, &cmd) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
 	if ((num >= 0) && (num < SOUNDTRK_MAXSE)) {
-		soundmix_rew(SOUNDTRK_SE + num);
-		soundmix_play(SOUNDTRK_SE + num, 0, 0);
+		sndplay_seplay(num | 0x20, 0);
 	}
 
+	return(GAMEEV_SUCCESS);
+}
+
+
+// DAE : CDDA‚Ìİ’è
+int drscmd_79(SCR_OPE *op) {
+
+	SINT32	cddaend;
+
+	if (scr_getval(op, &cddaend) != SUCCESS) {
+		return(GAMEEV_WRONGLENG);
+	}
+	sndplay_cddaset(2, cddaend);
 	return(GAMEEV_SUCCESS);
 }
 

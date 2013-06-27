@@ -10,7 +10,7 @@ void *variant_create(int max, int type) {
 		case VARIANT_BIT:
 		case VARIANT_SINT32:
 			size = max * type;
-			size /= 32;					// Æ¬°­¤¤¡Ä
+			size /= 32;					// “ªˆ«‚¢c
 			size++;
 			size *= 4;
 			break;

@@ -6,28 +6,63 @@
 
 
 typedef struct {
-	BYTE	used[256];
+	BYTE	used[0x20];
+	BYTE	usedef[0x20];
+	BYTE	usedef3[0x20];
 } _CMDLIST, *CMDLIST;
 
 
 static int cmdlist(SCRHDL hdl, SCROPE ope, void *arg) {
 
-	CMDLIST		cl;
+	CMDLIST	cl;
+	BYTE	cmd;
+	BYTE	cmd2;
 
 	cl = (CMDLIST)arg;
-	cl->used[ope->cmd & 0xff] = 1;
+	cl->used[(ope->cmd >> 3) & 0x1f] |= (1 << (ope->cmd & 7));
+	if ((ope->cmd == 0xef) && (ope->remain >= 1)) {
+		cmd = ope->ptr[0];
+		cl->usedef[(cmd >> 3) & 0x1f] |= (1 << (cmd & 7));
+		if ((cmd == 3) && (ope->remain >= 2)) {
+			cmd2 = ope->ptr[1];
+			cl->usedef3[(cmd2 >> 3) & 0x1f] |= (1 << (cmd2 & 7));
+		}
+	}
 	return(0);
 }
 
-void isfcheck_cmdlist(const char *path) {
+static void listdisp(BYTE *bit, int range) {
+
+	int		i;
+	char	*p;
+	char	work[128];
+
+	i = 0;
+	while(i < range) {
+		p = work + ((i & 0x0f) * 3);
+		if (bit[i >> 3] & (1 << (i & 7))) {
+			sprintf(p, "%02x ", i);
+		}
+		else {
+			strcpy(p, "   ");
+		}
+		i++;
+		if ((i & 0xf) == 0) {
+			log_disp("%s", work);
+		}
+	}
+	if ((i & 0xf) != 0) {
+		log_disp("%s", work);
+	}
+}
+
+void isfcheck_cmdlist(const char *path, const char *filename) {
 
 	_CMDLIST	cl;
 	ARCFH		afh;
 	int			i;
 	char		name[ARCFILENAME_LEN + 1];
 	SCRHDL		sh;
-	char		*p;
-	char		work[128];
 
 	ZeroMemory(&cl, sizeof(cl));
 	afh = arcread_open(path);
@@ -35,32 +70,42 @@ void isfcheck_cmdlist(const char *path) {
 		log_disp("%s: couldn't open.", path);
 		goto iccl_err;
 	}
-	for (i=0; i<afh->files; i++) {
-		if (arcread_getname(afh, i, name, sizeof(name))) {
-			break;
+	if (filename == NULL) {
+		for (i=0; i<afh->files; i++) {
+			if (arcread_getname(afh, i, name, sizeof(name))) {
+				break;
+			}
+			sh = scr_create(afh, name);
+			if (sh == NULL) {
+				log_disp("%s: couldn't open", name);
+				continue;
+			}
+			printf("%s\n", name);
+			scr_enum(sh, &cl, cmdlist);
+			scr_destroy(sh);
 		}
-		sh = scr_create(afh, name);
+	}
+	else {
+		sh = scr_create(afh, filename);
 		if (sh == NULL) {
-			log_disp("%s: couldn't open", name);
-			continue;
+			log_disp("%s: couldn't open", filename);
 		}
-		printf("%s\n", name);
-		scr_enum(sh, &cl, cmdlist);
-		scr_destroy(sh);
+		else {
+			printf("%s\n", filename);
+			scr_enum(sh, &cl, cmdlist);
+			scr_destroy(sh);
+		}
 	}
 	arcread_close(afh);
 
 	log_disp("%s: use command", path);
-	for (i=0; i<256; i++) {
-		p = work + ((i & 0x0f) * 3);
-		if (cl.used[i]) {
-			sprintf(p, "%02x ", i);
-		}
-		else {
-			strcpy(p, "   ");
-		}
-		if ((i & 0xf) == 0xf) {
-			log_disp("%s", work);
+	listdisp(cl.used, 256);
+	if (cl.used[0xef >> 3] & (1 << (0xef & 7))) {
+		log_disp("use command - ef");
+		listdisp(cl.usedef, 16);
+		if (cl.usedef[3 >> 3] & (1 << (3 & 7))) {
+			log_disp("use command - ef:03");
+			listdisp(cl.usedef3, 16);
 		}
 	}
 
@@ -92,6 +137,12 @@ static int isfdump(SCRHDL hdl, SCROPE ope, void *arg) {
 		}
 	}
 	log_disp("%s", work);
+	if ((ope->debug) && (ope->debugleng)) {
+		rem = min(ope->debugleng, sizeof(work) - 1);
+		CopyMemory(work, ope->debug, rem);
+		work[rem] = '\0';
+		log_disp("line %d: %s", ope->debugline, work);
+	}
 	return(0);
 }
 
@@ -102,6 +153,9 @@ void isfcheck_dump(const char *path, const char *filename) {
 	SCRHDL		sh;
 	char		workfile[MAX_PATH];
 
+	if (filename == NULL) {
+		goto icd_err1;
+	}
 	afh = arcread_open(path);
 	if (afh == NULL) {
 		log_disp("%s: couldn't open.", path);
@@ -222,13 +276,7 @@ static CCERR cctext1(CMDCHECK cc, SCROPE ope, BYTE cmdnum) {
 	BYTE	c;
 	BOOL	enableascii;
 
-	if (cmdnum == 0x2b) {
-		enableascii = cc->gametype & GAME_TEXTASCII;
-	}
-	else {
-		enableascii = TRUE;
-	}
-
+	enableascii = ((cc->gametype & GAME_TEXTASCII) != 0);
 	err = 0;
 	while(1) {
 		if (ope->remain <= 0) {
@@ -268,6 +316,7 @@ zen_break:
 		if ((!ascii) && (c >= 0x80)) {
 			if ((ope->remain <= 0) || (*ope->ptr == '\0')) {
 				log_disp("warning: text sjis broken down");
+				cc->warnings += 1;
 				break;
 			}
 			ope->ptr++;
@@ -298,33 +347,70 @@ static CCERR cctext(CMDCHECK cc, SCROPE ope, BYTE cmdnum) {
 			case 0x02:	// mouseevent
 			case 0x03:	// clear
 			case 0x06:	// cr
-			case 0x11:
+#if 0
+				if (!(cmdnum == 0x2b)) {
+					log_disp("warning: textcmd %x unsupport??", cmd);
+					cc->warnings += 1;
+					err |= CC_WARNING;
+				}
+#endif
 				break;
+
+			case 0x12:	// renum!
+				if (!((cmdnum == 0x2b) && (cc->exever >= EXE_VER2))) {
+					cc->warnings += 1;
+					err = CC_WARNING;
+				}
+				break;
+
+			case 0x11:
+				if ((cmdnum == 0x2b) && (cc->exever >= EXE_VER2)) {
+					err |= ccskip(ope, 4);
+				}
+				break;
+
 			case 0x01:	// fontcolor
 				if ((cmdnum == 0x2b) && (cc->exever >= EXE_VER1)) {
 					err = ccskip(ope, 1);
 				}
 				err |= ccskip(ope, 3);
 				break;
-			case 0x04:	// ¿ÍÌ¾É½¼¨
+
+			case 0x04:	// l–¼•\Ž¦
 				err = ccskip(ope, 1);
 				break;
-			case 0x08:	// ´ûÆÉ¥Õ¥é¥°¤ÎÀßÄê
+
+			case 0x08:	// Šù“Çƒtƒ‰ƒO‚ÌÝ’è
 				err = ccskip(ope, 4);
  				break;
+
+			case 0x09:	// ?
+				err = ccskip(ope, 1);
+ 				break;
+
 			case 0x0a:	// param;
 				if (cc->exever == EXEVER_MYU) {
 					err = ccskip(ope, 2);
+				}
+				else if (cmdnum == 0x2b) {
+					err = ccskip(ope, 4);
 				}
 				else {
 					err = ccskip(ope, 5);
 				}
 				break;
+
+			case 0x13:
+				err = ccstringskip(ope, 13);
+				break;
+
 			case 0xff:
 				err = cctext1(cc, ope, cmdnum);
 				break;
+
 			default:
 				log_disp("warning: unsupport textcmd %x", cmd);
+				cc->warnings += 1;
 				err = CC_WARNING;
 				break;
 		}
@@ -340,6 +426,17 @@ static CCERR cc13(CMDCHECK cc, SCROPE ope) {
 	err = ccskip(ope, 9);
 	if (cc->exever >= EXE_VER1) {
 		err |= ccskip(ope, 9);
+	}
+	return(err);
+}
+
+static CCERR cc1c(CMDCHECK cc, SCROPE ope) {
+
+	CCERR	err;
+
+	err = 0;
+	if (cc->exever != EXEVER_ROSYU2) {
+		err = ccskip(ope, 4 * 6);
 	}
 	return(err);
 }
@@ -379,16 +476,22 @@ static CCERR cc47(CMDCHECK cc, SCROPE ope) {
 		if (err) {
 			break;
 		}
-		if (cmd > 5) {
-		}
 		err |= ccget(ope, 1, &cmd);
 		if (cmd == 0) {
 			err |= ccskip(ope, 2);
+			err |= ccget(ope, 1, &cmd);
+			if ((!err) && (cmd != 0xff)) {
+				err |= CC_ERROR;
+			}
 			break;
 		}
 		else if (cmd == 1) {
 			err |= ccskip(ope, 2);
 			err |= ccskip(ope, 4);
+			err |= ccget(ope, 1, &cmd);
+			if ((!err) && (cmd != 0xff)) {
+				err |= CC_ERROR;
+			}
 			break;
 		}
 		else if (cmd == 0xff) {
@@ -437,8 +540,10 @@ static CCERR cc57(CMDCHECK cc, SCROPE ope) {
 		case 0x08: // type1			// wipe with pattern left
 		case 0x09: // type1			// wipe with pattern down
 		case 0x0a: // type1			// wipe with pattern up
-		case 0x0d: // type1
-		case 0x0e: // type1
+		case 0x0b: // type1			// zoom in
+		case 0x0c: // type1			// zoom out
+		case 0x0d: // type1			// mosaic in
+		case 0x0e: // type1			// mosaic out
 		case 0x13: // type1			// FadeIn
 		case 0x18: // type1			// width out
 		case 0x19: // type1			// width in
@@ -454,6 +559,7 @@ static CCERR cc57(CMDCHECK cc, SCROPE ope) {
 			break;
 
 		case 0x14: // type3			// copy with alpha
+		case 0x15:
 			effecterr = ccskip(ope, 4);
 			break;
 
@@ -464,14 +570,70 @@ static CCERR cc57(CMDCHECK cc, SCROPE ope) {
 
 		default:
 			log_disp("warning: unsupport effect %x", cmd);
-			effecterr = CC_WARNING;
 			cc->warnings += 1;
+			effecterr = CC_WARNING;
 			break;
 	}
 	cc->effect[cmd] = effecterr;
 	err |= effecterr;
 
 cc57_exit:
+	return(err);
+}
+
+static CCERR cc71(CMDCHECK cc, SCROPE ope) {
+
+	CCERR	err;
+
+	err = 0;
+	if (cc->exever != EXEVER_TEA2) {
+		err |= ccskip(ope, 1);
+	}
+	return(err);
+}
+
+static CCERR cc7b(CMDCHECK cc, SCROPE ope) {
+
+	CCERR	err;
+
+	if (cc->exever <= EXEVER_TSUKU) {
+		err = ccskip(ope, 4);
+		err |= ccskip(ope, 4);
+	}
+	else {
+		err = ccskip(ope, 4);
+		err |= ccskip(ope, 4);
+	}
+	return(err);
+}
+
+static CCERR cc7c(CMDCHECK cc, SCROPE ope) {
+
+	CCERR	err;
+
+	if (cc->exever <= EXEVER_TSUKU) {
+		err = ccskip(ope, 4);
+		err |= ccskip(ope, 1);
+	}
+	else {
+		err = ccskip(ope, 1);
+		err |= ccskip(ope, 2);
+	}
+	return(err);
+}
+
+static CCERR cc7d(CMDCHECK cc, SCROPE ope) {
+
+	CCERR	err;
+
+	if (cc->exever <= EXEVER_TSUKU) {
+		err = ccskip(ope, 4);
+	}
+	else {
+		err = ccskip(ope, 4);
+		err |= ccskip(ope, 1);
+		err |= ccskip(ope, 2);
+	}
 	return(err);
 }
 
@@ -504,7 +666,21 @@ static CCERR ccef(CMDCHECK cc, SCROPE ope) {
 	}
 	switch(cmd) {
 		case 1:
-			err = ccskip(ope, 4 + 4);
+			err = ccskip(ope, 4);
+			if (!(cc->gametype & GAME_SAVEGRPH)) {
+				if (ope->remain) {
+					log_disp("warning: set configure GAME_SAVEGRPH");
+					cc->warnings += 1;
+					err |= CC_WARNING;
+				}
+			}
+			else {
+				if (ccskip(ope, 4)) {
+					log_disp("warning: reset configure GAME_SAVEGRPH");
+					cc->warnings += 1;
+					err |= CC_WARNING;
+				}
+			}
 			break;
 
 		case 2:
@@ -530,6 +706,7 @@ static CCERR ccef(CMDCHECK cc, SCROPE ope) {
 					break;
 				default:
 					log_disp("warning: unsupport ef 03 %x", cmd2);
+					cc->warnings += 1;
 					err = CC_WARNING;
 					break;
 			}
@@ -544,8 +721,27 @@ static CCERR ccef(CMDCHECK cc, SCROPE ope) {
 			err = ccskip(ope, 4 + 8 + 4);
 			break;
 
+		case 6:
+			err = ccskip(ope, 4 * 5);
+			if (!err) {
+				log_disp("warning: xkazoku forces this command");
+				cc->warnings += 1;
+				err = CC_ERROR;
+			}
+			break;
+
+		case 7:
+			err = ccskip(ope, 4 * 2);
+			if (!err) {
+				log_disp("warning: xkazoku forces this command");
+				cc->warnings += 1;
+				err = CC_ERROR;
+			}
+			break;
+
 		default:
 			log_disp("warning: unsupport ef %x", cmd);
+			cc->warnings += 1;
 			err = CC_WARNING;
 			break;
 	}
@@ -582,6 +778,7 @@ static CCERR cmdcheck_nor(CMDCHECK cc, SCROPE ope, const BYTE *cmdtype) {
 				break;
 
 			case ISF_WORD:
+			case ISF_ADRS:
 				err = ccskip(ope, 2);
 				break;
 
@@ -634,6 +831,10 @@ static CCERR cmdcheck_nor(CMDCHECK cc, SCROPE ope, const BYTE *cmdtype) {
 				err = cc13(cc, ope);
 				break;
 
+			case ISF_CMD1c:
+				err = cc1c(cc, ope);
+				break;
+
 			case ISF_CMD2b:
 			case ISF_CMDd6:
 				err = cctext(cc, ope, 0x2b);
@@ -657,6 +858,22 @@ static CCERR cmdcheck_nor(CMDCHECK cc, SCROPE ope, const BYTE *cmdtype) {
 
 			case ISF_CMD5b:
 				err = cctext(cc, ope, 0x5b);
+				break;
+
+			case ISF_CMD71:
+				err = cc71(cc, ope);
+				break;
+
+			case ISF_CMD7b:
+				err = cc7b(cc, ope);
+				break;
+
+			case ISF_CMD7c:
+				err = cc7c(cc, ope);
+				break;
+
+			case ISF_CMD7d:
+				err = cc7d(cc, ope);
 				break;
 
 			case ISF_CMD81:
@@ -716,7 +933,15 @@ const BYTE		*cmdtype;
 	opebak = *ope;
 	err = 0;
 
-	cmdtype = isfcmds[cmd];
+	if (hdl->type == SCRIPT_ISF) {
+		cmdtype = isfcmds[cmd];
+	}
+	else if (hdl->type == SCRIPT_DRS) {
+		cmdtype = drscmds[cmd];
+	}
+	else {
+		cmdtype = NULL;
+	}
 	if (cmdtype) {
 		err = cmdcheck_nor(cc, ope, cmdtype);
 	}
@@ -734,8 +959,8 @@ const BYTE		*cmdtype;
 	return(0);
 }
 
-void isfcheck_cmdcheck(const char *path, int exever, UINT gametype,
-															int warnlevel) {
+void isfcheck_cmdcheck(const char *path, const char *filename,
+								int exever, UINT gametype, int warnlevel) {
 
 	_CMDCHECK	cc;
 	ARCFH		afh;
@@ -753,23 +978,96 @@ void isfcheck_cmdcheck(const char *path, int exever, UINT gametype,
 		log_disp("%s: couldn't open.", path);
 		goto iccc_err;
 	}
-	for (i=0; i<afh->files; i++) {
-		if (arcread_getname(afh, i, name, sizeof(name))) {
-			break;
+	if (filename == NULL) {
+		for (i=0; i<afh->files; i++) {
+			if (arcread_getname(afh, i, name, sizeof(name))) {
+				break;
+			}
+			sh = scr_create(afh, name);
+			if (sh == NULL) {
+				log_disp("%s: couldn't open", name);
+				continue;
+			}
+			printf("%s\n", name);
+			scr_enum(sh, &cc, cmdcheck);
+			scr_destroy(sh);
 		}
-		sh = scr_create(afh, name);
+	}
+	else {
+		sh = scr_create(afh, filename);
 		if (sh == NULL) {
-			log_disp("%s: couldn't open", name);
-			continue;
+			log_disp("%s: couldn't open", filename);
 		}
-		printf("%s\n", name);
-		scr_enum(sh, &cc, cmdcheck);
-		scr_destroy(sh);
+		else {
+			printf("%s\n", filename);
+			scr_enum(sh, &cc, cmdcheck);
+			scr_destroy(sh);
+		}
 	}
 	arcread_close(afh);
 
 	log_disp("%5d warning errors", cc.warnings);
 	log_disp("%5d  severe errors", cc.errors);
+	log_disp("");
+
+iccc_err:
+	return;
+}
+
+
+// ----
+
+static int cmddisp(SCRHDL hdl, SCROPE ope, void *arg) {
+
+	_SCROPE		opebak;
+
+	if (ope->cmd == (BYTE)(long)arg) {
+		opebak = *ope;
+		isfdump(hdl, &opebak, NULL);
+		log_disp("");
+	}
+	return(0);
+}
+
+void isfcheck_cmddisp(const char *path, const char *filename, BYTE cmd) {
+
+	ARCFH		afh;
+	int			i;
+	char		name[ARCFILENAME_LEN + 1];
+	SCRHDL		sh;
+
+	afh = arcread_open(path);
+	if (afh == NULL) {
+		log_disp("%s: couldn't open.", path);
+		goto iccc_err;
+	}
+	if (filename == NULL) {
+		for (i=0; i<afh->files; i++) {
+			if (arcread_getname(afh, i, name, sizeof(name))) {
+				break;
+			}
+			sh = scr_create(afh, name);
+			if (sh == NULL) {
+				log_disp("%s: couldn't open", name);
+				continue;
+			}
+			printf("%s\n", name);
+			scr_enum(sh, (void *)(long)cmd, cmddisp);
+			scr_destroy(sh);
+		}
+	}
+	else {
+		sh = scr_create(afh, filename);
+		if (sh == NULL) {
+			log_disp("%s: couldn't open", filename);
+		}
+		else {
+			printf("%s\n", filename);
+			scr_enum(sh, (void *)(long)cmd, cmddisp);
+			scr_destroy(sh);
+		}
+	}
+	arcread_close(afh);
 	log_disp("");
 
 iccc_err:

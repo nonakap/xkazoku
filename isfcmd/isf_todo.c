@@ -14,16 +14,8 @@
 
 // ---- not supported
 
-// IM : マウスカ〖ソルデ〖タの粕み哈み
+// IM : 儅僂僗僇乕僜儖僨乕僞偺撉傒崬傒
 int isfcmd_80(SCR_OPE *op) {
-
-	(void)op;
-	return(GAMEEV_SUCCESS);
-}
-
-
-// IXY : マウスの疤弥恃构
-int isfcmd_83(SCR_OPE *op) {
 
 	(void)op;
 	return(GAMEEV_SUCCESS);
@@ -32,16 +24,14 @@ int isfcmd_83(SCR_OPE *op) {
 
 // ---- todo
 
-// CTEXT : テキスト山绩
-int isfcmd_1c(SCR_OPE *op) {
+// WL : 僋儕僢僋懸僷乕僣撉傒崬傒
+int isfcmd_22(SCR_OPE *op) {
 
 	(void)op;
 	return(GAMEEV_FORCE);
 }
 
-
-
-// WW : クリック略肋年
+// WW : 僋儕僢僋懸愝掕
 int isfcmd_23(SCR_OPE *op) {
 
 	(void)op;
@@ -50,7 +40,7 @@ int isfcmd_23(SCR_OPE *op) {
 
 
 
-// SETINSIDEVOL : 柒婶不翁肋年
+// SETINSIDEVOL : 撪晹壒検愝掕
 int isfcmd_9f(SCR_OPE *op) {
 
 	(void)op;
@@ -59,29 +49,36 @@ int isfcmd_9f(SCR_OPE *op) {
 
 
 
-// KIDCLR : 贷粕矢鞠の介袋步
+// KIDCLR : 婛撉暥復偺弶婜壔
 int isfcmd_a0(SCR_OPE *op) {
 
 	(void)op;
 	return(GAMEEV_FORCE);
 }
 
-// KIDMOJI : 贷粕矢鞠の矢机の咖を肋年する
+// KIDMOJI : 婛撉暥復偺暥帤偺怓傪愝掕偡傞
 int isfcmd_a1(SCR_OPE *op) {
 
 	(void)op;
 	return(GAMEEV_FORCE);
 }
 
-// KIDPAGE : 贷粕矢鞠の是攫鼠
+// KIDPAGE : 婛撉暥復偺暸忣曬
 int isfcmd_a2(SCR_OPE *op) {
 
 	(void)op;
 	return(GAMEEV_FORCE);
 }
 
-// KIDHABA : 贷粕矢鞠の１乖あたりの矢机眶
+// KIDHABA : 婛撉暥復偺侾峴偁偨傝偺暥帤悢
 int isfcmd_a6(SCR_OPE *op) {
+
+	(void)op;
+	return(GAMEEV_FORCE);
+}
+
+// ????
+int isfcmd_da(SCR_OPE *op) {
 
 	(void)op;
 	return(GAMEEV_FORCE);

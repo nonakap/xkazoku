@@ -1,0 +1,247 @@
+
+    xkazoku for SDL/X11
+
+
+ 0. これは何？
+
+    D.O. から発売されている Windows 上で動作するゲーム「家族計画」を X11 上で
+    プレイを出来る様にするプログラム…の筈でした。
+    昔の Purple や CD-BROS 系列メーカのゲームは動作するかもしれません。
+
+
+ 1. 動作環境
+
+    1.1. ソフトウェア
+
+        現在、以下のライブラリが必要です。
+        また、文字の表示に TrueType 形式のフォントが必要です。
+    
+          ・SDL 1.2.x
+          ・SDL_ttf 2.0.x
+
+        CD-DA の代りに ogg 形式ファイルを再生するのであれば以下のライブラリも
+        必要です。
+
+          ・libogg
+          ・libvorbis
+
+    1.2. 環境
+
+          15/16/32bpp の TrueColor/DirectColor で動作します。
+
+    1.3. 開発環境
+
+        開発環境は以下の通りです。
+
+          ・NetBSD/i386
+          ・XFree86 4.4.0 (3D Rage Mobility, 1024x768x16bpp)
+          ・SDL 1.2.7
+          ・SDL_ttf 2.0.6
+          ・libogg 1.1
+          ・libvorbis 1.0.1
+
+
+ 2. コンパイル＆インストール
+
+    2.1. xkazoku のコンパイルとインストール
+
+        xkazoku のコンパイルとインストールは以下の手順で行ないます。
+
+        1. cd x11 (既に x11 に移動しているのであれば必要ありません)
+        2. config.tmpl の編集
+        3. xmkmf
+        4. make
+	(必要であれば su で root になってください)
+        5. make install
+
+    2.2. config.tmpl で指定可能な内容
+
+        2.2.1. Ogg vorbis 関連
+
+            USE_OGGVIRBIS : 音楽の再生に Ogg vorbis 形式ファイルを使用する際に
+                            #define してください。
+
+            OGG_CFLAGS    : Ogg vorbis 関連のインクルードヘッダファイルが
+                            コンパイラの標準パスに含まれていない場合には、
+                            OGG_CFLAGS に必要なオプションを記述してください。
+
+            OGG_LDFLAGS   : Ogg vorbis 関連のライブラリファイルがリンカの
+                            標準パスに含まれていない場合には、OGG_LDFLAGS に
+                            必要なオプションを記述してください。
+
+        2.2.2. フォント関連
+
+            TTFONT        : ゲーム中で使用する TrueType フォントのパスを記述
+                            してください。
+
+        2.2.3. その他
+
+            SDL_CONFIG    : sdl-config のファイル名が変更されている場合に
+                            記述してください。通常は記述する必要は無いと
+                            思います。
+
+    2.3. ゲームデータのインストール
+
+        ゲーム用のディレクトリを新規作成して、CD-ROM や Windows 領域の
+        ゲームディレクトリに存在するファイルを全てコピーしてください。
+        その際、ファイル名のアルファベットは大文字(A-Z)にしておいてください。
+
+    2.4. 音楽
+
+        2.4.1. CD-DA で音楽を再生
+
+            CD-ROM ドライブが複数台存在する構成では環境変数 CDROM_DRIVE で
+            使用する CD-ROM ドライブを選択する事が出来ます。
+
+            CD-ROM ドライブ番号 2 を CD-DA 再生で使用する場合:
+                使用しているシェルが:
+                    sh, bash 等であれば CDROM_DRIVE=2 ; export CDROM_DRIVE
+                    csh, tcsh 等であれば setenv CDROM_DRIVE=2
+                もしくは xkazoku 起動時に env CDROM_DRIVE=2 xkazoku
+
+        2.4.2. CD-DA を使用しないで音楽を再生
+
+            CD-DA で音楽を再生するゲームでは CD-DA の代わりに音楽ファイルを
+            再生する事が出来ます。
+
+            ゲームディレクトリ(*.SUF 等のファイルが存在するディレクトリ)に
+            cdda/ というディレクトリを作成し、そこに
+     
+            cdda/track02.wav
+            cdda/track03.ogg
+            ...
+
+            の様に trackXX.YYY というファイル名(*1)の音楽ファイルを置いて
+            ください。以降、CD-DA の再生要求時に CD-ROM が存在していなければ、
+            音楽ファイルを使用して音楽を再生します(*2)。
+            CD-DA を強制的に使用しない様にするには環境変数 NOCDROM を設定して
+            ください(*3)。
+
+            (*1) XX は CD のトラック番号。
+                 YYY は RIFF 形式であれば wav、ogg vorbis 形式であれば ogg。
+                 但し ogg は config.tmpl でサポートする様に指定していなければ
+                 使用出来ません。
+
+             (*2) CD-DA -> RIFF -> ogg の順番で音楽が再生出来るか試します。
+
+             (*3) 使用しているシェルが:
+                      sh, bash 等であれば NOCDROM= ; export NOCDROM
+                      csh, tcsh 等であれば setenv NOCDROM=
+                  もしくは xkazoku 起動時に env NOCDROM= xkazoku
+
+
+ 3. 実行   
+
+    3.1. 実行
+
+        初回の起動時には以下の様な手順になります。
+        以降は 2), 3) の手順は不要になります。
+
+        1) ゲームのデータファイル等が存在しているディレクトリに移動します。
+        2) *.SUF ファイルを system.suf の名前でリンクを作成します。
+        3) (config.tmpl で TrueType フォントファイルを指定していなければ)
+           TrueType フォントファイルを default.ttf の名前でリンクを作成します。
+        4) xkazoku を起動してください。
+
+        以下は私の環境で「家族計画」の場合の例です。
+        使用する TrueType フォントは pkgsrc でインストールした東風ゴシックです。
+
+        $ cd ~/games/D.O./kazoku
+        $ ln -s KAZOKU.SUF system.suf
+        $ ln -s /usr/pkg/lib/X11/font/TrueType/kochi-gothic.ttf default.ttf
+        $ ls
+        DATA            GGD             KAZOKU.HLP      SE
+        DOLOGO.AVI      ISF             KAZOKU.SAV      WMSC
+        FAM_OP.MPG      KAZOKU.CNT      KAZOKU.SUF      default.ttf@
+        FAM_OPHQ.MPG    KAZOKU.EXE      KAZOKU.ini      system.suf@
+        $ xkazoku
+
+    3.2. コマンドラインオプション
+
+        実行時に以下のオプションを指定する事ができます。
+
+        --help       [-h]        : ヘルプを表示します。
+
+        --fullscreen [-f]        : フルスクリーンモードで起動します。
+
+        --suf        [-s] <file> : .SUP ファイルパスを指定します。
+
+        --ttfont     [-t] <file> : 文字表示に使用する TrueType フォントを指定
+                                   します。
+
+
+ 4. 操作
+
+    4.1. マウス
+
+        ・左クリック
+            Windows での左クリックと同じ
+            メッセージを読み進む、選択肢選択
+
+        ・右クリック
+            Windows での右クリックと同じ
+            グラフィックモードなどではモードからの復帰を意味することもあります
+
+
+ 5. セーブファイル
+
+    4.1. セーブファイルの場所
+
+        xkazoku はゲームディレクトリにセーブファイル、ゲーム環境設定ファイルを
+        作成します。その為、xkazoku を起動するユーザがゲームディレクトリに書き
+        込み権限を持っているか確認してから起動してください。
+
+    4.2. Windows とのセーブファイルの互換性
+
+        Windows で作成されたセーブファイルを利用する事は出来ます。
+
+        xkazoku で作成したセーブファイルを Windows で使用する事は
+        なるべく止めておいた方が良いと思います(と言うか試してみた
+        事がありません)。
+
+
+ 6. 問題点、備考
+
+    ・ゲーム中に表示されるメッセージで文字が表示されてない、もしくは変な
+      文字が表示される場合があります。
+      例としては、ローマ数字(I,II,III等)は東風フォントを使用していると表示
+      されません。
+
+
+ 7. リンク等
+
+    ・Simple DirectMedia Layer
+      http://www.libsdl.org/
+      SDL, SDL_ttf
+
+    ・My Linux 日本語化計画
+      http://www.on.cs.keio.ac.jp/~yasu/jp_fonts.html
+      フリーの TrueType 形式のフォント(東風明朝体、東風ゴシック)
+
+    ・Xiph.Org
+      http://www.xiph.org/, http://www.ogg.org/
+      Ogg, Ogg Vorbis
+
+
+ 8. 謝辞
+
+    ・ゆいさん
+      元にした私のソースなんて破片も見当たりませんよ？
+
+
+ 9. 連絡先
+
+    本ソフトウェアに関する問い合わせは
+
+        NONAKA Kimihiro(埜中公博)/ aw9k-nnk@asahi-net.or.jp
+
+    まで電子メールにてお願いします。
+
+    また、ソフトウェアのバージョンアップ等の情報は
+
+        http://www.asahi-net.or.jp/~aw9k-nnk/drs/
+
+    から入手できます。
+
+--
+		$Id: README.X11.ja,v 1.3 2003/08/13 05:01:53 yui Exp $

@@ -1,8 +1,8 @@
 #include	"compiler.h"
 #include	<stddef.h>
-#include	"gamecore.h"
-#include	"gamemsg.h"
 #include	"dosio.h"
+#include	"gamemsg.h"
+#include	"gamecore.h"
 
 
 enum {
@@ -27,7 +27,10 @@ static const GAMEINI gameini[] = {
 			{"VOICEVOL",	TYPE_INT,	offsetof(GAMECFG_T, voicevol)},
 			{"WINRGB",		TYPE_UINT32,offsetof(GAMECFG_T, winrgb)},
 			{"WINALPHA",	TYPE_INT,	offsetof(GAMECFG_T, winalpha)},
-			{"FULLSCREEN",	TYPE_INT,	offsetof(GAMECFG_T, fullscreen)}};
+			{"FULLSCREEN",	TYPE_INT,	offsetof(GAMECFG_T, fullscreen)},
+			{"WINPOSX",		TYPE_INT,	offsetof(GAMECFG_T, winposx)},
+			{"WINPOSY",		TYPE_INT,	offsetof(GAMECFG_T, winposy)}};
+
 
 static BOOL iniread(void *arg, const char *para,
 									const char *key, const char *data) {
@@ -109,9 +112,13 @@ static void gamecfg_getname(char *path, int leng) {
 void gamecfg_init(void) {
 
 	GAMECFG	gamecfg;
+	UINT	gametype;
 
 	gamecfg = &gamecore.gamecfg;
-	gamecfg->msgtype = (gamecore.sys.type & GAME_VOICE)?2:1;
+	ZeroMemory(gamecfg, sizeof(GAMECFG_T));
+
+	gametype = gamecore.sys.type;
+	gamecfg->msgtype = (gametype & GAME_VOICE)?2:1;
 	gamecfg->textwaittick = 25;
 	gamecfg->bgm = 1;
 	gamecfg->bgmvol = 0;
@@ -121,6 +128,16 @@ void gamecfg_init(void) {
 	gamecfg->voicevol = 0;
 	gamecfg->winrgb = 0;
 	gamecfg->winalpha = 32;
+
+	if (gametype & GAME_VOICEONLY) {
+		gamecfg->msgdlgtype = 0;
+	}
+	else if (gametype & GAME_VOICE) {
+		gamecfg->msgdlgtype = 1;
+	}
+	else {
+		gamecfg->msgdlgtype = 2;
+	}
 }
 
 void gamecfg_reset(void) {
@@ -135,7 +152,7 @@ void gamecfg_reset(void) {
 
 void gamecfg_load(void) {
 
-	char		path[MAX_PATH];
+	char	path[MAX_PATH];
 
 	gamecfg_getname(path, sizeof(path));
 	profile_enum(path, &gamecore.gamecfg, iniread);
@@ -143,7 +160,7 @@ void gamecfg_load(void) {
 
 void gamecfg_save(void) {
 
-	char		path[MAX_PATH];
+	char	path[MAX_PATH];
 
 	gamecfg_getname(path, sizeof(path));
 	iniwrite(path, &gamecore.gamecfg);
@@ -175,5 +192,26 @@ void gamecfg_setreadskip(int readskip) {
 		gamemsg_send(GAMEMSG_MSGWAIT, 0);
 #endif
 	}
+}
+
+
+// ----
+
+static BOOL gcsd(void *vpItem, void *vpArg) {
+
+	if ((((GCDLG)vpItem)->page == ((GCDLGD)vpArg)->page) &&
+		(((GCDLG)vpItem)->group == ((GCDLGD)vpArg)->group) &&
+		(((GCDLG)vpItem)->num == ((GCDLGD)vpArg)->num)) {
+		((GCDLG)vpItem)->disable = ((GCDLGD)vpArg)->disable;
+		return(TRUE);
+	}
+	else {
+		return(FALSE);
+	}
+}
+
+void gamecfg_setdisable(GCDLGD prm) {
+
+	listarray_enum(gamecore.cfglist, gcsd, prm);
 }
 

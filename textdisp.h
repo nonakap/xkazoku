@@ -1,20 +1,27 @@
 
+enum {
+	TDFLAG_MULTI	= 1,
+	TDFLAG_RENUM	= 2
+};
+
 typedef struct {
-	BYTE		*ptr;
+const BYTE		*ptr;
 	int			remain;
 } STRING_T;
 
 typedef struct {
-	STRING_T	str;
+	STRING_T	cmd;
+	STRING_T	txt;
 	int			x;
 	int			y;
 	UINT		flag;
+	BYTE		txtwork[36];
 } TEXT_T;
 
 typedef struct {
 	int			txtnum;
 	int			count;
-	BOOL		renum;
+	UINT		flag;
 	int			skip;
 	TEXT_T		txt[GAMECORE_MAXTEXT];
 	STRING_T	*ext[GAMECORE_MAXTEXT];

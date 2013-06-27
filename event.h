@@ -67,11 +67,12 @@ typedef struct {
 extern "C" {
 #endif
 
-
+void event_setmouse(int x, int y);
 UINT event_getmouse(int *x, int *y);
 void event_resetmouse(UINT mask);
 UINT event_getkey(void);
 void event_resetkey(UINT mask);
+void event_resetall(void);
 
 void event_cmdwindraw(TEXTWIN textwin, int num, int method);
 void event_choicewindraw(TEXTWIN textwin, int num, int method);

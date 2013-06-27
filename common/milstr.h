@@ -3,31 +3,31 @@
 extern "C" {
 #endif
 
-// 络矢机井矢机を票办浑して孺秤
-// ret 0:办米
+// 戝暥帤彫暥帤傪摨堦帇偟偰斾妑
+// ret 0:堦抳
 BOOL milstr_cmp(const char *str, const char *cmp);
 
-// 络矢机井矢机を 票办浑してcmpのヌルまで孺秤
-// ret 0:办米
+// 戝暥帤彫暥帤傪 摨堦帇偟偰cmp偺僰儖傑偱斾妑
+// ret 0:堦抳
 BOOL milstr_memcmp(const char *str, const char *cmp);
 
-// 0~9, A~Z のみを络矢机井矢机を票办浑して孺秤
-// ret 0:办米
+// 0~9, A~Z 偺傒傪戝暥帤彫暥帤傪摨堦帇偟偰斾妑
+// ret 0:堦抳
 BOOL milstr_extendcmp(const char *str, const char *cmp);
 
-// str[pos]が戳机１バイト誊かどうか∧
+// str[pos]偑娍帤侾僶僀僩栚偐偳偆偐乧
 int milstr_kanji1st(const char *str, int pos);
 
-// str[pos]が戳机２バイト誊かどうか∧
+// str[pos]偑娍帤俀僶僀僩栚偐偳偆偐乧
 int milstr_kanji2nd(const char *str, int pos);
 
-// maxlen尸だけ矢机误をコピ〖
+// maxlen暘偩偗暥帤楍傪僐僺乕
 void milstr_ncpy(char *dst, const char *src, int maxlen);
 
-// maxlen尸だけ矢机误をキャット
+// maxlen暘偩偗暥帤楍傪僉儍僢僩
 void milstr_ncat(char *dst, const char *src, int maxlen);
 
-// 矢机误からARGの艰评
+// 暥帤楍偐傜ARG偺庢摼
 int milstr_getarg(char *str, char *arg[], int maxarg);
 
 // HEX2INT
@@ -35,9 +35,6 @@ long milstr_solveHEX(const char *str);
 
 // STR2INT
 long milstr_solveINT(const char *str);
-
-// パスカル矢机误を侯る
-void milstr_mkstr255(BYTE *dst, const char *src);
 
 #ifdef __cplusplus
 }

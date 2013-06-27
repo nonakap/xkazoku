@@ -5,13 +5,19 @@
 
 #ifndef SIZE_QVGA
 
-// ---- close
+// ---- minimize, close
+
+static const BYTE minimize1[4] = {		// 12x10
+		0x6d,0x66,0x96,0x00};
+
+const MENURES2 menures_minimize = {12, 10, minimize1};
+
 
 static const BYTE close1[14] = {		// 12x10
 		0xe8,0x42,0x52,0x22,0x72,0x84,0x29,0x98,0x74,0x22,0x52,0x42,0x92,
 		0x0a};
 
-MENURES2 menures_close = {12, 10, close1};
+const MENURES2 menures_close = {12, 10, close1};
 
 
 // ---- sys
@@ -22,7 +28,7 @@ static const BYTE scheck[7] = {			// 8x16
 static const BYTE snext[9] = {			// 8x16
 		0xc9,0x71,0x62,0x53,0x44,0x53,0x62,0xb1,0x03};
 
-MENURES2 menures_sys[2] = {{8, 16, scheck}, {8, 16, snext}};
+const MENURES2 menures_sys[2] = {{8, 16, scheck}, {8, 16, snext}};
 
 
 // ---- radio
@@ -42,8 +48,8 @@ static const BYTE radiog[43] = {		// 12x12
 static const BYTE radiohit[7] = {		// 12x12
 		0x5b,0x82,0x49,0x88,0x84,0x29,0x5b};
 
-MENURES2 menures_radio[3] = {{12, 12, radio}, {12, 12, radiog},
-							 {12, 12, radiohit}};
+const MENURES2 menures_radio[3] = {{12, 12, radio}, {12, 12, radiog},
+							 		{12, 12, radiohit}};
 
 
 // ---- check
@@ -51,7 +57,7 @@ MENURES2 menures_radio[3] = {{12, 12, radio}, {12, 12, radiog},
 static const BYTE checkhit[11] = {		// 9x9
 		0x09,0x71,0x22,0x31,0x23,0x12,0x33,0x55,0x73,0x81,0x0e};
 
-MENURES2 menures_check = {9, 9, checkhit};
+const MENURES2 menures_check = {9, 9, checkhit};
 
 
 // ---- btn
@@ -62,7 +68,7 @@ static const BYTE btnup[7] = {			// 12x12
 static const BYTE btndn[7] = {			// 12x12
 		0x2b,0x67,0x85,0x38,0xa8,0xb1,0x06};
 
-MENURES2 menures_scrbtn[2] = {{12, 12, btnup}, {12, 12, btndn}};
+const MENURES2 menures_scrbtn[2] = {{12, 12, btnup}, {12, 12, btndn}};
 
 
 // ---- slider
@@ -142,7 +148,7 @@ static const BYTE sbv2g[48] = {			// 21x11
 		0x05,0x45,0x6f,0x69,0x54,0x00,0x45,0x6f,0x68,0x54,0x07,0x45,0x6f,
 		0x67,0x54,0x08,0xf5,0x84,0x54,0x09,0x5f,0x59};
 
-MENURES2 menures_sld[12] = {
+const MENURES2 menures_sld[12] = {
 				{11, 21, sbh0}, {11, 21, sbh1}, {11, 21, sbh2},
 				{11, 21, sbh0g}, {11, 21, sbh1g}, {11, 21, sbh2g},
 				{21, 11, sbv0}, {21, 11, sbv1}, {21, 11, sbv2},
@@ -258,7 +264,7 @@ static const BYTE icon16dm[97] = {		// 32x32
 		0x07,0xd9,0x08,0x05,0x07,0xda,0xfc,0x08,0x04,0x07,0xdb,0x08,0x03,
 		0x07,0xdc,0x08,0x02,0x03,0x0a};
 
-MENURES menures_icon16[4] = {
+const MENURES menures_icon16[4] = {
 				{32, 32, icon16a, icon16am}, {32, 32, icon16b, icon16bm},
 				{32, 32, icon16c, icon16cm}, {32, 32, icon16d, icon16dm}};
 
@@ -373,7 +379,7 @@ static const BYTE icon24dm[97] = {		// 32x32
 		0x07,0xd9,0x08,0x05,0x07,0xda,0xfc,0x08,0x04,0x07,0xdb,0x08,0x03,
 		0x07,0xdc,0x08,0x02,0x03,0x0a};
 
-MENURES menures_icon24[4] = {
+const MENURES menures_icon24[4] = {
 				{32, 32, icon24a, icon24am}, {32, 32, icon24b, icon24bm},
 				{32, 32, icon24c, icon24cm}, {32, 32, icon24d, icon24dm}};
 
@@ -381,12 +387,18 @@ MENURES menures_icon24[4] = {
 
 #else
 
-// ---- close
+// ---- minimize, close
+
+static const BYTE minimize1[3] = {		// 8x8
+		0x1b,0x85,0x0a};
+
+const MENURES2 menures_minimize = {8, 8, minimize1};
+
 
 static const BYTE close1[11] = {		// 8x8
 		0x98,0x31,0x41,0x11,0x61,0x61,0x11,0x41,0x31,0x91,0x02};
 
-MENURES2 menures_close = {8, 8, close1};
+const MENURES2 menures_close = {8, 8, close1};
 
 
 // ---- sys
@@ -397,7 +409,7 @@ static const BYTE scheck[7] = {			// 8x12
 static const BYTE snext[7] = {			// 8x12
 		0xb9,0x71,0x62,0x53,0x62,0xa1,0x04};
 
-MENURES2 menures_sys[2] = {{8, 12, scheck}, {8, 12, snext}};
+const MENURES2 menures_sys[2] = {{8, 12, scheck}, {8, 12, snext}};
 
 
 // ---- radio
@@ -417,8 +429,8 @@ static const BYTE radiog[40] = {		// 11x11
 static const BYTE radiohit[6] = {		// 11x11
 		0x1b,0x81,0x39,0x98,0xb1,0x01};
 
-MENURES2 menures_radio[3] = {{11, 11, radio}, {11, 11, radiog},
-							 {11, 11, radiohit}};
+const MENURES2 menures_radio[3] = {{11, 11, radio}, {11, 11, radiog},
+									 {11, 11, radiohit}};
 
 
 // ---- check
@@ -426,7 +438,7 @@ MENURES2 menures_radio[3] = {{11, 11, radio}, {11, 11, radiog},
 static const BYTE checkhit[8] = {		// 7x7
 		0xc8,0x51,0x22,0x11,0x32,0x53,0x81,0x0b};
 
-MENURES2 menures_check = {7, 7, checkhit};
+const MENURES2 menures_check = {7, 7, checkhit};
 
 
 // ---- btn
@@ -438,7 +450,7 @@ static const BYTE btnup[5] = {			// 6x6
 static const BYTE btndn[4] = {			// 6x6
 		0x56,0x32,0x14,0xf8};
 
-MENURES2 menures_scrbtn[2] = {{6, 6, btnup}, {6, 6, btndn}};
+const MENURES2 menures_scrbtn[2] = {{6, 6, btnup}, {6, 6, btndn}};
 
 
 // ---- slider
@@ -500,7 +512,7 @@ static const BYTE sbv2g[22] = {			// 15x7
 		0x07,0x2f,0x05,0x20,0x3e,0x54,0x20,0xe3,0x46,0x55,0xf4,0x46,0x05,
 		0x45,0x6e,0x54,0x00,0xf5,0x54,0x07,0x5f,0x05};
 
-MENURES2 menures_sld[12] = {
+const MENURES2 menures_sld[12] = {
 				{7, 15, sbh0}, {7, 15, sbh1}, {7, 15, sbh2},
 				{7, 15, sbh0g}, {7, 15, sbh1g}, {7, 15, sbh2g},
 				{15, 7, sbv0}, {15, 7, sbv1}, {15, 7, sbv2},
@@ -659,7 +671,7 @@ static const BYTE icon16dm[118] = {		// 16x16
 		0x00,0x04,0x8a,0xff,0x64,0xac,0x01,0xa9,0x00,0x02,0x02,0x8c,0x01,
 		0xe5};
 
-MENURES menures_icon16[4] = {
+const MENURES menures_icon16[4] = {
 				{16, 16, icon16a, icon16am}, {16, 16, icon16b, icon16bm},
 				{16, 16, icon16c, icon16cm}, {16, 16, icon16d, icon16dm}};
 
@@ -847,7 +859,7 @@ static const BYTE icon24dm[118] = {		// 16x16
 		0x00,0x04,0x8a,0xff,0x64,0xac,0x01,0xa9,0x00,0x02,0x02,0x8c,0x01,
 		0xe5};
 
-MENURES menures_icon24[4] = {
+const MENURES menures_icon24[4] = {
 				{16, 16, icon24a, icon24am}, {16, 16, icon24b, icon24bm},
 				{16, 16, icon24c, icon24cm}, {16, 16, icon24d, icon24dm}};
 

@@ -3,11 +3,11 @@ enum {
 	TEXTCTRL_BOLD		= 0x0001,
 	TEXTCTRL_ITALIC		= 0x0002,
 	TEXTCTRL_FONTMASK	= 0x0003,
+	TEXTCTRL_SHADOW		= 0x0004,
 
 	TEXTCTRL_ASCII		= 0x0100,
-//	TEXTCTRL_SHADOW		= 0x0200,
-	TEXTCTRL_CLIP		= 0x0400,
-	TEXTCTRL_READY		= 0x0800
+	TEXTCTRL_CLIP		= 0x0200,
+	TEXTCTRL_READY		= 0x0400
 };
 
 typedef struct {
@@ -37,6 +37,8 @@ enum {
 	TEXTWIN_WINBYCMD	= 0x0100,
 	TEXTWIN_WINBYTEXT	= 0x0200,
 
+	TEXTWIN_TEXTCLIP	= 0x1000,
+
 	TEXTWIN_WINBYALL	= TEXTWIN_WINBYCMD | TEXTWIN_WINBYTEXT
 };
 
@@ -48,10 +50,14 @@ typedef struct {
 typedef struct {
 	RECT_T	rct;
 	int		type;
-	int		x;
-	int		y;
 	char	str[GAMECORE_CHOICELEN];
 } CHO_T, *CHOICE;
+
+typedef struct {
+	RECT_T	rect;
+	UINT32	col[2];
+	char	str[GAMECORE_CMDTEXTLEN];
+} CMDTEXT_T, *CMDTEXT;
 
 typedef struct {
 	UINT		flag;
@@ -65,13 +71,16 @@ typedef struct {
 	VRAMHDL		cmdvram;
 	VRAMHDL		cmdframe;
 	VRAMHDL		cmdicon;
+	VRAMHDL		namevram;
 	int			iconwidth;
 	SCRN_T		cmdscrn;
 	int			cmdtype;
 	int			cmdmax;
 	int			cmdfocus;
 	int			cmdret;
+	int			namenum;
 	UINT32		chocolor[6];
+	LISTARRAY	cmdtext;
 
 	char		chrname[GAMECORE_MAXNAME][GAMECORE_NAMELEN];
 
@@ -83,27 +92,31 @@ typedef struct {
 extern "C" {
 #endif
 
-void textctrl_init(TEXTCTRL textctrl, BOOL ascii);
+void textctrl_init(TEXTCTRL textctrl);
 void textctrl_setsize(TEXTCTRL textctrl, int size);
 void textctrl_settype(TEXTCTRL textctrl, BYTE type);
 void textctrl_trash(TEXTCTRL textctrl);
 void textctrl_renewal(TEXTCTRL textctrl);
 
-
 TEXTWIN textwin_getwin(int num);
 void textwin_create(void);
 void textwin_destroy(void);
+void textwin_allclose(void);
 void textwin_setpos(int num, const SCRN_T *scrn, const SCRN_T *clip);
 void textwin_open(int num);
 void textwin_clear(int num);
 void textwin_close(int num);
 void textwin_setframe(int num, const char *label);
+void textwin_setname(TEXTWIN textwin, int num);
 
 void textwin_cmdopen(int num, int cmds, int type);
 void textwin_cmdclose(int num);
 
 void textwin_setcmdframe(int num, const char *label);
 void textwin_setcmdicon(int num, int width, const char *label);
+
+BOOL textwin_isopen(void);
+void textwin_setrect(void);
 
 #ifdef __cplusplus
 }

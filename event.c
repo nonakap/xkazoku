@@ -1,19 +1,23 @@
 #include	"compiler.h"
-#include	"gamecore.h"
+#include	"fontmng.h"
 #include	"inputmng.h"
 #include	"taskmng.h"
+#include	"gamecore.h"
 #include	"sound.h"
 
 
-static void cmdwin_exec(TEXTWIN textwin, int x, int y, UINT btn, UINT key) {
+static BOOL cmdwin_exec(TEXTWIN textwin, int x, int y, UINT btn, UINT key) {
 
-	VRAMHDL		vram;
-	int			i;
-	int			curval;
-	CMD_T		*cmd;
-	int			size;
-	CHO_T		*cho;
+	VRAMHDL	vram;
+	int		i;
+	int		curval;
+	CMD_T	*cmd;
+	int		size;
+	CHO_T	*cho;
+	BOOL	r;
+	DISPWIN	dispwin;
 
+	r = FALSE;
 	curval = textwin->cmdfocus;
 	vram = textwin->cmdvram;
 	if (textwin->cmdtype == 1) {
@@ -36,8 +40,8 @@ static void cmdwin_exec(TEXTWIN textwin, int x, int y, UINT btn, UINT key) {
 			if (textwin->cmdfocus != curval) {
 				event_cmdwindraw(textwin, textwin->cmdfocus, 2);
 				event_cmdwindraw(textwin, curval, 0);
-				vramdraw_draw();
 				textwin->cmdfocus = curval;
+				r = TRUE;
 			}
 		}
 		if (btn & LBUTTON_DOWNBIT) {
@@ -55,6 +59,18 @@ static void cmdwin_exec(TEXTWIN textwin, int x, int y, UINT btn, UINT key) {
 		if (btn & MOUSE_MOVEBIT) {
 			x -= vram->posx;
 			y -= vram->posy;
+			if (gamecore.sys.type & GAME_CMDWINNOBG) {
+				dispwin = &gamecore.dispwin;
+				if (dispwin->flag & DISPWIN_CLIPTEXT) {
+#ifndef SIZE_QVGA
+					x -= dispwin->txtclip.left;
+					y -= dispwin->txtclip.top;
+#else
+					x -= vramdraw_half(dispwin->txtclip.left);
+					y -= vramdraw_half(dispwin->txtclip.top);
+#endif
+				}
+			}
 			cho = textwin->cho;
 			curval = -1;
 			for (i=0; i<textwin->cmdmax; i++, cho++) {
@@ -80,6 +96,7 @@ static void cmdwin_exec(TEXTWIN textwin, int x, int y, UINT btn, UINT key) {
 			event_choicewindraw(textwin, textwin->cmdfocus, 0);
 			event_choicewindraw(textwin, curval, 1);
 			textwin->cmdfocus = curval;
+			r = TRUE;
 		}
 		if ((btn & LBUTTON_UPBIT) || (key & KEY_ENTER)) {
 			textwin->cmdret = curval;
@@ -87,7 +104,7 @@ static void cmdwin_exec(TEXTWIN textwin, int x, int y, UINT btn, UINT key) {
 	}
 
 cwexec_exit:
-	return;
+	return(r);
 }
 
 static void event_exec(void) {
@@ -97,36 +114,54 @@ static void event_exec(void) {
 	int		y;
 	UINT	btn;
 	UINT	key;
+	UINT	keydown;
 	int		i;
 	TEXTWIN	textwin;
+	BOOL	r;
 
 	evthdl = &gamecore.evthdl;
 	btn = inputmng_getmouse(&x, &y);
 	inputmng_resetmouse(LBUTTON_BIT | RBUTTON_BIT);
 	key = inputmng_getkey();
 
-	evthdl->x = x;
-	evthdl->y = y;
+	if (btn & MOUSE_MOVEBIT) {
+		evthdl->x = x;
+		evthdl->y = y;
+	}
 	evthdl->btn &= ~(LBUTTON_BIT | RBUTTON_BIT);
 	evthdl->btn |= btn;
+	keydown = (~evthdl->key) & key;
 	evthdl->key = key;
 
-	// ²»À¼Ää»ß½èÍı¡Á
-	if (btn & LBUTTON_DOWNBIT) {
+	// ‰¹º’â~ˆ—`
+	if ((btn & LBUTTON_DOWNBIT) || (key & (KEY_SKIP | KEY_ENTER))) {
 		if (soundmix_isplaying(SOUNDTRK_VOICE)) {
 			soundmix_stop(SOUNDTRK_VOICE, 0);
 		}
 	}
 
-	// ¥³¥Ş¥ó¥É¥¦¥£¥ó¥É¥¦½èÍı¡Á
+	// ƒRƒ}ƒ“ƒhƒEƒBƒ“ƒhƒEˆ—`
+	r = FALSE;
 	for (i=0; i<GAMECORE_MAXTXTWIN; i++) {
 		textwin = gamecore.textwin[i];
 		if ((textwin) &&
 			(textwin->flag & (TEXTWIN_CMDCAP | TEXTWIN_CMDCAPEX))) {
-			cmdwin_exec(textwin, x, y, btn, key);
+			r |= cmdwin_exec(textwin, x, y, btn, keydown);
 		}
 	}
-	vramdraw_draw();
+	if (r) {
+		vramdraw_draw();
+	}
+}
+
+void event_setmouse(int x, int y) {
+
+	EVTHDL	evthdl;
+
+	evthdl = &gamecore.evthdl;
+	evthdl->x = x;
+	evthdl->y = y;
+	evthdl->btn |= MOUSE_MOVEBIT;
 }
 
 UINT event_getmouse(int *x, int *y) {
@@ -150,7 +185,7 @@ void event_resetmouse(UINT mask) {
 
 	evthdl = &gamecore.evthdl;
 	evthdl->btn &= mask;
-	inputmng_resetmouse(mask | (~(LBUTTON_BIT | RBUTTON_BIT)));
+	inputmng_resetmouse(mask);
 }
 
 UINT event_getkey(void) {
@@ -169,6 +204,12 @@ void event_resetkey(UINT mask) {
 	evthdl = &gamecore.evthdl;
 	evthdl->key &= mask;
 	inputmng_resetkey(mask);
+}
+
+void event_resetall(void) {
+
+	event_resetmouse(LBUTTON_BIT | RBUTTON_BIT);
+	event_resetkey(KEY_SKIP);
 }
 
 
@@ -201,8 +242,13 @@ void event_choicewindraw(TEXTWIN textwin, int num, int method) {
 
 	CHO_T		*cho;
 	VRAMHDL		dst;
+	RECT_T		rct;
 	POINT_T		pt;
+	POINT_T		pfnt;
 	TEXTCTRL	textctrl;
+	DISPWIN		dispwin;
+	BOOL		fntgetsize;
+	int			pos;
 
 	if ((num < 0) || (num >= textwin->cmdmax)) {
 		return;
@@ -214,33 +260,74 @@ void event_choicewindraw(TEXTWIN textwin, int num, int method) {
 	if (dst == NULL) {
 		dst = textwin->textctrl.vram;
 	}
+	rct = cho->rct;
+	fntgetsize = fontmng_getsize(textctrl->font, cho->str, &pfnt);
+	if ((fntgetsize == SUCCESS) && (gamecore.sys.type & GAME_ENGSTYLE)) {
+		// ƒtƒHƒ“ƒg‚Ì·‚ğ‹zû
+		pos = pfnt.x - (rct.right - rct.left);
+		if (pos > 0) {
+			rct.right += pos;
+		}
+#if 0
+		pos = pfnt.y - (rct.bottom - rct.top);
+		if (pos > 0) {
+			rct.bottom += pos;
+		}
+#endif
+	}
 	if (gamecore.sys.version >= EXE_VER1) {
 		if (method) {
 			method = 3;
 		}
-		if (textwin->chocolor[method+2] == 0) {
-			vram_zerofill(dst, &cho->rct);
+		if (gamecore.sys.type & GAME_CMDWINNOBG) {
+			dispwin = &gamecore.dispwin;
+			if (dispwin->flag & DISPWIN_CLIPTEXT) {
+#ifndef SIZE_QVGA
+				rct.left += dispwin->txtclip.left;
+				rct.top += dispwin->txtclip.top;
+				rct.right += dispwin->txtclip.left;
+				rct.bottom += dispwin->txtclip.top;
+#else
+				pt.x = dispwin->txtclip.left;
+				pt.y = dispwin->txtclip.top;
+				vramdraw_halfpoint(&pt);
+				rct.left += pt.x;
+				rct.top += pt.y;
+				rct.right += pt.x;
+				rct.bottom += pt.y;
+#endif
+			}
+			vram_zerofill(dst, &rct);
+		}
+		else if (textwin->chocolor[method+2] == 0) {
+			vram_zerofill(dst, &rct);
 		}
 		else {
-			vram_fill(dst, &cho->rct, textwin->chocolor[method+2], 0xff);
+			vram_fill(dst, &rct, textwin->chocolor[method+2], 0xff);
 		}
-		pt.x = cho->x + 1;
-		pt.y = cho->y + 1;
-		vrammix_text(dst, textctrl->font, cho->str,
-								textwin->chocolor[method+1], &pt, &cho->rct);
-		pt.x = cho->x;
-		pt.y = cho->y;
-		vrammix_text(dst, textctrl->font, cho->str,
-								textwin->chocolor[method+0], &pt, &cho->rct);
+		if (textctrl->fonttype & TEXTCTRL_SHADOW) {
+			pt.x = rct.left + 1;
+			pt.y = rct.top + 1;
+			vrammix_textex(dst, textctrl->font, cho->str,
+								textwin->chocolor[method+1], &pt, &rct);
+		}
+		pt.x = rct.left;
+		pt.y = rct.top;
+		vrammix_textex(dst, textctrl->font, cho->str,
+								textwin->chocolor[method+0], &pt, &rct);
 	}
 	else {
-		vram_zerofill(dst, &cho->rct);
-		pt.x = cho->x;
-		pt.y = cho->y;
-		vrammix_text(dst, textctrl->font, cho->str,
-								textwin->chocolor[method], &pt, &cho->rct);
+		vram_zerofill(dst, &rct);
+		pt.x = rct.left;
+		pt.y = rct.top;
+		if ((fntgetsize == SUCCESS) && (!(gamecore.sys.type & GAME_DRS))) {
+			pt.x += (rct.right - rct.left - pfnt.x) / 2;
+			pt.y += (rct.bottom - rct.top - pfnt.y) / 2;
+		}
+		vrammix_textex(dst, textctrl->font, cho->str,
+								textwin->chocolor[method], &pt, &rct);
 	}
-	vramdraw_setrect(dst, &cho->rct);
+	vramdraw_setrect(dst, &rct);
 }
 
 
@@ -250,7 +337,7 @@ int event_getcmdwin(TEXTWIN textwin) {
 
 	int		r;
 
-	event_exec();					// ËÜÅö¤Ï¾ï¤Ë²ó¤¹¤Ù¤·
+	event_exec();					// –{“–‚Íí‚É‰ñ‚·‚×‚µ
 	r = textwin->cmdret;
 	textwin->cmdret = -1;
 	return(r);
@@ -357,6 +444,8 @@ int event_mouse(void) {
 	int			flag;
 	UINT		keybit;
 	VRAMHDL		map;
+	int			version;
+	BOOL		enable2;
 
 	mouseevt = &gamecore.mouseevt;
 
@@ -365,11 +454,11 @@ int event_mouse(void) {
 
 	cnt = min(mouseevt->prm.cnt, GAMECORE_MAXRGN);
 
-	// ¥Ş¥¦¥¹
+	// ƒ}ƒEƒX
 	if ((btn & MOUSE_MOVEBIT) || (mouseevt->flag & MEVT_RENEWAL)) {
 		pos = -1;
 
-		// ¥Ş¥¦¥¹ÈÏ°Ï»ØÄê
+		// ƒ}ƒEƒX”ÍˆÍw’è
 		if ((!(mouseevt->flag & MEVT_CLIP)) ||
 			(rect_in(&mouseevt->clip, x, y))) {
 			map = mouseevt->map;
@@ -406,7 +495,7 @@ int event_mouse(void) {
 		}
 	}
 
-	// ¥­¡¼¥Ü¡¼¥É
+	// ƒL[ƒ{[ƒh
 	if (key & (KEY_UP | KEY_DOWN | KEY_LEFT | KEY_RIGHT)) {
 		pos = mouseevt->keypos;
 		if ((pos >= 0) && (pos < cnt)) {
@@ -446,22 +535,27 @@ int event_mouse(void) {
 	}
 
 	pos = mouseevt->lastpos;
-	if ((mouseevt->pos != pos) && (pos != -1)) {
-		mouseevt->pos = pos;
-	}
-	if ((mouseevt->pos >= 0) && (rgnenable(mouseevt->rgn + mouseevt->pos))) {
-		pos = mouseevt->pos;
+	if (gamecore.sys.type & GAME_SELECTEX) {
+		if ((mouseevt->pos != pos) && (pos != -1)) {
+			mouseevt->pos = pos;
+		}
+		if ((mouseevt->pos >= 0) &&
+			(rgnenable(mouseevt->rgn + mouseevt->pos))) {
+			pos = mouseevt->pos;
+		}
 	}
 
 	flag = 0;
 	if (mouseevt->prm.btnflg & 1) {
-		if (btn & RBUTTON_BIT) {
+		if ((btn & RBUTTON_BIT) || (key & KEY_MENU)) {
 			flag = -1;
 		}
 	}
 
+	version = gamecore.sys.version;
+	enable2 = ((version >= EXEVER_KONYA) && (version != EXEVER_VECHO));
 	if (key & KEY_ENTER) {
-		flag = 2;
+		flag = (enable2)?2:1;
 	}
 	else {
 		if (!(mouseevt->prm.btnflg & 4)) {
@@ -475,10 +569,9 @@ int event_mouse(void) {
 				flag = 1;
 			}
 		}
-		// ¤¹¤¯¤Ê¤¯¤È¤â ¥×¥é¥¤¥Ù¡¼¥È¥Ê¡¼¥¹¤Ï 2¤ÏÊÖ¤·¤Á¤ã¥À¥á
-		if (gamecore.sys.version >= EXEVER_KONYA) {
+		if (enable2) {
 			if (flag == 1) {
-				if (pos == mouseevt->pos) {
+				if ((pos != -1) && (pos == mouseevt->lastpos)) {
 					flag++;
 				}
 			}
@@ -486,7 +579,7 @@ int event_mouse(void) {
 	}
 
 	if (mouseevt->prm.btnflg & 2) {
-		if (!flag) {			// ¥Ü¥¿¥óÂÔ¤Á
+		if (!flag) {			// ƒ{ƒ^ƒ“‘Ò‚¿
 			taskmng_sleep(10);
 			return(GAMEEV_WAITMOUSE);
 		}
@@ -496,7 +589,7 @@ int event_mouse(void) {
 	}
 
 	if (flag) {
-		event_resetmouse(LBUTTON_BIT | RBUTTON_BIT);		// ¥á¥Ë¥å¡¼ÂĞºö
+		event_resetmouse(LBUTTON_BIT | RBUTTON_BIT);		// ƒƒjƒ…[‘Îô
 		event_resetkey(~KEY_ENTER);
 	}
 
@@ -521,7 +614,8 @@ int event_msgclk(void) {
 		return(GAMEEV_SUCCESS);
 	}
 	gamecfg = &gamecore.gamecfg;
-	if ((gamecfg->lastread) && (gamecfg->readskip)) {
+	if ((gamecfg->skip) ||
+		((gamecfg->lastread) && (gamecfg->readskip))) {
 		return(GAMEEV_SUCCESS);
 	}
 

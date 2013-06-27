@@ -1,16 +1,20 @@
 
 enum {
-	GAMECORE_MAXSCENE	= 16,				// º¬§œ12∏ƒ°©
-	GAMECORE_MAXRGN		= 32,
+	GAMECORE_MAXSCENE	= 16,
+	GAMECORE_MAXRGN		= 64,
 	GAMECORE_MAXCMDS	= 16,
-	GAMECORE_MAXVRAM	= 128,				// VRAMNUM_MAX
+	GAMECORE_MAXVRAM	= 128,
 	GAMECORE_MAXSTACK	= 0x400,
 	GAMECORE_MAXNAME	= 160,
 	GAMECORE_MAXTXTWIN	= 8,
 	GAMECORE_NAMELEN	= 32,
-	GAMECORE_CHOICELEN	= (128 - 28),
+	GAMECORE_CMDTEXTLEN	= 128,
+	GAMECORE_CHOICELEN	= (128 - 20),
 	GAMECORE_MAXTEXT	= 30,
 	GAMECORE_PATTBLS	= 100,
+	GAMECORE_MAXGADFILE	= 32,
+	GAMECORE_MAXGADHDL	= 32,
+	GAMECORE_MAXGANHDL	= 32,
 
 	SOUNDTRK_SOUND		= 0,
 	SOUNDTRK_CDDA		= 0,
@@ -19,6 +23,7 @@ enum {
 	SOUNDTRK_MAXSE		= 32
 };
 
+#include	"gamedef.h"
 #include	"vram.h"
 #include	"vramdraw.h"
 #include	"vrammix.h"
@@ -46,6 +51,8 @@ typedef struct {
 //	int			textnum;
 	int			posx;
 	int			posy;
+	int			fontsize;
+	UINT		fonttype;
 	SCRN_T		txtclip;
 	SCRN_T		hisclip;
 } DISPWIN_T, *DISPWIN;
@@ -57,11 +64,11 @@ typedef struct {
 
 typedef struct {
 	int		*val;
-	int		maxval;
+	UINT	maxval;
 
 	BYTE	*flag;
-	int		maxflag;
-	UINT	flagsize;			// •ª°º•÷§«…¨Õ◊°£
+	UINT	maxflag;
+	UINT	flagsize;			// ÉZÅ[ÉuÇ≈ïKóvÅB
 
 	void	*exaval;
 	void	*exaflag;
@@ -70,23 +77,34 @@ typedef struct {
 	PATTBL	pattbl[GAMECORE_PATTBLS];
 } FLAGS_T, *FLAGS;
 
+typedef struct {
+	SINT32	num;
+	SINT32	bit;
+	char	name[16];
+} CGFLAG_T, *CGFLAG;
 
 typedef struct {
-	char		company[64];
-	char		title[64];
-	char		key[64];
-
-	char		scriptpath[MAX_PATH];
-} SUF_T;
-
+	SINT32	width;
+	SINT32	indenty;
+	SINT32	indentx;
+	SINT32	length;
+	BOOL	flag;					// centering?
+} SCOMCFG_T, *SCOMCFG;
 
 typedef struct {
-	int			version;
-	int			type;
-	int			width;
-	int			height;
-} SYS_T;
+	BYTE		type;
+	BYTE		pos;
+} SCRNSHOT_T;
 
+typedef struct {
+	UINT16		curpage;
+	BYTE		savepre;
+	BYTE		saverenewal;
+	BYTE		*flag;
+	LISTARRAY	scr;
+	LISTARRAY	kid;
+	LISTARRAY	cgflag;
+} DRSSYS_T, *DRSSYS;
 
 typedef struct {
 	SYS_T		sys;
@@ -116,50 +134,20 @@ typedef struct {
 	TIMEEVT_T	wait;
 	TEXTCTRL_T	textdraw;
 	CWEVT_T		cwevt;
+	SCOMCFG_T	scomcfg;
+
+	SCRNSHOT_T	scrnshot;
+	DRSSYS_T	drssys;
 
 	LISTARRAY	cfglist;
 	char		comment[100];
+	char		ggdname[GAMECORE_MAXVRAM][16];
+	char		sename[SOUNDTRK_MAXSE][16];
+
+	BOOL		initialized;
+const char		*err;
+	char		errstr[256];
 } GAMECORE;
-
-
-enum {
-	EXE_VER0		= 0,
-	EXEVER_KANA,					// 99-06-16 ≤√∆‡
-	EXEVER_MYU,						// 99-07-16 Purple
-	EXE_VER1		= 100,
-	EXEVER_TEA2DEMO,				// 00-08-08 §ª§Û§ª§§£≤•«•‚
-	EXEVER_PLANET,					// 00-11-27 ¿±∂ı§◊§È§Õ§√§»
-	EXEVER_PLANDVD,					// 01-01-31 ¿±∂ı§◊§È§Õ§√§»DVD
-	EXEVER_NURSE,					// 01-06-01 •◊•È•§•Ÿ°º•»• °º•π
-	EXEVER_KONYA,					// 01-07-15 ª‰§À∫£ÃÎ°˘≤Ò§§§ÀÕË§∆
-	EXEVER_CRES,					// 01-09-11 •Ø•Ï•∑•ß•Û•…
-	EXEVER_KAZOKU,					// 01-10-24 ≤»¬≤∑◊≤Ë
-	EXEVER_OSHIETE,					// 02-08-19 ∂µ§®§∆§¢§≤§¡§„§¶
-	EXEVER_SISKON,					// 02-09-02 §∑§π§≥§Û
-	EXEVER_KONYA2,					// 02-10-03 ª‰§À∫£ÃÎ°˘≤Ò§§§ÀÕË§∆£≤
-	EXEVER_KAZOKUK,					// 02-11-27 ≤»¬≤∑◊≤Ë Â´»¢
-	EXEVER_HEART,					// 03-01-13 §œ§°§»de•Î°º•‡•·•§•»
-	EXEVER_DM,						// 03-03-11 •…°º•ø°º•·°º•´°º
-	EXEVER_MOEKKO					// 03-04-04 À®§®•√Ãº• °º•π
-};
-
-
-enum {
-	GAME_VOICE			= 0x0001,		// •Ù•©•§•π§Œ•µ•›°º•»
-	GAME_VOICEONLY		= 0x0002,		// •Ù•©•§•π§Œ§ﬂ§Œ•µ•›°º•»
-	GAME_HAVEALPHA		= 0x0004,		// •∆•≠•π•»¡Î≤ƒ —ƒÃ≤·ΩËÕ˝•µ•›°º•»
-	GAME_TEXTASCII		= 0x0008,		// »æ≥—•∆•≠•π•»§Úµˆ§π
-	GAME_SVGA			= 0x0010,		// 800x600
-
-	GAME_SAVEMYU		= 0x0100,		// MYU-.EXE •ª°º•÷
-	GAME_SAVEMAX27		= 0x0200,		// •ª°º•÷øÙ 27
-	GAME_SAVEMAX30		= 0x0300,		// •ª°º•÷øÙ 30
-	GAME_SAVEMAX50		= 0x0400,		// •ª°º•÷øÙ 50
-	GAME_SAVEMASK		= 0x0700,
-	GAME_SAVEGRPH		= 0x0800,		// •∞•È•’•£•√•Ø§Ú¥ﬁ§‡
-	GAME_SAVECOM		= 0x1000,		// •≥•·•Û•»§Ú¥ﬁ§‡
-	GAME_SAVESYS		= 0x2000		// •∑•π•∆•‡ŒŒ∞ËÕ≠§Í
-};
 
 
 enum {
@@ -175,24 +163,24 @@ enum {
 
 	GAMEEV_FAILURE		= -200,			// todo
 
-	GAMEEV_ERROR		= -2,			// •®•È°º°¶∂Ø¿©Ω™Œª
-	GAMEEV_EXIT			= -1,			// •≤°º•‡Ω™Œª
-	GAMEEV_SUCCESS		= 0,			// º°§Œ•π•∆•√•◊§ÿ
-	GAMEEV_TEXTOUT		= 1,			// •∆•≠•π•»…Ωº®
-	GAMEEV_WAITMOUSE	= 2,			// •ﬁ•¶•π•‡°º•÷ / •◊•√•∑•Â¬‘§¡
-	GAMEEV_EFFECT		= 3,			// •®•’•ß•Ø•»√Ê
-	GAMEEV_FADEOUT		= 4,			// •’•ß°º•…•¢•¶•»√Ê
-	GAMEEV_FADEIN		= 5,			// •’•ß°º•…•§•Û√Ê
-	GAMEEV_CMDWIN		= 6,			// •≥•ﬁ•Û•…•¶•£•Û•…•¶º¬π‘√Ê
-	GAMEEV_GRAYSCALE	= 7,			// •∞•Ï°º•π•±°º•Î(cmd:60)
-	GAMEEV_SCROLL		= 8,			// •π•Ø•Ì°º•ÎΩËÕ˝(cmd:62)
-	GAMEEV_QUAKE		= 9,			// ≤ËÃÃÕ…§È§∑ΩËÕ˝(cmd:63)
-	GAMEEV_WAITPCMEND	= 10,			// PCMΩ™Œª¬‘§¡
-	GAMEEV_MSGCLK		= 11,			// •·•√•ª°º•∏•Ø•Í•√•Ø¬‘§¡
-	GAMEEV_IRCLK		= 12,			// IRCLK •Ø•Í•√•Ø¬‘§¡
-	GAMEEV_WAIT			= 13,			// •¶•ß•§•»
+	GAMEEV_ERROR		= -2,			// ÉGÉâÅ[ÅEã≠êßèIóπ
+	GAMEEV_EXIT			= -1,			// ÉQÅ[ÉÄèIóπ
+	GAMEEV_SUCCESS		= 0,			// éüÇÃÉXÉeÉbÉvÇ÷
+	GAMEEV_TEXTOUT		= 1,			// ÉeÉLÉXÉgï\é¶
+	GAMEEV_WAITMOUSE	= 2,			// É}ÉEÉXÉÄÅ[Éu / ÉvÉbÉVÉÖë“Çø
+	GAMEEV_CMDWIN		= 3,			// ÉRÉ}ÉìÉhÉEÉBÉìÉhÉEé¿çsíÜ
+	GAMEEV_WAITPCMEND	= 4,			// PCMèIóπë“Çø
+	GAMEEV_MSGCLK		= 5,			// ÉÅÉbÉZÅ[ÉWÉNÉäÉbÉNë“Çø
+	GAMEEV_IRCLK		= 6,			// IRCLK ÉNÉäÉbÉNë“Çø
+	GAMEEV_WAIT			= 7,			// ÉEÉFÉCÉg
+	GAMEEV_FADEIN		= 10,			// ÉtÉFÅ[ÉhÉCÉìíÜ(cmd:54)
+	GAMEEV_FADEOUT		= 11,			// ÉtÉFÅ[ÉhÉAÉEÉgíÜ(cmd:55)
+	GAMEEV_EFFECT		= 12,			// ÉGÉtÉFÉNÉgíÜ(cmd:57)
+	GAMEEV_GRAYSCALE	= 13,			// ÉOÉåÅ[ÉXÉPÅ[Éã(cmd:60)
+	GAMEEV_SCROLL		= 14,			// ÉXÉNÉçÅ[Éãèàóù(cmd:62)
+	GAMEEV_QUAKE		= 15,			// âÊñ óhÇÁÇµèàóù(cmd:63)
 
-	GAMEEV_FORCE		= 100			// ∂Øπ‘
+	GAMEEV_FORCE		= 100			// ã≠çs
 };
 
 
@@ -207,6 +195,9 @@ void gamecore_destroy(void);
 
 void gamecore_resetvolume(void);
 void gamecore_reset(void);
+
+const char *gamecore_seterrorevent(int event);
+const char *gamecore_geterror(void);
 
 BOOL gamecore_proc(void);
 BOOL gamecore_exec(void);

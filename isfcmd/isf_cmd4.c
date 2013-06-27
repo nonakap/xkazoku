@@ -9,11 +9,11 @@
 
 #include	"compiler.h"
 #include	"gamecore.h"
-#include	"isf_cmd.h"
 #include	"savefile.h"
+#include	"isf_cmd.h"
 
 
-// HLN : ÊÑ¿ô¤Î¿ô¤ò¥»¥Ã¥È (Nonaka.K)
+// HLN : •Ï”‚Ì”‚ğƒZƒbƒg (Nonaka.K)
 int isfcmd_40(SCR_OPE *op) {
 
 	FLAGS	flags;
@@ -41,7 +41,7 @@ int isfcmd_40(SCR_OPE *op) {
 }
 
 
-// HS : ÊÑ¿ô¤ËÃÍ¤òÂåÆş (T.Yui)
+// HS : •Ï”‚É’l‚ğ‘ã“ü (T.Yui)
 int isfcmd_41(SCR_OPE *op) {
 
 	UINT16	num;
@@ -56,7 +56,7 @@ int isfcmd_41(SCR_OPE *op) {
 }
 
 
-// HINC : ÊÑ¿ô¤ò¥¤¥ó¥¯¥ê¥á¥ó¥È (T.Yui)								DRS cmd:43
+// HINC : •Ï”‚ğƒCƒ“ƒNƒŠƒƒ“ƒg (T.Yui)								DRS cmd:43
 int isfcmd_42(SCR_OPE *op) {
 
 	UINT16	num;
@@ -72,7 +72,7 @@ int isfcmd_42(SCR_OPE *op) {
 }
 
 
-// HDEC : ÊÑ¿ô¤ò¥Ç¥¯¥ê¥á¥ó¥È (T.Yui)								DRS cmd:44
+// HDEC : •Ï”‚ğƒfƒNƒŠƒƒ“ƒg (T.Yui)								DRS cmd:44
 int isfcmd_43(SCR_OPE *op) {
 
 	UINT16	num;
@@ -88,7 +88,7 @@ int isfcmd_43(SCR_OPE *op) {
 }
 
 
-// CALC : ·×»»¤¹¤ë (Nonaka.K)
+// CALC : ŒvZ‚·‚é (Nonaka.K)
 int isfcmd_44(SCR_OPE *op) {
 
 	UINT16	num;
@@ -173,7 +173,7 @@ int isfcmd_44(SCR_OPE *op) {
 }
 
 
-// HSG : ÊÑ¿ô¤Ë¤Ş¤È¤á¤ÆÃÍ¤òÂåÆş Nonaka.K, T.Yui
+// HSG : •Ï”‚É‚Ü‚Æ‚ß‚Ä’l‚ğ‘ã“ü Nonaka.K, T.Yui
 int isfcmd_45(SCR_OPE *op) {
 
 	UINT16	from;
@@ -185,14 +185,14 @@ int isfcmd_45(SCR_OPE *op) {
 		(scr_getval(op, &val) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
-	while(from <= to) {					// ¤³¤¦¤¸¤ã¤Ê¤¤¤«¤Ê¡©
+	while(from <= to) {					// ‚±‚¤‚¶‚á‚È‚¢‚©‚ÈH
 		scr_valset(from++, val);
 	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// HT : ÊÑ¿ô¤ÎÅ¾Á÷
+// HT : •Ï”‚Ì“]‘—
 int isfcmd_46(SCR_OPE *op) {
 
 	UINT16	from;
@@ -312,7 +312,7 @@ int isfcmd_47(SCR_OPE *op) {
 }
 
 
-// EXA : ¥Õ¥é¥°¤ÈÊÑ¿ô¤òÊÌÅÓ¤Ëµ­²±¤¹¤ëÎÎ°è¤ò³ÎÊİ Nonaka.K T.Yui
+// EXA : ƒtƒ‰ƒO‚Æ•Ï”‚ğ•Ê“r‚É‹L‰¯‚·‚é—Ìˆæ‚ğŠm•Û Nonaka.K T.Yui
 int isfcmd_48(SCR_OPE *op) {
 
 	FLAGS	flags;
@@ -322,7 +322,7 @@ int isfcmd_48(SCR_OPE *op) {
 
 	flags = &gamecore.flags;
 
-	if ((scr_getword(op, &exaflags) != SUCCESS) ||			// ¤³¤³µÕ¡Ä
+	if ((scr_getword(op, &exaflags) != SUCCESS) ||			// ‚±‚±‹tc
 		(scr_getword(op, &exavals) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
@@ -333,15 +333,14 @@ int isfcmd_48(SCR_OPE *op) {
 	TRACEOUT(("exa - %d, %d", exavals, exaflags));
 
 	sh = savefile_open(FALSE);
-	savefile_readexaflag(sh, flags->exaflag);
-	savefile_readexaval(sh, flags->exaval);
-	savefile_close(sh);
-
+	sh->readexaflag(sh, flags->exaflag);
+	sh->readexaval(sh, flags->exaval);
+	sh->close(sh);
 	return(GAMEEV_SUCCESS);
 }
 
 
-// EXS : EXA¥³¥Ş¥ó¥É¤Ç³ÎÊİ¤·¤¿ÎÎ°è¤«¤é»ØÄê¥Õ¥é¥°¡¿ÊÑ¿ô¤ò½ñ¹ş (Nonaka.K)
+// EXS : EXAƒRƒ}ƒ“ƒh‚ÅŠm•Û‚µ‚½—Ìˆæ‚©‚çw’èƒtƒ‰ƒO^•Ï”‚ğ‘ (Nonaka.K)
 int isfcmd_49(SCR_OPE *op) {
 
 	FLAGS	flags;
@@ -382,7 +381,7 @@ int isfcmd_49(SCR_OPE *op) {
 }
 
 
-// EXC : EXA¥³¥Ş¥ó¥É¤Ç³ÎÊİ¤·¤¿ÎÎ°è¤«¤é»ØÄê¥Õ¥é¥°¡¿ÊÑ¿ô¤ËÆÉ¹ş (Nonaka.K)
+// EXC : EXAƒRƒ}ƒ“ƒh‚ÅŠm•Û‚µ‚½—Ìˆæ‚©‚çw’èƒtƒ‰ƒO^•Ï”‚É“Ç (Nonaka.K)
 int isfcmd_4a(SCR_OPE *op) {
 
 	FLAGS	flags;
@@ -423,7 +422,7 @@ int isfcmd_4a(SCR_OPE *op) {
 }
 
 
-// SCP : ¥·¥¹¥Æ¥àÊÑ¿ô¤Î¥³¥Ô¡¼
+// SCP : ƒVƒXƒeƒ€•Ï”‚ÌƒRƒs[
 int isfcmd_4b(SCR_OPE *op) {
 
 	UINT16	num;
@@ -438,6 +437,10 @@ int isfcmd_4b(SCR_OPE *op) {
 
 	val = 0;
 	switch(cmd) {
+		case 0x09:		// anime?
+			val = (gamecore.anime.ganenable != NULL)?1:0;
+			break;
+
 		case 0x14:
 			textwin = textwin_getwin(0);
 			if (textwin) {
@@ -453,7 +456,7 @@ int isfcmd_4b(SCR_OPE *op) {
 }
 
 
-// SSP : ¥·¥¹¥Æ¥àÊÑ¿ô¤Ë¥Ñ¥é¥á¡¼¥¿¤ò¥³¥Ô¡¼¤¹¤ë
+// SSP : ƒVƒXƒeƒ€•Ï”‚Éƒpƒ‰ƒ[ƒ^‚ğƒRƒs[‚·‚é
 int isfcmd_4c(SCR_OPE *op) {
 
 	UINT16	num;

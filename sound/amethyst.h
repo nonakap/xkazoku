@@ -4,7 +4,7 @@ enum {
 	MPEG_FAILURE		= 1
 };
 
-enum {								// ²ÄÊÑÄ¹ÂÐ±þ¡©
+enum {								// ‰Â•Ï’·‘Î‰žH
 	MPEGHEAD_SUCCESS	= 0,
 	MPEGHEAD_RENEWAL	= 1,
 	MPEGHEAD_FAILURE	= 2

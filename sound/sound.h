@@ -1,5 +1,5 @@
 
-// ･ｱ･簣ﾍ､ﾎ･ｵ･ｦ･ﾉ･ﾟ･ｭ･ｵ｡ｼ､ﾃ､ﾝ､､ﾅﾛ
+// ケモ様のサウンドミキサーっぽい奴
 
 
 #define	SND_MAXTRACK	34
@@ -9,7 +9,7 @@
 
 // ---- supports
 
-// #define	SOUND_MOREINFO				// chime､ｬｾ隍熙ﾋ､ｯ､�､ﾎ､ﾇ｡ﾄ
+// #define	SOUND_MOREINFO				// chimeが情報取りにくるので…
 
 #define	WAVE_MSADPCM
 #define	WAVE_IMA
@@ -20,17 +20,29 @@
 
 // ---- stream
 
-typedef void *(*PCMSTREAM_OPEN)(const void *arg, int num);
-typedef UINT (*PCMSTREAM_READ)(void *stream, void *buf, UINT size);
-typedef long (*PCMSTREAM_SEEK)(void *stream, long pos, int method);
-typedef void (*PCMSTREAM_CLOSE)(void *stream);
+struct _sndstream;
+typedef	struct _sndstream	_SNDSTREAM;
+typedef	struct _sndstream	*SNDSTREAM;
 
-typedef struct {
-	PCMSTREAM_OPEN		stream_open;
-	PCMSTREAM_READ		stream_read;
-	PCMSTREAM_SEEK		stream_seek;
-	PCMSTREAM_CLOSE		stream_close;
-} PCMSTREAM;
+enum {
+	SSSEEK_SET		= 0,
+	SSSEEK_CUR		= 1,
+	SSSEEK_END		= 2,
+	SSSEEK_MODE		= 3
+};
+
+typedef int (*SNDSTREAM_OPEN)(SNDSTREAM stream, void *arg, int num);
+typedef UINT (*SNDSTREAM_READ)(SNDSTREAM stream, void *buf, UINT size);
+typedef long (*SNDSTREAM_SEEK)(SNDSTREAM stream, long pos, int method);
+typedef void (*SNDSTREAM_CLOSE)(SNDSTREAM stream);
+
+struct _sndstream {
+	void			*hdl;
+	UINT			param;
+	SNDSTREAM_READ	ssread;
+	SNDSTREAM_SEEK	ssseek;
+	SNDSTREAM_CLOSE	ssclose;
+};
 
 
 // ---- wave file formats
@@ -39,8 +51,9 @@ enum {
 	WAVEFMT_PCM			= 0x01,
 	WAVEFMT_MSADPCM		= 0x02,
 	WAVEFMT_IMA			= 0x11,
-	WAVEFMT_MP2			= 0x52,
+	WAVEFMT_MP2			= 0x50,
 	WAVEFMT_MP3			= 0x55,
+	WAVEFMT_MIDI		= 0x4d4944,
 	WAVEFMT_OGG			= 0x4f4747,
 	WAVEFMT_KPV			= 0x4b5056
 };
@@ -66,12 +79,13 @@ typedef void (*DECENDFN)(SMIXTRACK self);
 typedef void (*MIXFN)(SMIXTRACK self, void *buf, UINT size);
 typedef void *(*MIXFN2)(SMIXTRACK self, void *buf, void *bufterm);
 typedef void (*DECGAINFN)(SMIXTRACK self, int gain);
+typedef int (*DECREWFN)(SMIXTRACK self);
 
 
 struct _smixtrack {
 volatile UINT	flag;
 
-	BYTE		*data;					// data loadﾍﾑ･ﾐ･ﾃ･ﾕ･｡
+	BYTE		*data;					// data load用バッファ
 	UINT		indatas;
 	UINT		maxdatas;
 
@@ -82,15 +96,13 @@ volatile UINT	flag;
 	SINT32		pcml;
 	SINT32		pcmr;
 
-	void			*stream;
-	PCMSTREAM_READ	stream_read;
-	PCMSTREAM_SEEK	stream_seek;
-	PCMSTREAM_CLOSE	stream_close;
+	_SNDSTREAM	stream;
 
 	void		*snd;
 	DECFN		dec;
 	DECENDFN	decend;
 	DECGAINFN	decgain;
+	DECREWFN	decrew;
 
 	MIXFN		cpy16;
 	MIXFN2		cpy16cnv;
@@ -109,6 +121,8 @@ volatile UINT	flag;
 	long		loopfpos;
 	UINT		loopsize;
 	UINT		fremain;
+
+	UINT		samplepos;
 
 	int			worksize;
 	BYTE		*buffer;
@@ -130,13 +144,20 @@ typedef struct {
 	_SMIXTRACK	trk[SND_MAXTRACK];
 	UINT		basehz;
 	int			gain[SND_MAXTRACK];
-} SOUND_T;
+} _SNDHDL, *SNDHDL;
 
 
 enum {
-	SNDMIX_NEXT = -1,
+	SNDMIX_DEVICEERROR = -9,
+	SNDMIX_DATAERROR = -8,
+	SNDMIX_STREAMERROR = -7,
+	SNDMIX_MEMORYERROR = -6,
+	SNDMIX_PARAMERROR = -4,
+	SNDMIX_TRACKERROR = -3,
+	SNDMIX_NOTSUPPORT = -2,
+	SNDMIX_NOTREADY = -1,
 	SNDMIX_SUCCESS = 0,
-	SNDMIX_FAILURE = 1
+	SNDMIX_FAILURE = 1,
 };
 
 
@@ -147,6 +168,7 @@ extern "C" {
 int sndwave_open(SMIXTRACK trk);
 int sndmp3_open(SMIXTRACK trk);
 int sndexse_open(SMIXTRACK trk);
+int sndmidi_open(SMIXTRACK trk);
 int sndogg_open(SMIXTRACK trk);
 int sndkpv_open(SMIXTRACK trk);
 
@@ -159,9 +181,8 @@ void sndmix_datatrash(SMIXTRACK trk, UINT size);
 
 void soundmix_create(UINT basehz);
 void soundmix_destory(void);
-void soundmix_setgain(int num, int gain);
 
-BOOL soundmix_load(int num, PCMSTREAM *stream, void *arg);
+int soundmix_load(int num, SNDSTREAM_OPEN ssopen, void *arg);
 void soundmix_unload(int num);
 void soundmix_play(int num, int loop, int fadeintick);
 void soundmix_stop(int num, int fadeouttick);
@@ -169,6 +190,8 @@ void soundmix_rew(int num);
 void soundmix_continue(int num);
 
 BOOL soundmix_isplaying(int num);
+UINT soundmix_getpos(int num);
+void soundmix_setgain(int num, int gain);
 #ifdef SOUND_MOREINFO
 SMIXTRACK soundmix_getinfo(int num);
 #endif
@@ -179,6 +202,11 @@ UINT soundmix_getpcm(SINT16 *pcm, UINT samples);
 #if defined(AMETHYST_OVL)
 void amethsy_init(void);
 void amethsy_term(void);
+#endif
+
+#if defined(VERMOUTH_LIB)
+void vermouth_init(void);
+void vermouth_term(void);
 #endif
 
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 
-// ､皃ﾋ､蝪ｼ､ﾇ､ｳ､�｡ｼ､ｷ､遉｣
-// VGAﾍﾑ｡｣
+// めにゅーでこれーしょん。
+// VGA用。
 
 #ifndef SIZE_QVGA
 
@@ -108,10 +108,10 @@ enum {
 	MENUSYS_CXCLOSE		= 12,
 	MENUSYS_CYCLOSE		= 12,
 
-	MENUSYS_CYSYS		= 18,
-	MENUSYS_SXSYS		= 7,
-	MENUSYS_LXSYS		= 7,
-	MENUSYS_SYSYS		= 2,
+	MENUSYS_CYSYS		= 12,
+	MENUSYS_SXSYS		= 4,
+	MENUSYS_LXSYS		= 4,
+	MENUSYS_SYSYS		= 0,
 
 	MENUSYS_CYITEM		= 12,
 	MENUSYS_SXITEM		= 3,

@@ -603,7 +603,7 @@ static void lzxsolve(BYTE *ptr, int size, const BYTE *dat) {
 
 // ----
 
-VRAMHDL menuvram_resload(MENURES *res, int bpp) {
+VRAMHDL menuvram_resload(const MENURES *res, int bpp) {
 
 	VRAMHDL	ret;
 	int		size;
@@ -895,7 +895,12 @@ void menuvram_caption(VRAMHDL vram, const RECT_T *rect,
 	pt.x = rect->left + MENU_PXCAPTION;
 	if (icon) {
 		pt.y = rect->top + MENU_PYCAPTION;
-		vramcpy_cpyex(vram, icon, &pt, NULL);
+		if (icon->alpha) {
+			vramcpy_cpyex(vram, icon, &pt, NULL);
+		}
+		else {
+			vramcpy_cpy(vram, icon, &pt, NULL);
+		}
 		pt.x += icon->width;
 		pt.x += MENU_PXCAPTION;
 	}
@@ -907,11 +912,11 @@ mvpt_exit:
 }
 
 
-void menuvram_closebtn(VRAMHDL vram, const RECT_T *rect, BOOL focus) {
-
-	RECT_T		rct;
-	POINT_T		pt;
-	UINT		mvc4;
+static void putbtn(VRAMHDL vram, const RECT_T *rect,
+										const MENURES2 *res, BOOL focus) {
+	RECT_T	rct;
+	POINT_T	pt;
+	UINT	mvc4;
 
 	if (rect) {
 		rct = *rect;
@@ -938,6 +943,16 @@ void menuvram_closebtn(VRAMHDL vram, const RECT_T *rect, BOOL focus) {
 		pt.x += MENU_LINE;
 		pt.y += MENU_LINE;
 	}
-	menuvram_res3put(vram, &menures_close, &pt, MVC_TEXT);
+	menuvram_res3put(vram, res, &pt, MVC_TEXT);
+}
+
+void menuvram_minimizebtn(VRAMHDL vram, const RECT_T *rect, BOOL focus) {
+
+	putbtn(vram, rect, &menures_minimize, focus);
+}
+
+void menuvram_closebtn(VRAMHDL vram, const RECT_T *rect, BOOL focus) {
+
+	putbtn(vram, rect, &menures_close, focus);
 }
 

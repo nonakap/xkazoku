@@ -8,14 +8,18 @@
 // -------------------------------------------------------------
 
 #include	"compiler.h"
-#include	"gamecore.h"
-#include	"isf_cmd.h"
-#include	"gamemsg.h"
-#include	"arcfile.h"
 #include	"moviemng.h"
+#include	"gamemsg.h"
+#include	"gamecore.h"
+#include	"arcfile.h"
+#include	"isf_cmd.h"
+#ifndef DISABLE_DIALOG
+#include	"menubase.h"
+#include	"dlgcfg.h"
+#endif
 
 
-// CNF : 息冯ファイルのファイル叹肋年 (T.Yui)
+// CNF : 楢寢僼傽僀儖偺僼傽僀儖柤愝掕 (T.Yui)
 int isfcmd_f0(SCR_OPE *op) {
 
 	BYTE	type;
@@ -32,7 +36,7 @@ int isfcmd_f0(SCR_OPE *op) {
 }
 
 
-// ATIMES : ウェイトの倡幌 (T.Yui)
+// ATIMES : 僂僃僀僩偺奐巒 (T.Yui)
 int isfcmd_f1(SCR_OPE *op) {
 
 	TIMEEVT_T	evt;
@@ -46,7 +50,7 @@ int isfcmd_f1(SCR_OPE *op) {
 }
 
 
-// AWAIT : ウェイト略ち (T.Yui)
+// AWAIT : 僂僃僀僩懸偪 (T.Yui)
 int isfcmd_f2(SCR_OPE *op) {
 
 	(void)op;
@@ -54,7 +58,7 @@ int isfcmd_f2(SCR_OPE *op) {
 }
 
 
-// AVIP : AVI
+// AVIP : AVI (T.Yui)
 int isfcmd_f3(SCR_OPE *op) {
 
 	RECT_U	scrn;
@@ -69,7 +73,7 @@ int isfcmd_f3(SCR_OPE *op) {
 }
 
 
-// PPF : ポップアップメニュ〖の山绩肋年 (Nonaka.K)
+// PPF : 億僢僾傾僢僾儊僯儏乕偺昞帵愝掕 (Nonaka.K)
 int isfcmd_f4(SCR_OPE *op) {
 
 	BYTE	cmd;
@@ -87,7 +91,7 @@ int isfcmd_f4(SCR_OPE *op) {
 }
 
 
-// SVF : セ〖ブの材ˇ稍材の肋年 (Nonaka.K)
+// SVF : 僙乕僽偺壜丒晄壜偺愝掕 (Nonaka.K)
 int isfcmd_f5(SCR_OPE *op) {
 
 	BYTE	cmd;
@@ -105,7 +109,21 @@ int isfcmd_f5(SCR_OPE *op) {
 }
 
 
-// SETGAMEINFO : ゲ〖ム柒攫鼠の肋年 (T.Yui)
+// PRE : 億僢僾傾僢僾儊僯儏乕偺嬛巭丒嫋壜昞帵愝掕 (T.Yui)
+int isfcmd_f6(SCR_OPE *op) {
+
+	BYTE	num;
+	BYTE	cmd;
+
+	if ((scr_getbyte(op, &num) != SUCCESS) ||
+		(scr_getbyte(op, &cmd) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	return(GAMEEV_SUCCESS);
+}
+
+
+// SETGAMEINFO : 僎乕儉撪忣曬偺愝掕 (T.Yui)
 int isfcmd_f7(SCR_OPE *op) {
 
 	int		size;
@@ -119,7 +137,7 @@ int isfcmd_f7(SCR_OPE *op) {
 }
 
 
-// SETFONTSTYLE : 山绩フォントスタイル回年
+// SETFONTSTYLE : 昞帵僼僅儞僩僗僞僀儖巜掕
 int isfcmd_f8(SCR_OPE *op) {
 
 	BYTE	num;
@@ -138,7 +156,7 @@ int isfcmd_f8(SCR_OPE *op) {
 }
 
 
-// SETFONTCOLOR : 山绩フォントカラ〖回年 (T.Yui)
+// SETFONTCOLOR : 昞帵僼僅儞僩僇儔乕巜掕 (T.Yui)
 int isfcmd_f9(SCR_OPE *op) {
 
 	BYTE	num;
@@ -164,7 +182,7 @@ int isfcmd_f9(SCR_OPE *op) {
 }
 
 
-// TIMERSET : タイムカウンタ〖肋年 (Nonaka.K)
+// TIMERSET : 僞僀儉僇僂儞僞乕愝掕 (Nonaka.K)
 int isfcmd_fa(SCR_OPE *op) {
 
 	TIMEEVT_T	evt;
@@ -178,7 +196,7 @@ int isfcmd_fa(SCR_OPE *op) {
 }
 
 
-// TIMEREND : タイムカウンタ〖姜位 (Nonaka.K)
+// TIMEREND : 僞僀儉僇僂儞僞乕廔椆 (Nonaka.K)
 int isfcmd_fb(SCR_OPE *op) {
 
 	TIMEEVT	evt;
@@ -192,7 +210,7 @@ int isfcmd_fb(SCR_OPE *op) {
 }
 
 
-// TIMERGET : タイムカウンタ〖艰评 (Nonaka.K)
+// TIMERGET : 僞僀儉僇僂儞僞乕庢摼 (Nonaka.K)
 int isfcmd_fc(SCR_OPE *op) {
 
 	TIMEEVT	evt;
@@ -207,6 +225,48 @@ int isfcmd_fc(SCR_OPE *op) {
 	evt->val += now - evt->base;
 	evt->base = now;
 	scr_valset(num, evt->val);
+	return(GAMEEV_SUCCESS);
+}
+
+
+// GRPOUT : 夋憸弌椡
+int isfcmd_fd(SCR_OPE *op) {
+
+	SINT32	num;
+	char	label[32];
+	BYTE	type;
+	BYTE	pos;
+	char	credit0[ARCFILENAME_LEN+1];
+	char	credit1[ARCFILENAME_LEN+1];
+
+	if ((scr_getval(op, &num) != SUCCESS) ||
+		(scr_getlabel(op, label, sizeof(label)) != SUCCESS) ||
+		(scr_getbyte(op, &type) != SUCCESS) ||
+		(scr_getbyte(op, &pos) != SUCCESS) ||
+		(scr_getlabel(op, credit0, sizeof(credit0)) != SUCCESS) ||
+		(scr_getlabel(op, credit1, sizeof(credit1)) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+#ifndef DISABLE_DIALOG
+	if ((num >= 0) && (num < GAMECORE_MAXVRAM)) {
+		SCRNSHOT_T *ss;
+		ss = &gamecore.scrnshot;
+		ss->type = type;
+		ss->pos = pos;
+		if (ssdlg_open()) {
+			vramdraw_savebmp(num, gamecore.suf.scriptpath, label,
+												ss->pos, credit0, credit1);
+		}
+	}
+#endif
+	return(GAMEEV_SUCCESS);
+}
+
+
+// BREAK : 俛倰倕倎倠 (T.Yui)
+int isfcmd_fe(SCR_OPE *op) {
+
+	(void)op;
 	return(GAMEEV_SUCCESS);
 }
 

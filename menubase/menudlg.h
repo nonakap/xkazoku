@@ -17,7 +17,10 @@ enum {
 	DMSG_SETTEXT,
 	DMSG_APPENDTEXT,
 	DMSG_SETLISTPOS,
-	DMSG_SETFONT
+	DMSG_SETRECT,
+	DMSG_GETRECT,
+	DMSG_SETFONT,
+	DMSG_GETFONT
 };
 
 enum {
@@ -26,8 +29,14 @@ enum {
 	MSS_POSMASK			= 0x0030,
 	MSS_VERT			= 0x0040,
 
-	MSL_VERT			= 0x0010
+	MSL_VERT			= 0x0010,
+
+	MST_LEFT			= 0x0000,
+	MST_CENTER			= 0x0010,
+	MST_RIGHT			= 0x0020,
+	MST_POSMASK			= 0x0030
 };
+
 
 enum {
 	DLGTYPE_BASE	= 0,
@@ -43,12 +52,15 @@ enum {
 
 	DLGTYPE_FRAME,
 	DLGTYPE_EDIT,
-	DLGTYPE_LTEXT,
-	DLGTYPE_CTEXT,
-	DLGTYPE_RTEXT,
+	DLGTYPE_TEXT,
 	DLGTYPE_VRAM,
 	DLGTYPE_LINE,
-	DLGTYPE_BOX
+	DLGTYPE_BOX,
+
+// å›ä∑ópÅc
+	DLGTYPE_LTEXT,
+	DLGTYPE_CTEXT,
+	DLGTYPE_RTEXT
 };
 
 typedef struct {
@@ -106,6 +118,11 @@ void menudlg_disppagehidden(MENUID page, BOOL hidden);
 					menudlg_msg(DMSG_APPENDTEXT, (id), (void *)(arg))
 #define menudlg_setlistpos(id, num)		\
 					menudlg_msg(DMSG_SETLISTPOS, (id), (void *)(num))
+#define menudlg_setrect(id, rect)		\
+					menudlg_msg(DMSG_SETRECT, (id), (rect))
+#define menudlg_getrect(id)				\
+					((RECT_T *)menudlg_msg(DMSG_GETRECT, (id), NULL))
 #define menudlg_setfont(id, font)		\
 					menudlg_msg(DMSG_SETFONT, (id), (font))
-
+#define menudlg_getfont(id)				\
+					menudlg_msg(DMSG_GETFONT, (id), NULL)

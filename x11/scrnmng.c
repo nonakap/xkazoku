@@ -1,4 +1,4 @@
-/*	$Id: scrnmng.c,v 1.2 2003/04/22 07:15:51 yui Exp $	*/
+/*	$Id: scrnmng.c,v 1.3 2003/08/13 05:01:54 yui Exp $	*/
 
 #include "compiler.h"
 #include "gamecore.h"
@@ -49,7 +49,7 @@ static BOOL
 norrect(DEST_SURFACE *ds, VRAMHDL s, MIX_RECT *rct)
 {
 
-	bzero(rct, sizeof(MIX_RECT));
+	memset(rct, 0, sizeof(MIX_RECT));
 
 	rct->width = min(ds->width, s->width);
 	rct->height = min(ds->height, s->height);

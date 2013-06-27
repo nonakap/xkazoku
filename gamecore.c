@@ -1,200 +1,102 @@
 #include	"compiler.h"
-#include	"gamecore.h"
-#include	"arcfile.h"
-#include	"taskmng.h"
-#include	"scrnmng.h"
-#include	"fontmng.h"
 #include	"dosio.h"
-#include	"cgload.h"
 #include	"cddamng.h"
-#include	"gamemsg.h"
-#include	"sound.h"
-#include	"sstream.h"
+#include	"fontmng.h"
+#include	"scrnmng.h"
+#include	"taskmng.h"
 #include	"timemng.h"
+#include	"gamemsg.h"
+#include	"gamecore.h"
+#include	"sound.h"
+#include	"arcfile.h"
+#include	"cgload.h"
+#include	"savefile.h"
+#include	"savedrs.h"
+#include	"sstream.h"
 #ifndef DISABLE_DIALOG
+#include	"inputmng.h"
 #include	"menubase.h"
 #include	"sysmenu.h"
-#include	"inputmng.h"
 #endif
 
 
 	GAMECORE	gamecore;
 
 
-typedef struct {
-const char	*company;
-const char	*key;
-	int		exever;
-	UINT	gametype;
-} GAMETBL;
-
-
-// ¥²¡¼¥à¥·¥¹¥Æ¥à¤ò¹ç¤ï¤»¤ë¤Ë¤Ï ¤³¤³¤ÇÄ´À°¡Ä
-
-static const GAMETBL gametbl[] = {
-	{NULL,		"KANA",		EXEVER_KANA,	GAME_HAVEALPHA},
-	{"Purple",	NULL,		EXEVER_MYU,		GAME_SAVEMYU | GAME_VOICE},
-
-	{NULL,		"TEA2SMPL",	EXEVER_TEA2DEMO,GAME_SAVEMAX30 | GAME_SAVECOM |
-				GAME_SAVESYS | GAME_SAVEGRPH | GAME_VOICE | GAME_VOICEONLY},
-	{NULL,		"TEA2DEMO",	EXEVER_TEA2DEMO,GAME_SAVEMAX30 | GAME_SAVECOM |
-				GAME_SAVESYS | GAME_SAVEGRPH | GAME_VOICE | GAME_VOICEONLY},
-
-	{NULL,		"CRES",		EXEVER_CRES,	GAME_SAVEMAX30 | GAME_SAVECOM |
-							GAME_TEXTASCII | GAME_SAVEGRPH | GAME_HAVEALPHA},
-
-	{NULL,		"PLANET",	EXEVER_PLANET,	GAME_SAVEMAX27 | GAME_SAVECOM},
-	{NULL,		"PLANDVD",	EXEVER_PLANET,	GAME_SAVEMAX27 | GAME_SAVECOM |
-																GAME_SVGA},
-
-	{NULL,		"KAZOKU",	EXEVER_KAZOKU,	GAME_SAVEMAX27 | GAME_SAVECOM},
-	{NULL,		"KAZOKUK",	EXEVER_KAZOKUK,	GAME_SAVEMAX27 | GAME_SAVECOM |
-																GAME_VOICE},
-	{NULL,		"KAZOKUKU",	EXEVER_KAZOKUK,	GAME_SAVEMAX27 | GAME_SAVECOM |
-																GAME_VOICE},
-
-	{NULL,		"KONYA",	EXEVER_KONYA,	GAME_SAVEMAX27 | GAME_SAVECOM |
-												GAME_VOICE | GAME_VOICEONLY},
-	{NULL,		"KONYA2",	EXEVER_KONYA2,	GAME_SAVEMAX30 | GAME_SAVECOM |
-								GAME_TEXTASCII | GAME_SAVEGRPH | GAME_VOICE},
-
-	{NULL,		"PrivateNurse",
-							EXEVER_NURSE,	GAME_SAVEMAX27 | GAME_VOICE},
-	{NULL,		"SISKON",	EXEVER_SISKON,	GAME_SAVEMAX30 | GAME_SAVECOM |
-																GAME_VOICE},
-	{NULL,		"HEART",	EXEVER_HEART,	GAME_SAVEMAX30 | GAME_SAVECOM |
-								GAME_TEXTASCII | GAME_SAVEGRPH | GAME_VOICE},
-
-	{NULL,		"DM",		EXEVER_DM,		GAME_SAVEMAX30 | GAME_SAVECOM |
-								GAME_TEXTASCII | GAME_SAVEGRPH | GAME_VOICE},
-
-	{NULL,		"MOEKKO",	EXEVER_MOEKKO,	GAME_SAVEMAX50 | GAME_SAVECOM |
-								GAME_TEXTASCII | GAME_SAVEGRPH | GAME_VOICE},
-
-	{NULL,		"fuku",		EXEVER_KONYA,	GAME_SAVEMAX30 | GAME_SAVECOM |
-								GAME_TEXTASCII |
-								GAME_SAVEGRPH | GAME_VOICE | GAME_VOICEONLY},
-	{NULL,		"SAMOV",	EXEVER_DM,		GAME_SAVEMAX30 | GAME_SAVECOM |
-								GAME_TEXTASCII | GAME_SAVEGRPH | GAME_VOICE},
-
-	{"TRABULANCE", NULL,	EXEVER_KONYA,	GAME_SAVEMAX27 | GAME_SAVECOM |
-												GAME_VOICE | GAME_VOICEONLY},
-
-	{NULL,		NULL,		EXEVER_PLANET,	GAME_SAVEMAX27 | GAME_SAVECOM}
-};
-
-
-static BOOL sufload(void *arg, const char *para,
-									const char *key, const char *data) {
-
-	SUF_T	*suf;
-
-	suf = (SUF_T *)arg;
-	if (!milstr_cmp(para, "StartUpInfo")) {
-		if (!milstr_cmp(key, "COMPANY")) {
-			milstr_ncpy(suf->company, data, sizeof(suf->company));
-		}
-		else if (!milstr_cmp(key, "TITLE")) {
-			milstr_ncpy(suf->title, data, sizeof(suf->title));
-		}
-		else if (!milstr_cmp(key, "KEY")) {
-			// ¤È¤é¤Ö¡¼¤Î¥²¡¼¥à¤Ë¤Ï¡ÖKEY=SILKDVD\SILK_AD¡×¤È¤¤¤¦
-			// ¤Î¤¬¤¢¤ë¤Î¤Ç '\' °ÊÁ°¤ÏÌµ»ë¤µ¤»¤ë¡Ä (NONAKA.K)
-			// ´Á»ú¤À¤Ã¤¿¾ì¹ç¤â°ì±þ¹ÍÎ¸ (NONAKA.K)
-			// ¤É¡¼¤»¤Ê¤é ':' '/'¤âÂÐ±þ¤·¤Þ¤× (T.Yui)
-			char c;
-			const char *p;
-			p = data;
-			do {
-				c = *data++;
-				if ((((c ^ 0x20) - 0xa1) & 0xff) >= 0x3c) {
-					if ((c == '\\') || (c == '/') || (c == ':')) {
-						p = data;
-					}
-				}
-				else if (data[0]) {
-					data++;
-				}
-			} while(c);
-			milstr_ncpy(suf->key, p, sizeof(suf->key));
-		}
-	}
-	return(FALSE);
-}
-
-
 static void readsuf(const char *path) {
 
-	SYS_T		*sys;
-	SUF_T		*suf;
-const GAMETBL	*tbl;
-	UINT		cnt;
+	SYS_T	*sys;
+	SUF_T	*suf;
+	char	subpath[MAX_PATH];
 
 	sys = &gamecore.sys;
 	suf = &gamecore.suf;
-	ZeroMemory(suf, sizeof(SUF_T));
-	if (path) {
-		profile_enum(path, suf, sufload);
-		milstr_ncpy(suf->scriptpath, path, sizeof(suf->scriptpath));
-		cutFileName(suf->scriptpath);
+	gamedef_loadsuf(path, suf, sys);
+	if (archive_throwall(suf->scriptpath) != SUCCESS) {
+		milstr_ncpy(subpath, suf->scriptpath, sizeof(subpath));
+		plusyen(subpath, sizeof(subpath));
+		milstr_ncat(subpath, suf->key, sizeof(subpath));
+		archive_throwall(subpath);
 	}
-
-	TRACEOUT(("COMPANY: %s", suf->company));
-	TRACEOUT(("TITLE: %s", suf->title));
-	TRACEOUT(("KEY: %s", suf->key));
-
-	tbl = gametbl;
-	cnt = sizeof(gametbl) / sizeof(GAMETBL);
-	while(cnt--) {
-		if (((tbl->company == NULL) ||
-				(!milstr_cmp(tbl->company, suf->company))) &&
-			((tbl->key == NULL) || (!milstr_cmp(tbl->key, suf->key)))) {
-			sys->version = tbl->exever;
-			sys->type = tbl->gametype;
-			break;
-		}
-		tbl++;
-	}
-	if (sys->type & GAME_SVGA) {
-		sys->width = 800;
-		sys->height = 600;
-	}
-	else {
-		sys->width = 640;
-		sys->height = 480;
-	}
-	archive_throwall(suf->scriptpath);
 }
-
 
 BOOL gamecore_init(const char *path) {
 
+const char	*e;
+
+	e = NULL;
 	ZeroMemory(&gamecore, sizeof(gamecore));
+	if (path == NULL) {
+		e = "no suf file (NULL)";
+		goto gcinit_err;
+	}
+
+	gamedef_create();
+
 	if (archive_create()) {
-		return(FAILURE);
+		e = "couldn't read archives";
+		goto gcinit_err;
 	}
 	readsuf(path);
 	gamecfg_init();
+	gamecfg_reset();
 	gamecfg_load();
 	gamecore.cfglist = listarray_new(sizeof(_GCDLG), 32);
 
 	if (vramdraw_create() != SUCCESS) {
-		return(FAILURE);
+		e = "couldn't create vram";
+		goto gcinit_err;
 	}
 
-	if (scr_init()) {
-		TRACEOUT(("scr_init fail"));
-		return(FAILURE);
+	if (scr_init(gamecore.sys.defbits, gamecore.sys.defflags) != SUCCESS) {
+		e = "couldn't create flags";
+		goto gcinit_err;
 	}
 
 	sndplay_init();
-	textctrl_init(&gamecore.textdraw, TRUE);
+	gamecore.dispwin.fontsize = 16;
+	gamecore.dispwin.fonttype = TEXTCTRL_BOLD |
+					((gamecore.sys.type & GAME_TEXTASCII)?TEXTCTRL_ASCII:0);
+	textctrl_init(&gamecore.textdraw);
 	textwin_create();
 	event_mousereset();
 
-	return(scr_scriptcall("START"));
-}
+	if (gamecore.sys.type & GAME_DRS) {
+		savedrs_sysread();
+	}
 
+	if (scr_scriptcall("START")) {
+		e = "couldn't reat start script";
+		goto gcinit_err;
+	}
+
+	gamecore.initialized = TRUE;
+	return(SUCCESS);
+
+gcinit_err:
+	gamecore.err = e;
+	return(FAILURE);
+}
 
 void gamecore_resetvolume(void) {
 
@@ -209,7 +111,6 @@ void gamecore_resetvolume(void) {
 	}
 }
 
-
 void gamecore_reset(void) {
 
 	_SYSTIME	st;
@@ -218,8 +119,8 @@ void gamecore_reset(void) {
 	gamecore.mouseevt.map = NULL;
 	textdisp_multireset();
 	effect_trush();
-	textwin_cmdclose(0);
-	textwin_close(0);
+	textwin_allclose();
+	anime_alltrush();
 
 	timemng_gettime(&st);
 	srand(((st.day[0] << 24) | (st.hour[0] << 16) |
@@ -228,11 +129,16 @@ void gamecore_reset(void) {
 	gamecore.event = GAMEEV_SUCCESS;
 }
 
-
 void gamecore_destroy(void) {
 
-	gamecfg_save();
-
+	if (gamecore.initialized) {
+#if 0
+		if (gamecore.sys.type & GAME_DRS) {
+			savedrs_syswrite();
+		}
+#endif
+		gamecfg_save();
+	}
 	gamecore_reset();
 	cddamng_stop(0);
 	scr_term();
@@ -240,8 +146,12 @@ void gamecore_destroy(void) {
 	textctrl_trash(&gamecore.textdraw);
 	vramdraw_destroy();
 	textwin_destroy();
+	anime_alltrush();
+	listarray_destroy(gamecore.drssys.cgflag);
 	listarray_destroy(gamecore.cfglist);
 	archive_destory();
+
+	gamedef_destroy();
 }
 
 
@@ -249,41 +159,41 @@ void gamecore_destroy(void) {
 
 typedef struct {
 	int		errcode;
-	char	*str;
+const char	*str;
 } CMDERROR;
 
-static const BYTE strerr100[] = {		// ¥¹¥¯¥ê¥×¥È½ªÃ¼¥¨¥é¡¼¤Ç¤¹
+static const BYTE strerr100[] = {		// ƒXƒNƒŠƒvƒgI’[ƒGƒ‰[‚Å‚·
 		0x83,0x58,0x83,0x4e,0x83,0x8a,0x83,0x76,0x83,0x67,0x8f,0x49,0x92,0x5b,
 		0x83,0x47,0x83,0x89,0x81,0x5b,0x82,0xc5,0x82,0xb7,0};
-static const BYTE strerr101[] = {		// ¥³¥Þ¥ó¥ÉÄ¹¥¨¥é¡¼
+static const BYTE strerr101[] = {		// ƒRƒ}ƒ“ƒh’·ƒGƒ‰[
 		0x83,0x52,0x83,0x7d,0x83,0x93,0x83,0x68,0x92,0xb7,0x83,0x47,0x83,0x89,
 		0x81,0x5b,0};
-static const BYTE strerr102[] = {		// ¥µ¥Ý¡¼¥È¤·¤Æ¤¤¤Ê¤¤Ì¿Îá¤Ç¤¹
+static const BYTE strerr102[] = {		// ƒTƒ|[ƒg‚µ‚Ä‚¢‚È‚¢–½—ß‚Å‚·
 		0x83,0x54,0x83,0x7c,0x81,0x5b,0x83,0x67,0x82,0xb5,0x82,0xc4,0x82,0xa2,
 		0x82,0xc8,0x82,0xa2,0x96,0xbd,0x97,0xdf,0x82,0xc5,0x82,0xb7,0};
-static const BYTE strerr103[] = {		// ¥Ñ¥é¥á¡¼¥¿Ä¹¤¬´Ö°ã¤Ã¤Æ¤¤¤Þ¤¹
+static const BYTE strerr103[] = {		// ƒpƒ‰ƒ[ƒ^’·‚ªŠÔˆá‚Á‚Ä‚¢‚Ü‚·
 		0x83,0x70,0x83,0x89,0x83,0x81,0x81,0x5b,0x83,0x5e,0x92,0xb7,0x82,0xaa,
 		0x8a,0xd4,0x88,0xe1,0x82,0xc1,0x82,0xc4,0x82,0xa2,0x82,0xdc,0x82,0xb7,
 		0};
-static const BYTE strerr104[] = {		// Ì¤ÂÐ±þ¤Î¥Ñ¥é¥á¡¼¥¿¤ò»ÈÍÑ¤·¤Þ¤·¤¿
+static const BYTE strerr104[] = {		// –¢‘Î‰ž‚Ìƒpƒ‰ƒ[ƒ^‚ðŽg—p‚µ‚Ü‚µ‚½
 		0x96,0xa2,0x91,0xce,0x89,0x9e,0x82,0xcc,0x83,0x70,0x83,0x89,0x83,0x81,
 		0x81,0x5b,0x83,0x5e,0x82,0xf0,0x8e,0x67,0x97,0x70,0x82,0xb5,0x82,0xdc,
 		0x82,0xb5,0x82,0xbd,0};
-static const BYTE strerr110[] = {		// ¥á¥â¥ê¥¨¥é¡¼¤Ç¤¹
+static const BYTE strerr110[] = {		// ƒƒ‚ƒŠƒGƒ‰[‚Å‚·
 		0x83,0x81,0x83,0x82,0x83,0x8a,0x83,0x47,0x83,0x89,0x81,0x5b,0x82,
 		0xc5,0x82,0xb7,0};
-static const BYTE strerr111[] = {		// ´û¤Ë½é´ü²½¤µ¤ì¤Æ¤¤¤Þ¤¹
+static const BYTE strerr111[] = {		// Šù‚É‰Šú‰»‚³‚ê‚Ä‚¢‚Ü‚·
 		0x8a,0xf9,0x82,0xc9,0x8f,0x89,0x8a,0xfa,0x89,0xbb,0x82,0xb3,0x82,0xea,
 		0x82,0xc4,0x82,0xa2,0x82,0xdc,0x82,0xb7,0};
-static const BYTE strerr112[] = {		// ¥¹¥¯¥ê¥×¥È¥Õ¥¡¥¤¥ë¤¬¸«¤Ä¤«¤ê¤Þ¤»¤ó
+static const BYTE strerr112[] = {		// ƒXƒNƒŠƒvƒgƒtƒ@ƒCƒ‹‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ
 		0x83,0x58,0x83,0x4e,0x83,0x8a,0x83,0x76,0x83,0x67,0x83,0x74,0x83,0x40,
 		0x83,0x43,0x83,0x8b,0x82,0xaa,0x8c,0xa9,0x82,0xc2,0x82,0xa9,0x82,0xe8,
 		0x82,0xdc,0x82,0xb9,0x82,0xf1,0};
-static const BYTE strerr200[] = {		// ¥¹¥¯¥ê¥×¥È½èÍý¤Ç¼ºÇÔ¤·¤Þ¤·¤¿
+static const BYTE strerr200[] = {		// ƒXƒNƒŠƒvƒgˆ—‚ÅŽ¸”s‚µ‚Ü‚µ‚½
 		0x83,0x58,0x83,0x4e,0x83,0x8a,0x83,0x76,0x83,0x67,0x8f,0x88,0x97,0x9d,
 		0x82,0xc5,0x8e,0xb8,0x94,0x73,0x82,0xb5,0x82,0xdc,0x82,0xb5,0x82,0xbd,
 		0};
-static const BYTE strerr002[] = {		// ¥·¥¹¥Æ¥à¥¨¥é¡¼¤Ç¤¹
+static const BYTE strerr002[] = {		// ƒVƒXƒeƒ€ƒGƒ‰[‚Å‚·
 		0x83,0x56,0x83,0x58,0x83,0x65,0x83,0x80,0x83,0x47,0x83,0x89,0x81,0x5b,
 		0x82,0xc5,0x82,0xb7,0};
 
@@ -299,6 +209,33 @@ static const CMDERROR cmderr[] = {
 	{GAMEEV_FAILURE,		(char *)strerr200},
 	{GAMEEV_ERROR,			(char *)strerr002}};
 
+const char *gamecore_seterrorevent(int event) {
+
+const CMDERROR	*e;
+	int			i;
+
+	e = cmderr;
+	for (i=0; i<(int)(sizeof(cmderr)/sizeof(CMDERROR)); i++) {
+		if (e->errcode == event) {
+			gamecore.err = e->str;
+			return(e->str);
+			break;
+		}
+		e++;
+	}
+	return(NULL);
+}
+
+const char *gamecore_geterror(void) {
+
+const char	*ret;
+
+	ret = gamecore.err;
+	if (ret == NULL) {
+		ret = "no error";
+	}
+	return(ret);
+}
 
 BOOL gamecore_proc(void) {
 
@@ -306,21 +243,43 @@ BOOL gamecore_proc(void) {
 
 #ifndef DISABLE_DIALOG
 	if (gamecore.gamecfg.enablepopup) {
+		int x, y;
 		UINT btn;
-		btn = inputmng_getmouse(NULL, NULL);
+		UINT key;
+		BOOL r;
+		btn = inputmng_getmouse(&x, &y);
+		key = inputmng_getkey();
 		if (btn & RBUTTON_DOWNBIT) {
-			sysmenu_menuopen();
-			menubase_modalproc();
-			vramdraw_setrect(mainvram, NULL);
-			vramdraw_draw();
+			r = sysmenu_menuopen(TRUE, x, y);
 		}
+		else if (key & KEY_MENU) {
+			r = sysmenu_menuopen(TRUE, 0, 0);
+		}
+		else {
+			r = FAILURE;
+		}
+		if (r == SUCCESS) {
+			inputmng_resetmouse(0);
+			inputmng_resetkey(0);
+			menubase_modalproc();
+			event = gamecore.event;
+			if ((event >= GAMEEV_SUCCESS) && (event < GAMEEV_FADEIN)) {
+				vramdraw_setrect(mainvram, NULL);
+				vramdraw_draw();
+			}
+		}
+	}
+	if (menuvram != NULL) {
+		menubase_proc();
 	}
 #endif
 
 	event = gamecore.event;
+	if ((event >= GAMEEV_SUCCESS) && (event < GAMEEV_FADEIN)) {
+		anime_exec();
+	}
 	switch(event) {
 		case GAMEEV_SUCCESS:
-			anime_exec();
 			event = script_dispatch();
 			break;
 
@@ -332,24 +291,8 @@ BOOL gamecore_proc(void) {
 			event = event_mouse();
 			break;
 
-		case GAMEEV_EFFECT:
-			event = effect_exec();
-			break;
-
-		case GAMEEV_FADEOUT:
-			event = effect_fadeoutexec();
-			break;
-
 		case GAMEEV_CMDWIN:
 			event = event_cmdwin();
-			break;
-
-		case GAMEEV_GRAYSCALE:
-			event = effect_grayscale();
-			break;
-
-		case GAMEEV_SCROLL:
-			event = effect_scroll();
 			break;
 
 		case GAMEEV_WAITPCMEND:
@@ -368,6 +311,30 @@ BOOL gamecore_proc(void) {
 			event = event_wait();
 			break;
 
+		case GAMEEV_FADEIN:
+			event = effect_fadeinexec();
+			break;
+
+		case GAMEEV_FADEOUT:
+			event = effect_fadeoutexec();
+			break;
+
+		case GAMEEV_EFFECT:
+			event = effect_exec();
+			break;
+
+		case GAMEEV_GRAYSCALE:
+			event = effect_grayscale();
+			break;
+
+		case GAMEEV_SCROLL:
+			event = effect_scroll();
+			break;
+
+		case GAMEEV_QUAKE:
+			event = effect_quake();
+			break;
+
 		case GAMEEV_FORCE:
 			event = GAMEEV_SUCCESS;
 			break;
@@ -378,22 +345,19 @@ BOOL gamecore_proc(void) {
 
 	gamecore.event = event;
 	if (event < 0) {
-		const CMDERROR *e;
-		int i;
+		const char *e;
+		e = gamecore_seterrorevent(event);
+#ifndef DISABLE_DIALOG
+		if (e) {
+			menumbox(e, gamecore.suf.key, MBOX_ICONSTOP | MBOX_OK);
+			return(FAILURE);
+		}
+#endif
 		TRACEOUT(("error: %d", event));
 		TRACEOUT(("system terminate."));
-		e = cmderr;
-		for (i=0; i<(int)(sizeof(cmderr)/sizeof(CMDERROR)); i++) {
-			if (e->errcode == event) {
-				menumbox(e->str, gamecore.suf.key, MBOX_ICONSTOP | MBOX_OK);
-				return(FAILURE);
-			}
-			e++;
-		}
 	}
 	return(SUCCESS);
 }
-
 
 BOOL gamecore_exec(void) {
 

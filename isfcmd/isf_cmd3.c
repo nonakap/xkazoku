@@ -8,14 +8,13 @@
 // -------------------------------------------------------------
 
 #include	"compiler.h"
-#include	"gamecore.h"
-#include	"isf_cmd.h"
-#include	"savefile.h"
-#include	"gamemsg.h"
 #include	"inputmng.h"
+#include	"gamecore.h"
+#include	"savefile.h"
+#include	"isf_cmd.h"
 
 
-// FLN : フラグ眶の肋年 (Nonaka.K)
+// FLN : 僼儔僌悢偺愝掕 (Nonaka.K)
 int isfcmd_30(SCR_OPE *op) {
 
 	FLAGS	flags;
@@ -32,7 +31,7 @@ int isfcmd_30(SCR_OPE *op) {
 		flags->maxflag = 0;
 	}
 	flagsize = (int)maxflag + 1;
-	flagsize = ((flagsize + 8) / 8) * sizeof(BYTE);		// +8じゃないとダメ
+	flagsize = ((flagsize + 8) / 8) * sizeof(BYTE);		// +8偠傖側偄偲僟儊
 	flags->flag = (BYTE *)_MALLOC(flagsize, "flag table");
 	flags->flagsize = flagsize;
 	if (flags->flag == NULL) {
@@ -40,11 +39,12 @@ int isfcmd_30(SCR_OPE *op) {
 	}
 	ZeroMemory(flags->flag, flagsize);
 	flags->maxflag = maxflag + 1;
+	TRACEOUT(("maxflag: %d", maxflag));
 	return(GAMEEV_SUCCESS);
 }
 
 
-// SK : フラグのセットˇクリアˇ瓤啪 (Nonaka.K)
+// SK : 僼儔僌偺僙僢僩丒僋儕傾丒斀揮 (Nonaka.K)
 int isfcmd_31(SCR_OPE *op) {
 
 	UINT16	num;
@@ -59,7 +59,7 @@ int isfcmd_31(SCR_OPE *op) {
 }
 
 
-// SKS : フラグをまとめてセットˇクリアˇ瓤啪 Nonaka.K, T.Yui
+// SKS : 僼儔僌傪傑偲傔偰僙僢僩丒僋儕傾丒斀揮 Nonaka.K, T.Yui
 int isfcmd_32(SCR_OPE *op) {
 
 	UINT16	from;
@@ -71,14 +71,14 @@ int isfcmd_32(SCR_OPE *op) {
 		(scr_getbyte(op, &cmd) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
-	while(from <= to) {				// タイトルに提れないのはこれが付傍か∧
+	while(from <= to) {				// 僞僀僩儖偵栠傟側偄偺偼偙傟偑尨場偐乧
 		scr_flagop(from++, cmd);
 	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// SKS : フラグ冉年ジャンプ (Nonaka.K)
+// SKS : 僼儔僌敾掕僕儍儞僾 (Nonaka.K)
 int isfcmd_33(SCR_OPE *op) {
 
 	UINT16	num;
@@ -96,7 +96,7 @@ int isfcmd_33(SCR_OPE *op) {
 }
 
 
-// FT : フラグ啪流 (T.Yui)
+// FT : 僼儔僌揮憲 (T.Yui)
 int isfcmd_34(SCR_OPE *op) {
 
 	UINT16	from;
@@ -127,7 +127,7 @@ int isfcmd_34(SCR_OPE *op) {
 }
 
 
-// SP : パタ〖ンフラグのセット (T.Yui)
+// SP : 僷僞乕儞僼儔僌偺僙僢僩 (T.Yui)
 int isfcmd_35(SCR_OPE *op) {
 
 	FLAGS		flags;
@@ -160,7 +160,7 @@ ic35_exit:
 }
 
 
-// HP : パタ〖ンフラグ冉年ジャンプ (T.Yui)
+// HP : 僷僞乕儞僼儔僌敾掕僕儍儞僾 (T.Yui)
 static int __hitpattern(BYTE num, BYTE cmd) {
 
 	FLAGS		flags;
@@ -186,6 +186,7 @@ static int __hitpattern(BYTE num, BYTE cmd) {
 	p = (BYTE *)(pat + 1);
 
 	ret = (cmd & 2)?1:0;
+	cmd ^= ret;
 	while(size) {
 		if (p[0] == 0xff) {
 			ret ^= 1;
@@ -193,7 +194,7 @@ static int __hitpattern(BYTE num, BYTE cmd) {
 		}
 		size -= 4;
 		if (size < 0) {
-			ret ^= 1;						// というかコマンドエラ〖なんだが
+			ret ^= 1;						// 偲偄偆偐僐儅儞僪僄儔乕側傫偩偑
 			break;
 		}
 		pos = LOADINTELWORD(p);
@@ -240,42 +241,116 @@ int isfcmd_36(SCR_OPE *op) {
 }
 
 
-// STS : システムフラグの肋年 (T.Yui)
+// STS : 僔僗僥儉僼儔僌偺愝掕 (T.Yui)
 int isfcmd_37(SCR_OPE *op) {
 
 	BYTE	cmd;
 	BYTE	val;
+	BOOL	r;
+	GAMECFG	gamecfg;
 
 	if ((scr_getbyte(op, &cmd) != SUCCESS) ||
 		(scr_getbyte(op, &val) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
+	r = SUCCESS;
 	switch(cmd) {
-		case 0x08:	// メッセ〖ジスキップ
-			if ((val == 0) || (val == 2)) {
-				gamecfg_setskip(1);
-			}
-			else if (val == 1) {
-				gamecfg_setskip(0);
+		case 0x00:		// 2
+		case 0x01:
+		case 0x08:
+			if (val >= 3) {
+				r = FAILURE;
 			}
 			break;
 
-		case 0x0e:	// 贷粕スキップ
-			if (val < 4) {
-				gamecore.gamecfg.lastread = val & 1;
+		case 0x02:
+		case 0x03:
+		case 0x04:
+		case 0x05:
+		case 0x06:
+		case 0x07:
+		case 0x09:
+		case 0x0a:
+		case 0x0c:
+		case 0x0d:
+		case 0x0f:
+		case 0x10:
+		case 0x11:
+			if (val >= 2) {
+				r = FAILURE;
+			}
+			break;
+
+		case 0x0e:
+			if (val >= 4) {
+				r = FAILURE;
+			}
+			break;
+	}
+
+	if (r == SUCCESS) {
+		gamecfg = &gamecore.gamecfg;
+		switch(cmd) {
+			case 0x00:
+				gamecfg->msgdlgtype = val;
+				break;
+
+			case 0x01:
+				gamecfg->msgtype = val;
+				break;
+
+			case 0x02:
+				gamecfg->msgdisable = val;
+				break;
+
+			case 0x03:
+				gamecfg->voicedisable = val;
+				break;
+
+			case 0x04:
+				gamecfg->sedisable = val;
+				break;
+
+			case 0x05:
+				gamecfg->bgmdisable = val;
+				break;
+
+			case 0x06:
+				gamecfg->voicetestdisable = val;
+				break;
+
+			case 0x07:
+				gamecfg->setestdisable = val;
+				break;
+
+			case 0x08:	// 儊僢僙乕僕僗僉僢僾
+				if ((val == 0) || (val == 2)) {
+					gamecfg_setskip(1);
+				}
+				else if (val == 1) {
+					gamecfg_setskip(0);
+				}
+				break;
+
+			case 0x0c:	// 僆乕僩
+				gamecfg->autoclick = val;
+				break;
+
+			case 0x0e:	// 婛撉僗僉僢僾
+				gamecfg->lastread = val & 1;
 				gamecfg_setreadskip((val >> 1) & 1);
-			}
-			break;
+				break;
 
-		default:
-//			TRACEOUT(("STS : cmd:%x param:%x", cmd, val));
-			return(GAMEEV_FORCE);
+			default:
+//				TRACEOUT(("STS : cmd:%x param:%x", cmd, val));
+				return(GAMEEV_FORCE);
+		}
 	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// ES : 回年フラグのセ〖ブ (T.Yui)
+// ES : 巜掕僼儔僌偺僙乕僽 (T.Yui)									DRS cmd:39
 int isfcmd_38(SCR_OPE *op) {
 
 	UINT16	from;
@@ -288,14 +363,14 @@ int isfcmd_38(SCR_OPE *op) {
 	}
 	if (from <= to) {
 		sh = savefile_open(TRUE);
-		savefile_writesysflag(sh, from, (UINT)to - (UINT)from + 1);
-		savefile_close(sh);
+		sh->writesysflag(sh, from, (UINT)to - (UINT)from + 1);
+		sh->close(sh);
 	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// EC : 回年フラグのロ〖ド (T.Yui)
+// EC : 巜掕僼儔僌偺儘乕僪 (T.Yui)									DRS cmd:3a
 int isfcmd_39(SCR_OPE *op) {
 
 	UINT16	from;
@@ -308,14 +383,14 @@ int isfcmd_39(SCR_OPE *op) {
 	}
 	if (from <= to) {
 		sh = savefile_open(FALSE);
-		savefile_readsysflag(sh, from, (UINT)to - (UINT)from + 1);
-		savefile_close(sh);
+		sh->readsysflag(sh, from, (UINT)to - (UINT)from + 1);
+		sh->close(sh);
 	}
-	return(GAMEEV_FORCE);
+	return(GAMEEV_SUCCESS);
 }
 
 
-// STC : システムフラグの冉年ジャンプ (T.Yui)
+// STC : 僔僗僥儉僼儔僌偺敾掕僕儍儞僾 (T.Yui)
 int isfcmd_3a(SCR_OPE *op) {
 
 	BYTE	cmd;
@@ -324,6 +399,7 @@ int isfcmd_3a(SCR_OPE *op) {
 	BOOL	r;
 	GAMECFG	gamecfg;
 	int		flag;
+	TEXTWIN	textwin;
 
 	if ((scr_getbyte(op, &cmd) != SUCCESS) ||
 		(scr_getbyte(op, &val) != SUCCESS) ||
@@ -335,11 +411,39 @@ int isfcmd_3a(SCR_OPE *op) {
 	r = FALSE;
 
 	switch(cmd) {
-		case 0x01:	// 不兰のみ = 0, TEXTのみ = 1, TEXT/不兰 = 2
+		case 0x00:
+			r = (gamecfg->msgdlgtype == val);
+			break;
+
+		case 0x01:	// 壒惡偺傒 = 0, TEXT偺傒 = 1, TEXT/壒惡 = 2
 			r = (gamecfg->msgtype == (int)val);
 			break;
 
-		case 0x08:	// メッセ〖ジスキップ
+		case 0x02:
+			r = (gamecfg->msgdisable == val);
+			break;
+
+		case 0x03:
+			r = (gamecfg->voicedisable == val);
+			break;
+
+		case 0x04:
+			r = (gamecfg->sedisable == val);
+			break;
+
+		case 0x05:
+			r = (gamecfg->bgmdisable == val);
+			break;
+
+		case 0x06:
+			r = (gamecfg->voicetestdisable == val);
+			break;
+
+		case 0x07:
+			r = (gamecfg->setestdisable == val);
+			break;
+
+		case 0x08:	// 儊僢僙乕僕僗僉僢僾
 			flag = val?0:1;
 			if (event_getkey() & KEY_SKIP) {
 				r = (flag == 1);
@@ -349,12 +453,28 @@ int isfcmd_3a(SCR_OPE *op) {
 			}
 			break;
 
-		case 0x0c:	// オ〖ト
+		case 0x0a:
+			r = (val != 0);
+			break;
+
+		case 0x0c:	// 僆乕僩
 			flag = val?0:1;
 			r = (gamecfg->autoclick == flag);
 			break;
 
-		case 0x0e:	// 贷粕スキップ
+		case 0x0d:	// Active Window
+			// TRACEOUT(("STC : cmd:%x param:%x", cmd, val));
+			if (val == 0) {
+				r = FALSE;
+			}
+			else if (val == 1) {
+				textwin = textwin_getwin(0);
+				r = ((textwin) &&
+						(textwin->flag & (TEXTWIN_CMD | TEXTWIN_TEXT)));
+			}
+			break;
+
+		case 0x0e:	// 婛撉僗僉僢僾
 			flag = gamecfg->lastread;
 			if (!(event_getkey() & KEY_SKIP)) {
 				flag |= (gamecfg->readskip << 1);
@@ -373,7 +493,7 @@ int isfcmd_3a(SCR_OPE *op) {
 }
 
 
-// HN : フラグ冉年ジャンプ (Nonaka.K)
+// HN : 僼儔僌敾掕僕儍儞僾 (Nonaka.K)
 int isfcmd_3b(SCR_OPE *op) {
 
 	UINT16	num;
@@ -391,7 +511,7 @@ int isfcmd_3b(SCR_OPE *op) {
 }
 
 
-// HXP : パタ〖ンフラグ冉年ジャンプ２ (T.Yui)
+// HXP : 僷僞乕儞僼儔僌敾掕僕儍儞僾俀 (T.Yui)
 int isfcmd_3c(SCR_OPE *op) {
 
 	BYTE	num;

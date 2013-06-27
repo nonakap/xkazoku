@@ -10,12 +10,42 @@
 #include	"compiler.h"
 #include	"gamecore.h"
 #include	"arcfile.h"
+#include	"savefile.h"
+#include	"savedrs.h"
 #include	"drs_cmd.h"
-#include	"fontmng.h"
-#include	"cgload.h"
 
 
-// JS : ¥µ¥Ö¥ë¡¼¥Á¥ó¥¸¥ã¥ó¥×
+// LSBS : ƒTƒuƒVƒiƒŠƒI‚Ìƒ[ƒhÀs
+int drscmd_02(SCR_OPE *op) {
+
+	UINT16	bptr;
+	char	label[ARCFILENAME_LEN+1];
+
+	if ((scr_getword(op, &bptr) != SUCCESS) ||
+		(scr_getlabel(op, label, sizeof(label)) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	if (scr_scriptcall(label) != SUCCESS) {
+		return(GAMEEV_FILENOTFOUND);
+	}
+	gamecore.drssys.curpage = 0;
+	return(GAMEEV_SUCCESS);
+}
+
+
+// SRET : ƒTƒuƒVƒiƒŠƒI‚©‚ç‚Ì•œ‹A
+int drscmd_03(SCR_OPE *op) {
+
+	if (src_scriptret()) {
+		return(GAMEEV_FILENOTFOUND);
+	}
+
+	(void)op;
+	return(GAMEEV_SUCCESS);
+}
+
+
+// JS : ƒTƒuƒ‹[ƒ`ƒ“ƒWƒƒƒ“ƒv
 int drscmd_05(SCR_OPE *op) {
 
 	UINT16	bptr;
@@ -32,7 +62,7 @@ int drscmd_05(SCR_OPE *op) {
 }
 
 
-// RT : ¥µ¥Ö¥ë¡¼¥Á¥ó¤«¤éÉüµ¢
+// RT : ƒTƒuƒ‹[ƒ`ƒ“‚©‚ç•œ‹A
 int drscmd_06(SCR_OPE *op) {
 
 	if (scr_ret()) {
@@ -44,7 +74,7 @@ int drscmd_06(SCR_OPE *op) {
 }
 
 
-// ONJP : ¾ò·ï¥¸¥ã¥ó¥×
+// ONJP : ğŒƒWƒƒƒ“ƒv
 int drscmd_07(SCR_OPE *op) {
 
 	SINT32	val;
@@ -72,13 +102,15 @@ int drscmd_07(SCR_OPE *op) {
 }
 
 
-// ONJS : ¾ò·ï¥µ¥Ö¥ë¡¼¥Á¥ó¸Æ¤Ó½Ğ¤·
+// ONJS : ğŒƒTƒuƒ‹[ƒ`ƒ“ŒÄ‚Ño‚µ
 int drscmd_08(SCR_OPE *op) {
 
+	UINT16	self;
 	SINT32	val;
 	UINT16	limit;
 
-	if ((scr_getval(op, &val) != SUCCESS) ||
+	if ((scr_getword(op, &self) != SUCCESS) ||
+		(scr_getval(op, &val) != SUCCESS) ||
 		(scr_getword(op, &limit) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
@@ -95,6 +127,82 @@ int drscmd_08(SCR_OPE *op) {
 		if (scr_call(ptr)) {
 			return(GAMEEV_FAILURE);
 		}
+	}
+	return(GAMEEV_SUCCESS);
+}
+
+
+// —š—ğƒŠƒZƒbƒg
+int drscmd_0a(SCR_OPE *op) {
+
+	(void)op;
+	return(GAMEEV_SUCCESS);
+}
+
+
+// —š—ğƒXƒLƒbƒvƒy[ƒWw’è
+int drscmd_0b(SCR_OPE *op) {
+
+	(void)op;
+	return(GAMEEV_SUCCESS);
+}
+
+
+// ƒy[ƒWƒCƒ“
+int drscmd_0c(SCR_OPE *op) {
+
+	UINT16	num;
+	int		lastread;
+	char	label[ARCFILENAME_LEN+1];
+
+	if (scr_getword(op, &num) != SUCCESS) {
+		return(GAMEEV_WRONGLENG);
+	}
+	gamecore.drssys.curpage = num;
+	lastread = 0;
+	if (scr_getcurscr(label, sizeof(label)) == SUCCESS) {
+		lastread = savedrs_getkid(num, label)?1:0;
+		TRACEOUT(("%s %u = %d", label, num, lastread));
+	}
+	gamecore.gamecfg.lastread = lastread;
+	return(GAMEEV_SUCCESS);
+}
+
+
+// ƒy[ƒWƒAƒEƒg
+int drscmd_0d(SCR_OPE *op) {
+
+	BYTE	num;
+	char	label[ARCFILENAME_LEN+1];
+
+	if (scr_getbyte(op, &num) != SUCCESS) {
+		return(GAMEEV_WRONGLENG);
+	}
+	if (!gamecore.gamecfg.lastread) {
+		if (scr_getcurscr(label, sizeof(label)) == SUCCESS) {
+			savedrs_setkid(gamecore.drssys.curpage, label);
+		}
+	}
+	return(GAMEEV_SUCCESS);
+}
+
+
+// w’èƒtƒ‰ƒOŠg’£ƒ[ƒh?
+int drscmd_0e(SCR_OPE *op) {
+
+
+	UINT16	from;
+	UINT16	to;
+	SAVEHDL	sh;
+
+	if ((scr_getword(op, &from) != SUCCESS) ||
+		(scr_getword(op, &to) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	if (from <= to) {
+		sh = savefile_open(FALSE);
+		sh->readsysflagex(sh, from, (UINT)to - (UINT)from + 1);
+		sh->close(sh);
 	}
 	return(GAMEEV_SUCCESS);
 }

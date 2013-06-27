@@ -1,4 +1,4 @@
-/*	$Id: compiler.h,v 1.3 2003/04/22 07:15:51 yui Exp $	*/
+/*	$Id: compiler.h,v 1.7 2003/08/13 05:01:54 yui Exp $	*/
 
 /*
  * Redistribution and use in source and binary forms, with or without
@@ -45,6 +45,8 @@ typedef	unsigned short	USHORT;
 typedef	unsigned int	UINT;
 typedef	unsigned long	ULONG;
 
+typedef	signed char	SINT8;
+typedef	unsigned char	UINT8;
 typedef	short		SINT16;
 typedef	unsigned short	UINT16;
 typedef	int		SINT32;
@@ -79,7 +81,7 @@ typedef	int		BOOL;
 #endif
 
 #ifndef	ZeroMemory
-#define	ZeroMemory(d,n)		bzero((d),(n))
+#define	ZeroMemory(d,n)		memset((d), 0, (n))
 #endif
 #ifndef	CopyMemory
 #define	CopyMemory(d,s,n)	memcpy((d),(s),(n))
@@ -102,7 +104,7 @@ typedef	int		BOOL;
 
 #define	GETTICK()	SDL_GetTicks()
 
-#define	rand()		random()
+#define	GETRAND()	random()
 
 #define	__ASSERT(s)	assert(s)
 
@@ -128,3 +130,14 @@ typedef	int		BOOL;
 #define	SUPPORT_16BPP
 #define	SCREEN_BPP			16
 #endif
+
+#define	VERMOUTH_LIB
+#define	SUPPORT_DRS
+
+/*
+ * You could specify a complete path, e.g. "/etc/timidity.cfg", and
+ * then specify the library directory in the configuration file.
+ */
+#ifndef	TIMIDITY_CFGFILE
+#define	TIMIDITY_CFGFILE	"timidity.cfg"
+#endif	/* TIMIDITY_CFGFILE */

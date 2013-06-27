@@ -3,7 +3,6 @@
 
 
 #if defined(__GNUC__)
-
 typedef struct {
 	char	head[4];
 	BYTE	size[4];
@@ -29,9 +28,7 @@ typedef struct {
 	BYTE	spb[2];
 	BYTE	numcoef[2];
 } __attribute__ ((packed)) WAVE_MSA_INFO;
-
 #else /* __GNUC__ */
-
 #pragma pack(push, 1)
 typedef struct {
 	char	head[4];
@@ -59,7 +56,6 @@ typedef struct {
 	BYTE	numcoef[2];
 } WAVE_MSA_INFO;
 #pragma pack(pop)
-
 #endif /* __GNUC__ */
 
 #if defined(AMETHYST_LIB) || defined(AMETHYST_OVL)
@@ -87,7 +83,6 @@ static UINT pcm_dec(SMIXTRACK trk, SINT16 *dst) {
 	return(size);
 }
 
-
 #ifdef BYTESEX_BIG
 static UINT pcm_dec_big(SMIXTRACK trk, SINT16 *dst) {
 
@@ -114,20 +109,19 @@ static UINT pcm_dec_big(SMIXTRACK trk, SINT16 *dst) {
 }
 #endif
 
-
-static BOOL pcm_open(SMIXTRACK trk) {
+static int pcm_open(SMIXTRACK trk) {
 
 	UINT	align;
 
 	if ((trk->bit != 16) && (trk->bit != 8)) {
-		return(SNDMIX_FAILURE);
+		goto pcmopn_err;
 	}
 	align = trk->channels * (trk->bit / 8);
 	if ((!align) || (align > 4)) {
-		return(SNDMIX_FAILURE);
+		goto pcmopn_err;
 	}
 	if (trk->block != align) {
-		return(SNDMIX_FAILURE);
+		goto pcmopn_err;
 	}
 	trk->blksamp = 0x800;
 	trk->block *= trk->blksamp;
@@ -138,13 +132,15 @@ static BOOL pcm_open(SMIXTRACK trk) {
 	trk->dec = (DECFN)((trk->bit == 16)?pcm_dec_big:pcm_dec);
 #endif
 	return(SNDMIX_SUCCESS);
+
+pcmopn_err:
+	return(SNDMIX_DATAERROR);
 }
 
 
 // ---- IMA
 
 #ifdef WAVE_IMA
-
 #define IMA_MAXSTEP		89
 
 static	BOOL	ima_init = FALSE;
@@ -161,7 +157,6 @@ static const int ima_steptable[IMA_MAXSTEP] = {
 	 1411, 1552, 1707, 1878, 2066, 2272, 2499, 2749, 3024, 3327, 3660,
 	 4026, 4428, 4871, 5358, 5894, 6484, 7132, 7845, 8630, 9493,10442,
 	11487,12635,13899,15289,16818,18500,20350,22385,24623,27086,29794,32767};
-
 
 static void ima_inittable(void) {
 
@@ -180,7 +175,6 @@ static void ima_inittable(void) {
 		}
 	}
 }
-
 
 static UINT ima_dec(SMIXTRACK trk, SINT16 *dst) {
 
@@ -258,18 +252,17 @@ static UINT ima_dec(SMIXTRACK trk, SINT16 *dst) {
 	return(trk->blksamp);
 }
 
-
-static BOOL ima_open(SMIXTRACK trk) {
+static int ima_open(SMIXTRACK trk) {
 
 	int		blk;
 
 	if (trk->bit != 4) {
-		return(SNDMIX_FAILURE);
+		goto imaopn_err;
 	}
 	blk = trk->block;
 	blk /= trk->channels;
 	if (blk & 3) {
-		return(SNDMIX_FAILURE);
+		goto imaopn_err;
 	}
 	blk -= 4;				// first block;
 	blk *= 2;
@@ -282,15 +275,16 @@ static BOOL ima_open(SMIXTRACK trk) {
 		ima_inittable();
 	}
 	return(SNDMIX_SUCCESS);
-}
 
+imaopn_err:
+	return(SNDMIX_DATAERROR);
+}
 #endif
 
 
 // ---- MS-ADPCM
 
 #ifdef WAVE_MSADPCM
-
 typedef struct {
 	SINT16 Coef1;
 	SINT16 Coef2;
@@ -301,54 +295,57 @@ static const int MSADPCMTable[16] = {
 	768, 614, 512, 409, 307, 230, 230, 230 
 };
 
-
 static UINT msa_dec(SMIXTRACK trk, SINT16 *dst) {
 
 	UINT		size;
-	BYTE		*buf;
+const BYTE		*buf;
+	__COEFPAIR	*icoef;
+	UINT		outsamples;
 	int			pred[2];
 	int			delta[2];
 	int			in;
 	int			nibble;
 	UINT		i;
-	__COEFPAIR	*icoef;
+	UINT		ch;
 
 	size = sndmix_dataload(trk, trk->block);
-	if (size != trk->block) {
-		if (size == (UINT)-1) {
-			return((UINT)-1);
-		}
-		else {
-			return(0);
-		}
+	if (size == (UINT)-1) {
+		return((UINT)-1);
 	}
+	size = min(size, trk->block);
 	buf = trk->data;
 	icoef = (__COEFPAIR *)trk->snd;
 
+	outsamples = 0;
 	if (trk->channels == 1) {
-		pred[0] = buf[0];
-		pred[1] = 0;
-		delta[0] = LOADINTELWORD(buf+1);
-		delta[1] = 0;
-		*dst++ = (SINT16)LOADINTELWORD(buf+5);
-		*dst++ = (SINT16)LOADINTELWORD(buf+3);
-		buf += 7;
+		if (size >= 7) {
+			pred[0] = buf[0];
+			pred[1] = 0;
+			delta[0] = LOADINTELWORD(buf+1);
+			delta[1] = 0;
+			*dst++ = (SINT16)LOADINTELWORD(buf+5);
+			*dst++ = (SINT16)LOADINTELWORD(buf+3);
+			buf += 7;
+			outsamples = 2 + ((size - 7) * 2);
+		}
 	}
 	else {
-		pred[0] = buf[0];
-		pred[1] = buf[1];
-		delta[0] = LOADINTELWORD(buf+2);
-		delta[1] = LOADINTELWORD(buf+4);
-		*dst++ = (SINT16)LOADINTELWORD(buf+10);
-		*dst++ = (SINT16)LOADINTELWORD(buf+12);
-		*dst++ = (SINT16)LOADINTELWORD(buf+6);
-		*dst++ = (SINT16)LOADINTELWORD(buf+8);
-		buf += 14;
+		if (size >= 14) {
+			pred[0] = buf[0];
+			pred[1] = buf[1];
+			delta[0] = LOADINTELWORD(buf+2);
+			delta[1] = LOADINTELWORD(buf+4);
+			*dst++ = (SINT16)LOADINTELWORD(buf+10);
+			*dst++ = (SINT16)LOADINTELWORD(buf+12);
+			*dst++ = (SINT16)LOADINTELWORD(buf+6);
+			*dst++ = (SINT16)LOADINTELWORD(buf+8);
+			buf += 14;
+			outsamples = 2 + (size - 14);
+		}
 	}
 	nibble = 0;
 	in = 0;
-	for (i=2; i<trk->blksamp; i++) {
-		UINT ch;
+	for (i=2; i<outsamples; i++) {
 		for (ch=0; ch<trk->channels; ch++) {
 			int d, p, out, data;
 			d = delta[ch];
@@ -377,19 +374,18 @@ static UINT msa_dec(SMIXTRACK trk, SINT16 *dst) {
 			*dst++ = (SINT16)out;
 		}
 	}
-	sndmix_datatrash(trk, trk->block);
-	return(trk->blksamp);
+	sndmix_datatrash(trk, size);
+	return(outsamples);
 }
-
 
 static void msa_decend(SMIXTRACK trk) {
 
 	_MFREE(trk->snd);
 }
 
+static int msa_open(SMIXTRACK trk) {
 
-static BOOL msa_open(SMIXTRACK trk) {
-
+	int				r;
 	WAVE_MSA_INFO	*info;
 	BYTE			*coef;
 	UINT			exsize;
@@ -399,19 +395,22 @@ static BOOL msa_open(SMIXTRACK trk) {
 	UINT			numcoef;
 	__COEFPAIR		*icoef;
 
+	r = SNDMIX_SUCCESS;
 	if (trk->bit != 4) {
-		return(SNDMIX_FAILURE);
+		r = SNDMIX_DATAERROR;
+		goto msaopn_err1;
 	}
 	if (sndmix_dataload(trk, sizeof(WAVE_MSA_INFO))
 												!= sizeof(WAVE_MSA_INFO)) {
 		TRACEOUT(("wav: msa: failure read[1]"));
-		return(SNDMIX_FAILURE);
+		r = SNDMIX_STREAMERROR;
+		goto msaopn_err1;
 	}
 	info = (WAVE_MSA_INFO *)trk->data;
 	exsize = LOADINTELWORD(info->exsize);
 	spb = LOADINTELWORD(info->spb);
 	numcoef = LOADINTELWORD(info->numcoef);
-	sndmix_dataload(trk, sizeof(WAVE_MSA_INFO));
+	sndmix_datatrash(trk, sizeof(WAVE_MSA_INFO));
 
 	blk = trk->block;
 	blk /= trk->channels;
@@ -422,23 +421,27 @@ static BOOL msa_open(SMIXTRACK trk) {
 
 	if (blk != spb) {					// SamplesInBlock size check
 		TRACEOUT(("wav: msa: block size error"));
-		goto msaopen0;
+		r = SNDMIX_DATAERROR;
+		goto msaopn_err1;
 	}
 
 	if (exsize != (numcoef*4+4)) {		// NumOfCoefs * sizeof(short) * 2 + sizeof(SPB) + sizeof(NumOfCoefs)
 		TRACEOUT(("wav: msa: extra info size error"));
-		goto msaopen0;
+		r = SNDMIX_DATAERROR;
+		goto msaopn_err1;
 	}
 
 	icoef = (__COEFPAIR*)_MALLOC(numcoef*sizeof(__COEFPAIR), "msadpcm coefs");
 	if ( !icoef ) {
 		TRACEOUT(("wav: msa: failed to malloc coef table"));
-		goto msaopen0;
+		r = SNDMIX_MEMORYERROR;
+		goto msaopn_err1;
 	}
 
 	if (sndmix_dataload(trk, numcoef << 2) != (numcoef << 2)) {
 		TRACEOUT(("wav: msa: failure read[2]"));
-		goto msaopen1;
+		r = SNDMIX_STREAMERROR;
+		goto msaopn_err2;
 	}
 	coef = trk->data;
 	for (i=0; i<numcoef; i++) {
@@ -452,16 +455,14 @@ static BOOL msa_open(SMIXTRACK trk) {
 	trk->bit = 16;
 	trk->dec = (DECFN)msa_dec;
 	trk->decend = msa_decend;
-
 	return(SNDMIX_SUCCESS);
 
-msaopen1:
+msaopn_err2:
 	_MFREE(icoef);
 
-msaopen0:
-	return(SNDMIX_FAILURE);
+msaopn_err1:
+	return(r);
 }
-
 #endif
 
 
@@ -469,21 +470,24 @@ msaopen0:
 
 int sndwave_open(SMIXTRACK trk) {
 
+	int				r;
 	RIFF_HEADER		*riff;
 	WAVE_INFOS		*info;
 	UINT			fmt;
 	long			fpos;
-	BOOL			r;
 	UINT			datasize;
 
+	r = SNDMIX_SUCCESS;
 	if (sndmix_dataload(trk, sizeof(RIFF_HEADER)) != sizeof(RIFF_HEADER)) {
 		TRACEOUT(("wav: failure read[0]"));
-		goto wavopn_next;
+		r = SNDMIX_NOTSUPPORT;
+		goto wavopn_err;
 	}
 	riff = (RIFF_HEADER *)trk->data;
 	if (memcmp(riff->head, "RIFF", 4)) {
-		TRACEOUT(("wav:error RIFF header"));
-		goto wavopn_next;
+		TRACEOUT(("wav: error RIFF header"));
+		r = SNDMIX_NOTSUPPORT;
+		goto wavopn_err;
 	}
 	fpos = sizeof(RIFF_HEADER);
 	if (!memcmp(riff->fmt, "WAVE", 4)) {
@@ -491,10 +495,12 @@ int sndwave_open(SMIXTRACK trk) {
 		if (sndmix_dataload(trk, sizeof(WAVE_HEADER))
 													!= sizeof(WAVE_HEADER)) {
 			TRACEOUT(("wav: failure read[1]"));
+			r = SNDMIX_STREAMERROR;
 			goto wavopn_err;
 		}
 		if (memcmp(trk->data, "fmt ", 4)) {
 			TRACEOUT(("wav: error fmt header"));
+			r = SNDMIX_DATAERROR;
 			goto wavopn_err;
 		}
 		fpos += sizeof(WAVE_HEADER);
@@ -503,6 +509,7 @@ int sndwave_open(SMIXTRACK trk) {
 		if (sndmix_dataload(trk, sizeof(WAVE_INFOS))
 													!= sizeof(WAVE_INFOS)) {
 			TRACEOUT(("wav: failure read[2]"));
+			r = SNDMIX_STREAMERROR;
 			goto wavopn_err;
 		}
 		info = (WAVE_INFOS *)trk->data;
@@ -515,6 +522,7 @@ int sndwave_open(SMIXTRACK trk) {
 							fmt, trk->channels, trk->samprate, trk->bit));
 
 		if ((trk->channels != 1) && (trk->channels != 2)) {
+			r = SNDMIX_DATAERROR;
 			goto wavopn_err;
 		}
 #ifdef SOUND_MOREINFO
@@ -524,13 +532,18 @@ int sndwave_open(SMIXTRACK trk) {
 #endif
 		sndmix_datatrash(trk, sizeof(WAVE_INFOS));
 	}
+	else if (!memcmp(riff->fmt, "RMP2", 4)) {
+		sndmix_datatrash(trk, sizeof(RIFF_HEADER));
+		fmt = WAVEFMT_MP2;
+	}
 	else if (!memcmp(riff->fmt, "RMP3", 4)) {
 		sndmix_datatrash(trk, sizeof(RIFF_HEADER));
 		fmt = WAVEFMT_MP3;
 	}
 	else {
 		TRACEOUT(("wav: error WAVE header"));
-		goto wavopn_next;
+		r = SNDMIX_DATAERROR;
+		goto wavopn_err;
 	}
 
 	switch(fmt) {
@@ -551,14 +564,15 @@ int sndwave_open(SMIXTRACK trk) {
 #endif
 
 #if defined(AMETHYST_LIB) || defined(AMETHYST_OVL)
+		case WAVEFMT_MP2:
 		case WAVEFMT_MP3:
-			r = SNDMIX_SUCCESS;				// §»§Í§¢§®§∫¿Æ∏˘§Ú ÷§π
+			r = SNDMIX_SUCCESS;				// Ç∆ÇËÇ†Ç¶Ç∏ê¨å˜Çï‘Ç∑
 			break;
 #endif
 
 		default:
 			TRACEOUT(("wav: unknown format"));
-			r = SNDMIX_FAILURE;
+			r = SNDMIX_DATAERROR;
 			break;
 	}
 	if (r) {
@@ -568,13 +582,16 @@ int sndwave_open(SMIXTRACK trk) {
 
 	while(1) {
 		sndmix_datatrash(trk, (UINT)-1);
-		if (trk->stream_seek(trk->stream, fpos, 0) != fpos) {
+		if ((trk->stream.ssseek == NULL) ||
+			(trk->stream.ssseek(&trk->stream, fpos, SSSEEK_SET) != fpos)) {
 			TRACEOUT(("wav: failure seek[0]"));
+			r = SNDMIX_STREAMERROR;
 			goto wavopn_err;
 		}
 		if (sndmix_dataload(trk, sizeof(WAVE_HEADER))
 													!= sizeof(WAVE_HEADER)) {
 			TRACEOUT(("wav: failure read[3]"));
+			r = SNDMIX_STREAMERROR;
 			goto wavopn_err;
 		}
 		fpos += sizeof(WAVE_HEADER);
@@ -587,8 +604,9 @@ int sndwave_open(SMIXTRACK trk) {
 	sndmix_datatrash(trk, sizeof(WAVE_HEADER));
 
 #if defined(AMETHYST_LIB) || defined(AMETHYST_OVL)
-	if (fmt == WAVEFMT_MP3) {				// MP3§œ§≥§≥§«≥Œ ›
+	if ((fmt == WAVEFMT_MP2) || (fmt == WAVEFMT_MP3)) {	// MP3ÇÕÇ±Ç±Ç≈ämï€
 		if (__mp3_open(trk) != SNDMIX_SUCCESS) {
+			r = SNDMIX_DATAERROR;
 			goto wavopn_err;
 		}
 	}
@@ -600,9 +618,6 @@ int sndwave_open(SMIXTRACK trk) {
 	return(SNDMIX_SUCCESS);
 
 wavopn_err:
-	return(SNDMIX_FAILURE);
-
-wavopn_next:
-	return(SNDMIX_NEXT);
+	return(r);
 }
 

@@ -39,6 +39,11 @@ void sndplay_waveenable(int enable, int fade);
 void sndplay_seplay(int cmd, int tick);
 void sndplay_seenable(int enable, int fade);
 
+void sndplay_voiceset(const char *fname);
+void sndplay_voicereset(void);
+void sndplay_voiceplay(void);
+BOOL sndplay_voicecondition(const char *fname);
+
 #ifdef __cplusplus
 }
 #endif

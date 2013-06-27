@@ -2,6 +2,13 @@
 #define	ARCHIVE_MAXFILES	32
 #define	ARCFILENAME_LEN		12
 
+enum {
+	ARCNAME_ORIGINAL	= 0x00,
+	ARCNAME_TOUPPER		= 0x01,
+	ARCNAME_TOLOWER		= 0x02,
+	ARCNAME_CAPITALIZE	= 0x04,
+	ARCNAME_ALL			= 0x07
+};
 
 enum {
 	ARCTYPE_SCRIPT		= 0,
@@ -10,7 +17,8 @@ enum {
 	ARCTYPE_SE			= 3,
 	ARCTYPE_VOICE		= 4,
 	ARCTYPE_DATA		= 5,
-	ARCTYPES			= 6
+	ARCTYPE_MIDI		= 6,
+	ARCTYPES			= 7
 };
 
 typedef struct {
@@ -40,8 +48,12 @@ void arcfile_close(ARCFILEH hdl);
 UINT arcfile_read(ARCFILEH hdl, void *buf, UINT size);
 long arcfile_seek(ARCFILEH hdl, long pos, int method);
 
-// ┴┤д╞д╬евб╝еледе╓д└д╚╗╫дядьды╩кдЄ┼ъд▓дыбг
-void archive_throwall(const char *path);
+
+// ГAБ[ГJГCГuВ╠ГlБ[Г~ГУГOЛKСе
+void archive_namingconv(UINT type);
+
+// СSВ─В╠ГAБ[ГJГCГuВ╛В╞ОvВэВъВщХиВЁУКВ░ВщБB
+BOOL archive_throwall(const char *path);
 
 #ifdef __cplusplus
 }

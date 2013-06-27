@@ -100,11 +100,11 @@ static UINT mp3_dec(SMIXTRACK trk, SINT16 *dst) {
 			(mp3->c.insize > SUPPORT_VBR) ||
 			(mp3->c.samplingrate != (UINT)trk->samprate) ||
 			(mp3->c.channels != (UINT)trk->channels)) {
-			TRACEOUT(("mp3 decord err"));
+			TRACEOUT(("mp3: decord err"));
 			return(0);
 		}
 #else
-		TRACEOUT(("mp3 decord err"));
+		TRACEOUT(("mp3: decord err"));
 		return(0);
 #endif
 	}
@@ -140,6 +140,12 @@ BOOL __mp3_open(SMIXTRACK trk) {
 
 	MPEGL3	*mp3;
 
+#if defined(AMETHYST_OVL)
+	if (amethyst == NULL) {
+		TRACEOUT(("mp3: Amethyst not ready."));
+		goto mp3opn_err;
+	}
+#endif
 	if (sndmix_dataload(trk, 4) != 4) {
 		goto mp3opn_err;
 	}
@@ -191,24 +197,18 @@ mp3opn_err:
 
 int sndmp3_open(SMIXTRACK trk) {
 
-	BYTE	buf[10];
+	BYTE	*buf;
 	long	headpos;
 	UINT	loopsize = 0xffffffff;				// loopsize unknown
 	int		r;
 
-	r = SNDMIX_NEXT;
-#if defined(AMETHYST_OVL)
-	if (amethyst == NULL) {
-		TRACEOUT(("mp3: Amethyst not ready."));
-		goto mp3opn_err;
-	}
-#endif
-
+	r = SNDMIX_NOTSUPPORT;
 	if (sndmix_dataload(trk, 10) != 10) {
 		TRACEOUT(("mp3: failure head [0]"));
 		goto mp3opn_err;
 	}
 
+	buf = trk->data;
 	headpos = 0;
 	if (!memcmp(buf, "ID3", 3)) {
 		headpos = (buf[6] & 0x7f);
@@ -219,13 +219,16 @@ int sndmp3_open(SMIXTRACK trk) {
 		headpos <<= 7;
 		headpos |= (buf[9] & 0x7f);
 		headpos += 10;
-		TRACEOUT(("ID3 Tag - size:%dbyte(s)", headpos));
-		r = SNDMIX_FAILURE;
+		TRACEOUT(("mp3: ID3 Tag - size:%dbyte(s)", headpos));
 		sndmix_datatrash(trk, (UINT)-1);
-		if (trk->stream_seek(trk->stream, headpos, 0) != headpos) {
-			TRACEOUT(("mp3opn: failure seek head"));
+		if ((trk->stream.ssseek == NULL) ||
+			(trk->stream.ssseek(&trk->stream, headpos, SSSEEK_SET)
+															!= headpos)) {
+			TRACEOUT(("mp3: failure seek head"));
+			r = SNDMIX_STREAMERROR;
 			goto mp3opn_err;
 		}
+		r = SNDMIX_DATAERROR;
 	}
 
 	if (__mp3_open(trk) != SNDMIX_SUCCESS) {

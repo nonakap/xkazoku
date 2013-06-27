@@ -1,10 +1,10 @@
 #include	"compiler.h"
 
 
-LISTARRAY listarray_new(size_t listsize, int maxitems) {
+LISTARRAY listarray_new(size_t listsize, UINT maxitems) {
 
 	LISTARRAY	laRet = NULL;
-	int			dwSize;
+	UINT		dwSize;
 
 	dwSize = sizeof(_LISTARRAY);
 	dwSize += listsize * maxitems;
@@ -26,16 +26,13 @@ LISTARRAY listarray_new(size_t listsize, int maxitems) {
 	return(laRet);
 }
 
-
 void listarray_clr(LISTARRAY laHandle) {
 
-	if (laHandle) {
+	while(laHandle) {
 		laHandle->items = 0;
-		listarray_destroy(laHandle->laNext);
-		laHandle->laNext = NULL;
+		laHandle = laHandle->laNext;
 	}
 }
-
 
 void listarray_destroy(LISTARRAY laHandle) {
 
@@ -48,10 +45,9 @@ void listarray_destroy(LISTARRAY laHandle) {
 	}
 }
 
+UINT listarray_getitems(LISTARRAY laHandle) {
 
-int listarray_getitems(LISTARRAY laHandle) {
-
-	int		dwRet;
+	UINT	dwRet;
 
 	dwRet = 0;
 	while(laHandle) {
@@ -61,30 +57,34 @@ int listarray_getitems(LISTARRAY laHandle) {
 	return(dwRet);
 }
 
-
 void *listarray_append(LISTARRAY laHandle, const void *vpItem) {
 
-	LISTARRAY	laNew;
+	LISTARRAY	laNext;
 	char		*p;
 
-	if ((laHandle == NULL) || (vpItem == NULL)) {
+	if (laHandle == NULL) {
 		goto laapp_err;
 	}
 
-	while(laHandle->laNext) {
-		laHandle = laHandle->laNext;
-	}
-	if (laHandle->items >= laHandle->maxitems) {
-		laNew = listarray_new(laHandle->listsize, laHandle->maxitems);
-		if (laNew == NULL) {
-			goto laapp_err;
+	while(laHandle->items >= laHandle->maxitems) {
+		laNext = laHandle->laNext;
+		if (laNext == NULL) {
+			laNext = listarray_new(laHandle->listsize, laHandle->maxitems);
+			if (laNext == NULL) {
+				goto laapp_err;
+			}
+			laHandle->laNext = laNext;
 		}
-		laHandle->laNext = laNew;
-		laHandle = laNew;
+		laHandle = laNext;
 	}
 	p = (char *)(laHandle + 1);
 	p += laHandle->items * laHandle->listsize;
-	CopyMemory(p, vpItem, laHandle->listsize);
+	if (vpItem) {
+		CopyMemory(p, vpItem, laHandle->listsize);
+	}
+	else {
+		ZeroMemory(p, laHandle->listsize);
+	}
 	laHandle->items++;
 	return(p);
 
@@ -92,11 +92,22 @@ laapp_err:
 	return(NULL);
 }
 
+void *listarray_getitem(LISTARRAY laHandle, UINT num) {
+
+	while(laHandle) {
+		if (num < laHandle->items) {
+			return((char *)(laHandle + 1) + (laHandle->listsize * num));
+		}
+		num -= laHandle->items;
+		laHandle = laHandle->laNext;
+	}
+	return(NULL);
+}
 
 void *listarray_enum(LISTARRAY laHandle,
 				BOOL (*cbProc)(void *vpItem, void *vpArg), void *vpArg) {
 
-	int		i;
+	UINT	i;
 
 	if (cbProc == NULL) {
 		goto laenum_end;

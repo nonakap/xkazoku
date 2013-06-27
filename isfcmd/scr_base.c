@@ -3,61 +3,26 @@
 #include	"savefile.h"
 
 
-BYTE textsinglebyte[] = {
-			0x81, 0x40, 0x81, 0x40, 0x81, 0x41, 0x81, 0x42,
-			0x81, 0x45, 0x81, 0x48, 0x81, 0x49, 0x81, 0x69,
-			0x81, 0x6a, 0x81, 0x75, 0x81, 0x76, 0x82, 0x4f,
-			0x82, 0x50, 0x82, 0x51, 0x82, 0x52, 0x82, 0x53,
-			0x82, 0x54, 0x82, 0x55, 0x82, 0x56, 0x82, 0x57,
-			0x82, 0x58, 0x82, 0xa0, 0x82, 0xa2, 0x82, 0xa4,
-			0x82, 0xa6, 0x82, 0xa8, 0x82, 0xa9, 0x82, 0xaa,
-			0x82, 0xab, 0x82, 0xac, 0x82, 0xad, 0x82, 0xae,
-			0x81, 0x40, 0x82, 0xb0, 0x82, 0xb1, 0x82, 0xb2,
-			0x82, 0xb3, 0x82, 0xb4, 0x82, 0xb5, 0x82, 0xb6,
-			0x82, 0xb7, 0x82, 0xb8, 0x82, 0xb9, 0x82, 0xba,
-			0x82, 0xbb, 0x82, 0xbc, 0x82, 0xbd, 0x82, 0xbe,
-			0x82, 0xbf, 0x82, 0xc0, 0x82, 0xc1, 0x82, 0xc2,
-			0x82, 0xc3, 0x82, 0xc4, 0x82, 0xc5, 0x82, 0xc6,
-			0x82, 0xc7, 0x82, 0xc8, 0x82, 0xc9, 0x82, 0xca,
-			0x82, 0xcb, 0x82, 0xcc, 0x82, 0xcd, 0x82, 0xce,
-			0x82, 0xd0, 0x82, 0xd1, 0x82, 0xd3, 0x82, 0xd4,
-			0x82, 0xd6, 0x82, 0xd7, 0x82, 0xd9, 0x82, 0xda,
-			0x82, 0xdc, 0x82, 0xdd, 0x82, 0xde, 0x82, 0xdf,
-			0x82, 0xe0, 0x82, 0xe1, 0x82, 0xe2, 0x82, 0xe3,
-			0x82, 0xe4, 0x82, 0xe5, 0x82, 0xe6, 0x82, 0xe7,
-			0x82, 0xe8, 0x82, 0xe9, 0x82, 0xea, 0x82, 0xeb,
-			0x82, 0xed, 0x82, 0xf0, 0x82, 0xf1, 0x83, 0x41,
-			0x83, 0x43, 0x83, 0x45, 0x83, 0x47, 0x83, 0x49,
-			0x83, 0x4a, 0x83, 0x4c, 0x83, 0x4e, 0x83, 0x50,
-			0x83, 0x52, 0x83, 0x54, 0x83, 0x56, 0x83, 0x58,
-			0x83, 0x5a, 0x83, 0x5c, 0x83, 0x5e, 0x83, 0x60,
-			0x83, 0x62, 0x83, 0x63, 0x83, 0x65, 0x83, 0x67,
-			0x83, 0x69, 0x83, 0x6a, 0x82, 0xaf, 0x83, 0x6c,
-			0x83, 0x6d, 0x83, 0x6e, 0x83, 0x71, 0x83, 0x74,
-			0x83, 0x77, 0x83, 0x7a, 0x83, 0x7d, 0x83, 0x7e,
-			0x83, 0x80, 0x83, 0x81, 0x83, 0x82, 0x83, 0x84};
+// É|ÉCÉìÉ^ÉGÉâÅ[ÉtÉäÅ[ÅB
 
-
-// •›•§•Û•ø•®•È°º•’•Í°º°£
-
-BOOL scr_valset(int num, SINT32 val) {
+BOOL scr_valset(UINT num, SINT32 val) {
 
 	FLAGS	flags;
 
 	flags = &gamecore.flags;
-	if ((num < 0) || (num >= flags->maxval)) {
+	if (num >= flags->maxval) {
 		return(FAILURE);
 	}
 	flags->val[num] = val;
 	return(SUCCESS);
 }
 
-BOOL scr_valget(int num, SINT32 *val) {
+BOOL scr_valget(UINT num, SINT32 *val) {
 
 	FLAGS	flags;
 
 	flags = &gamecore.flags;
-	if ((num < 0) || (num >= flags->maxval)) {
+	if (num >= flags->maxval) {
 		return(FAILURE);
 	}
 	*val = flags->val[num];
@@ -67,14 +32,14 @@ BOOL scr_valget(int num, SINT32 *val) {
 
 // ----
 
-BOOL scr_flagop(int num, BYTE method) {
+BOOL scr_flagop(UINT num, BYTE method) {
 
 	FLAGS	flags;
 	BYTE	*p;
 	BYTE	bit;
 
 	flags = &gamecore.flags;
-	if ((num < 0) || (num >= flags->maxflag)) {
+	if (num >= flags->maxflag) {
 		return(FAILURE);
 	}
 	p = flags->flag + (num/8);
@@ -93,27 +58,27 @@ BOOL scr_flagop(int num, BYTE method) {
 	return(SUCCESS);
 }
 
-BOOL scr_flagget(int num, BYTE *flag) {
+BOOL scr_flagget(UINT num, BYTE *flag) {
 
 	FLAGS	flags;
 
 	flags = &gamecore.flags;
-	if ((num < 0) || (num >= flags->maxflag)) {
+	if (num >= flags->maxflag) {
 		return(FAILURE);
 	}
 	*flag = (flags->flag[num/8] >> (num & 7)) & 1;
 	return(SUCCESS);
 }
 
-BOOL scr_flagget8(int num, BYTE *flag) {
+BOOL scr_flagget8(UINT num, BYTE *flag) {
 
 	FLAGS	flags;
-	int		maxflag;
+	UINT	maxflag;
 
 	flags = &gamecore.flags;
 	maxflag = (flags->maxflag + 8) / 8;
 
-	if ((num < 0) || (num >= maxflag)) {
+	if (num >= maxflag) {
 		return(FAILURE);
 	}
 	*flag = flags->flag[num];
@@ -130,7 +95,7 @@ SINT32 scr_cmdval(UINT32 val) {
 	ret = val & 0x1fffffff;
 	val >>= 29;
 	if (val & 1) {					// sign
-		ret = ret - 0x20000000;		// or§«…‰πÁ…¸∏µ§π§Î§Œ§œ§Ë§Ì§∑§Ø§ §§°ƒ
+		ret = ret - 0x20000000;		// orÇ≈ïÑçáïúå≥Ç∑ÇÈÇÃÇÕÇÊÇÎÇµÇ≠Ç»Ç¢Åc
 	}
 	if (val & 4) {
 		if (scr_valget(ret, &ret) != SUCCESS) {
@@ -139,13 +104,13 @@ SINT32 scr_cmdval(UINT32 val) {
 	}
 	if ((val & 2) && (ret)) {
 		SINT32 rn;
-		rn = (rand() & 0x7fff) * 0x7fff;	// ≤ø∏Œ 0x8000§∏§„§ §§§Û§¿§Ì
-		rn += (rand() & 0x7fff);
+		rn = (GETRAND() & 0x7fff) * 0x7fff;	// âΩåÃ 0x8000Ç∂Ç·Ç»Ç¢ÇÒÇæÇÎ
+		rn += (GETRAND() & 0x7fff);
 		if (ret > 0) {
 			ret = rn % ret;
 		}
 		else {
-			ret = (rn % (ret * -1)) * -1;	// CPU∞Õ¬∏§¿§»∫§§Î§Œ§«æÈƒπ§›§Ø
+			ret = (rn % (ret * -1)) * -1;	// CPUàÀë∂ÇæÇ∆ç¢ÇÈÇÃÇ≈èÁí∑Ç€Ç≠
 		}
 	}
 	return(ret);
@@ -264,50 +229,31 @@ BOOL scr_getlabel(SCR_OPE *op, char *label, int size) {
 
 // ----
 
-int scr_getmsg(SCR_OPE *op, char *string, int len) {
+BOOL scr_getcurscr(char *label, int leng) {
 
-	int		pos = 0;
+	SCENE_HDL	sc;
+	SCRIPT_HDL	scr;
 
-	while(((pos + 2) < len) && (op->remain > 0)) {
-		BYTE c;
-		op->remain--;
-		c = *op->ptr++;
-		if (!c) {
-			break;
-		}
-		if (c < 0x80) {
-			string[pos++] = textsinglebyte[c * 2 + 0];
-			string[pos++] = textsinglebyte[c * 2 + 1];
-		}
-		else {
-			BYTE c2;
-			if (op->remain <= 0) {
-				break;
-			}
-			op->remain--;
-			c2 = *op->ptr++;
-			if (!c2) {
-				break;
-			}
-			string[pos++] = c;
-			string[pos++] = c2;
-		}
+	sc = gamecore.curscene;
+	if (sc == NULL) {
+		return(FAILURE);
 	}
-	if (pos < len) {
-		string[pos] = '\0';
+	scr = sc->script;
+	if (scr == NULL) {
+		return(FAILURE);
 	}
-	return(pos);
+	milstr_ncpy(label, scr->name, leng);
+	return(SUCCESS);
 }
-
-
-// ----
 
 BOOL scr_scriptcall(const char *label) {
 
 	SCENE_HDL	sc;
 	SCRIPT_HDL	scr;
+	int			scenes;
 
-	if (gamecore.scenes >= GAMECORE_MAXSCENE) {
+	scenes = gamecore.scenes;
+	if (scenes >= GAMECORE_MAXSCENE) {
 		TRACEOUT(("scene overflow"));
 		return(FAILURE);
 	}
@@ -316,7 +262,7 @@ BOOL scr_scriptcall(const char *label) {
 		TRACEOUT(("couldn't create script: %12s", label));
 		return(FAILURE);
 	}
-	sc = gamecore.scene + gamecore.scenes;
+	sc = gamecore.scene + scenes;
 	sc->script = scr;
 	sc->ptr = scr->scr;
 	sc->pos = 0;
@@ -325,35 +271,39 @@ BOOL scr_scriptcall(const char *label) {
 	return(SUCCESS);
 }
 
-
 BOOL src_scriptret(void) {
 
 	SCENE_HDL	sc;
+	int			scenes;
 
-	if (gamecore.scenes) {
-		gamecore.scenes--;
-		sc = gamecore.scene + gamecore.scenes;
+	scenes = gamecore.scenes;
+	if (scenes) {
+		scenes--;
+		gamecore.scenes = scenes;
+		sc = gamecore.scene + scenes;
 		script_destroy(sc->script);
-		if (gamecore.scenes) {
+		if (scenes) {
 			gamecore.curscene = sc - 1;
 			TRACEOUT(("script ret"));
 			return(SUCCESS);
 		}
+		gamecore.curscene = NULL;
 	}
 	return(FAILURE);
 }
 
-
 BOOL scr_jump(int ptr) {
 
 	SCENE_HDL	sc;
+	SCRIPT_HDL	script;
 
 	sc = gamecore.curscene;
-	if ((ptr < 0) || (ptr >= (int)sc->script->jmptbls)) {
+	script = sc->script;
+	if ((ptr < 0) || (ptr >= (int)script->jmptbls)) {
 		return(FAILURE);
 	}
-	sc->pos = LOADINTELDWORD(sc->script->jmptbl + ptr * 4);
-	sc->ptr = sc->script->scr + sc->pos;
+	sc->pos = LOADINTELDWORD(script->jmptbl + ptr * 4);
+	sc->ptr = script->scr + sc->pos;
 	return(SUCCESS);
 }
 
@@ -387,6 +337,50 @@ BOOL scr_ret(void) {
 	return(SUCCESS);
 }
 
+BOOL scr_setdrspos(UINT16 pnum) {
+
+	SCENE_HDL	sc;
+	SCRIPT_HDL	script;
+const BYTE		*ptr;
+	int			size;
+	UINT		pos;
+	int			len;
+	int			cmdpos;
+	BYTE		cmd;
+
+	sc = gamecore.curscene;
+	script = sc->script;
+
+	pos = 0;
+	ptr = script->scr;
+	size = script->scrsize;
+	while(size >= 2) {
+		cmd = ptr[0];
+		len = ptr[1];
+		cmdpos = 2;
+		if (len & 0x80) {
+			if (size < 3) {
+				break;
+			}
+			len &= 0x7f;
+			len <<= 8;
+			len += ptr[cmdpos++];
+		}
+		if (len > size) {
+			len = size;
+		}
+		if ((cmd == 0x0e) && ((len - cmdpos) >= 2)) {
+			if (pnum == LOADINTELWORD(ptr + cmdpos)) {
+				sc->pos = ptr - script->scr;
+				sc->ptr = ptr;
+				return(SUCCESS);
+			}
+		}
+		ptr += len;
+		size -= len;
+	}
+	return(FAILURE);
+}
 
 // ----
 
@@ -399,16 +393,16 @@ void scr_exaclear(void) {
 	if ((flags->exaval) || (flags->exaflag)) {
 		sh = savefile_open(TRUE);
 		if (flags->exaval) {
-			savefile_writeexaval(sh, flags->exaval);
+			sh->writeexaval(sh, flags->exaval);
 			variant_destory(flags->exaval);
 			flags->exaval = NULL;
 		}
 		if (flags->exaflag) {
-			savefile_writeexaflag(sh, flags->exaflag);
+			sh->writeexaflag(sh, flags->exaflag);
 			variant_destory(flags->exaflag);
 			flags->exaflag = NULL;
 		}
-		savefile_close(sh);
+		sh->close(sh);
 	}
 }
 
@@ -420,29 +414,38 @@ void scr_kidclear(void) {
 	flags = &gamecore.flags;
 	if (flags->kid) {
 		sh = savefile_open(TRUE);
-		savefile_writekid(sh, flags->kid);
+		if (sh) {
+			sh->writekid(sh, flags->kid);
+			sh->close(sh);
+		}
 		variant_destory(flags->kid);
 		flags->kid = NULL;
-		savefile_close(sh);
 	}
 }
 
 
-BOOL scr_init(void) {
+BOOL scr_init(UINT bits, UINT values) {
 
-	FLAGS		flags;
+	FLAGS	flags;
+	UINT	bitbytes;
 
 	flags = &gamecore.flags;
 
-	// Lien§«§œflag•∆°º•÷•Î≥Œ ›•≥•ﬁ•Û•…(cmd:30)§Úπ‘§Ô§ §§§Œ§«°ƒ
-	flags->val = (int *)_MALLOC(0x401 * sizeof(int), "value table");
-	flags->flag = (BYTE *)_MALLOC((0x400/8) * sizeof(BYTE), "flag table");
+	if ((!bits) || (!values)) {
+		return(FAILURE);
+	}
+	bitbytes = (bits + 7) >> 3;
+
+	// LienÇ≈ÇÕflagÉeÅ[ÉuÉãämï€ÉRÉ}ÉìÉh(cmd:30)ÇçsÇÌÇ»Ç¢ÇÃÇ≈Åc
+	// Ç¬Ç¢Ç≈Ç…ÇÍÇ∑Ç∆Ç†Ç‡ämï€ÇµÇ»Ç¢Ç≈Ç‚ÇÒÇÃÅc
+	flags->val = (int *)_MALLOC(values * sizeof(int), "value table");
+	flags->flag = (BYTE *)_MALLOC(bitbytes, "flag table");
 	if ((!flags->val) || (!flags->flag)) {
 		return(FAILURE);
 	}
-	flags->maxval = 0x400;
-	flags->maxflag = 0x400;
-	flags->flagsize = (0x400 / 8) * sizeof(BYTE);
+	flags->maxval = values;
+	flags->maxflag = bits;
+	flags->flagsize = bitbytes;
 	return(SUCCESS);
 }
 
@@ -482,7 +485,7 @@ void scr_term(void) {
 BOOL scr_restart(const char *label) {
 
 	gamecore_reset();
-	while(src_scriptret() == SUCCESS) { }		// •π•Ø•Í•◊•»«À¥˛
-	return(scr_scriptcall(label));				// •Ì°º•…•π•Ø•Í•◊•»
+	while(src_scriptret() == SUCCESS) { }		// ÉXÉNÉäÉvÉgîjä¸
+	return(scr_scriptcall(label));				// ÉçÅ[ÉhÉXÉNÉäÉvÉg
 }
 

@@ -8,14 +8,14 @@
 // -------------------------------------------------------------
 
 #include	"compiler.h"
+#include	"inputmng.h"
 #include	"gamecore.h"
-#include	"isf_cmd.h"
 #include	"arcfile.h"
 #include	"cgload.h"
+#include	"isf_cmd.h"
 
 
-
-// IC : ¥Þ¥¦¥¹¥«¡¼¥½¥ë¤ÎÊÑ¹¹ (T.Yui)
+// IC : ƒ}ƒEƒXƒJ[ƒ\ƒ‹‚Ì•ÏX T.Yui, abe
 int isfcmd_81(SCR_OPE *op) {
 
 	SINT32	type;
@@ -23,16 +23,16 @@ int isfcmd_81(SCR_OPE *op) {
 	int		version;
 
 	version = gamecore.sys.version;
-	if ((version == EXEVER_KONYA2) || (version >= EXEVER_HEART)) {
-		if (scr_getval(op, &type) != SUCCESS) {
-			return(GAMEEV_WRONGLENG);
-		}
-	}
-	else {
+	if ((version < EXEVER_KONYA2) || (version == EXEVER_KAZOKUK)) {
 		if (scr_getbyte(op, &type2) != SUCCESS) {
 			return(GAMEEV_WRONGLENG);
 		}
 		type = type2;
+	}
+	else {
+		if (scr_getval(op, &type) != SUCCESS) {
+			return(GAMEEV_WRONGLENG);
+		}
 	}
 	type = (type + CUR_SYSTEM) % (CUR_SYSTEM + CUR_USER);
 	gamecore.mouseevt.curnum = type;
@@ -40,7 +40,7 @@ int isfcmd_81(SCR_OPE *op) {
 }
 
 
-// IMS : ¥Þ¥¦¥¹°ÜÆ°ÈÏ°Ï¤ÎÀßÄê (T.Yui)
+// IMS : ƒ}ƒEƒXˆÚ“®”ÍˆÍ‚ÌÝ’è (T.Yui)
 int isfcmd_82(SCR_OPE *op) {
 
 	RECT_U		scrn;
@@ -66,7 +66,20 @@ int isfcmd_82(SCR_OPE *op) {
 }
 
 
-// IH : IG¥³¥Þ¥ó¥É¤ÎÁªÂòÈÏ°Ï»ØÄê (Nonaka.K)
+// IXY : ƒ}ƒEƒX‚ÌˆÊ’u•ÏX (T.Yui)
+int isfcmd_83(SCR_OPE *op) {
+
+	POINT_T	pt;
+
+	if (scr_getpt(op, &pt) != SUCCESS) {
+		return(GAMEEV_WRONGLENG);
+	}
+	event_setmouse(pt.x, pt.y);
+	return(GAMEEV_SUCCESS);
+}
+
+
+// IH : IGƒRƒ}ƒ“ƒh‚Ì‘I‘ð”ÍˆÍŽw’è (Nonaka.K)
 int isfcmd_84(SCR_OPE *op) {
 
 	BYTE		num;
@@ -82,6 +95,7 @@ int isfcmd_84(SCR_OPE *op) {
 		(scr_getbyte(op, &rgn.c4) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
+	TRACEOUT(("reg %d - %d %d %d %d", num, r.r.left, r.r.top, r.r.right, r.r.bottom));
 	num &= 0x3f;
 	if (num < GAMECORE_MAXRGN) {
 		MOUSEEVT mouseevt = &gamecore.mouseevt;
@@ -96,7 +110,7 @@ int isfcmd_84(SCR_OPE *op) {
 }
 
 
-// IG : ²èÌÌÆâ¥Þ¥¦¥¹ÆþÎÏ Nonaka.K, T.Yui
+// IG : ‰æ–Ê“àƒ}ƒEƒX“ü—Í Nonaka.K, T.Yui
 int isfcmd_85(SCR_OPE *op) {
 
 	MOUSEPRM	prm;
@@ -112,7 +126,7 @@ int isfcmd_85(SCR_OPE *op) {
 }
 
 
-// IGINIT : ²èÌÌÆâ¥Þ¥¦¥¹ÆþÎÏ¡Ý½é´ü²½
+// IGINIT : ‰æ–Ê“àƒ}ƒEƒX“ü—Í|‰Šú‰» (T.Yui)
 int isfcmd_86(SCR_OPE *op) {
 
 	event_mouserel(1);
@@ -121,7 +135,7 @@ int isfcmd_86(SCR_OPE *op) {
 }
 
 
-// IGRELEASE : ²èÌÌÆâ¥Þ¥¦¥¹ÆþÎÏ¡Ý²òÊü
+// IGRELEASE : ‰æ–Ê“àƒ}ƒEƒX“ü—Í|‰ð•ú (T.Yui)
 int isfcmd_87(SCR_OPE *op) {
 
 	event_mouserel(0);
@@ -130,7 +144,7 @@ int isfcmd_87(SCR_OPE *op) {
 }
 
 
-// IHK : ¥­¡¼¥Ü¡¼¥É³ÈÄ¥¡Ý°ÜÆ°Àè¥Ç¡¼¥¿¤ÎÀßÄê (T.Yui)
+// IHK : ƒL[ƒ{[ƒhŠg’£|ˆÚ“®æƒf[ƒ^‚ÌÝ’è (T.Yui)
 int isfcmd_88(SCR_OPE *op) {
 
 	BYTE		num;
@@ -154,7 +168,7 @@ int isfcmd_88(SCR_OPE *op) {
 }
 
 
-// IHKDEF : ¥­¡¼¥Ü¡¼¥É³ÈÄ¥¡Ý¥Ç¥Õ¥©¥ë¥ÈÈÖ¹æ¤ÎÀßÄê
+// IHKDEF : ƒL[ƒ{[ƒhŠg’£|ƒfƒtƒHƒ‹ƒg”Ô†‚ÌÝ’è (T.Yui)
 int isfcmd_89(SCR_OPE *op) {
 
 	SINT32		defpos;
@@ -170,7 +184,7 @@ int isfcmd_89(SCR_OPE *op) {
 }
 
 
-// IHGL : ÁªÂò¥ì¥¤¥¢¥¦¥È²èÁü¥¤¥á¡¼¥¸ÆÉ¹þ
+// IHGL : ‘I‘ðƒŒƒCƒAƒEƒg‰æ‘œƒCƒ[ƒW“Çž (T.Yui)
 int isfcmd_8a(SCR_OPE *op) {
 
 	char	label[ARCFILENAME_LEN+1];
@@ -180,14 +194,12 @@ int isfcmd_8a(SCR_OPE *op) {
 		(scr_getpt(op, &pt) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
-#ifndef SUPPORT_PPCARC
 	cgload_mask(&gamecore.mouseevt.map, ARCTYPE_GRAPHICS, label);
-#endif
 	return(GAMEEV_SUCCESS);
 }
 
 
-// IHGC : ÁªÂò¥ì¥¤¥¢¥¦¥È¥¼¥í¥¯¥ê¥¢
+// IHGC : ‘I‘ðƒŒƒCƒAƒEƒgƒ[ƒƒNƒŠƒA (T.Yui)
 int isfcmd_8b(SCR_OPE *op) {
 
 	MOUSEEVT	mouseevt;
@@ -200,7 +212,7 @@ int isfcmd_8b(SCR_OPE *op) {
 }
 
 
-// CLK : ¥¯¥ê¥Ã¥¯ÂÔ¤Á
+// CLK : ƒNƒŠƒbƒN‘Ò‚¿ (T.Yui)
 int isfcmd_8d(SCR_OPE *op) {
 
 	BYTE	dummy;
@@ -210,11 +222,13 @@ int isfcmd_8d(SCR_OPE *op) {
 		(scr_getval(op, &num) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
+	event_resetmouse(0);
+	event_resetkey(~KEY_ENTER);
 	return(GAMEEV_MSGCLK);
 }
 
 
-// IGN : ¥«¡¼¥½¥ë£Î£Ï¼èÆÀ (T.Yui)
+// IGN : ƒJ[ƒ\ƒ‹‚m‚nŽæ“¾ (T.Yui)
 int isfcmd_8e(SCR_OPE *op) {
 
 	SINT32	num;
@@ -227,7 +241,7 @@ int isfcmd_8e(SCR_OPE *op) {
 }
 
 
-// IHKINIT : ¥­¡¼¥Ü¡¼¥É³ÈÄ¥¡Ý°ÜÆ°Àè¥Ç¡¼¥¿ÀßÄê¤Î½é´ü²½
+// IHKINIT : ƒL[ƒ{[ƒhŠg’£|ˆÚ“®æƒf[ƒ^Ý’è‚Ì‰Šú‰» (T.Yui)
 int isfcmd_8f(SCR_OPE *op) {
 
 	(void)op;

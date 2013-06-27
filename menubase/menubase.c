@@ -39,7 +39,6 @@ BOOL menubase_create(void) {
 	return(SUCCESS);
 }
 
-
 void menubase_destroy(void) {
 
 	MENUBASE	*mb;
@@ -52,7 +51,6 @@ void menubase_destroy(void) {
 	fontmng_destroy(mb->font);
 	ZeroMemory(mb, sizeof(MENUBASE));
 }
-
 
 BOOL menubase_open(int num) {
 
@@ -80,7 +78,6 @@ mbopn_err:
 	return(FAILURE);
 }
 
-
 void menubase_close(void) {
 
 	MENUBASE	*mb;
@@ -106,8 +103,7 @@ void menubase_close(void) {
 	}
 }
 
-
-void menubase_moving(int x, int y, int btn) {
+BOOL menubase_moving(int x, int y, int btn) {
 
 	int		num;
 
@@ -118,8 +114,19 @@ void menubase_moving(int x, int y, int btn) {
 	else if (num) {
 		menudlg_moving(x, y, btn);
 	}
+	return(SUCCESS);
 }
 
+BOOL menubase_key(UINT key) {
+
+	int		num;
+
+	num = menubase.num;
+	if (num == 1) {
+		menusys_key(key);
+	}
+	return(SUCCESS);
+}
 
 void menubase_setrect(VRAMHDL vram, const RECT_T *rect) {
 
@@ -139,7 +146,6 @@ void menubase_setrect(VRAMHDL vram, const RECT_T *rect) {
 	}
 }
 
-
 void menubase_clrrect(VRAMHDL vram) {
 
 	RECT_T	rct;
@@ -151,7 +157,6 @@ void menubase_clrrect(VRAMHDL vram) {
 //		movieredraw = 1;
 	}
 }
-
 
 void menubase_draw(void (*draw)(VRAMHDL dst, const RECT_T *rect, void *arg),
 																void *arg) {
@@ -173,28 +178,38 @@ const	RECT_T	*rect;
 
 // ----
 
-void menubase_modalproc(void) {
+void menubase_proc(void) {
 
 	int		x;
 	int		y;
 	UINT	btn;
+	UINT	key;
+
+	btn = inputmng_getmouse(&x, &y);
+	inputmng_resetmouse(0);
+	key = inputmng_getkey();
+	inputmng_resetkey(0);
+	if (btn & MOUSE_MOVEBIT) {
+		menubase_moving(x, y, 0);
+	}
+	if (btn & LBUTTON_DOWNBIT) {
+		menubase_moving(x, y, 1);
+	}
+	if (btn & LBUTTON_UPBIT) {
+		menubase_moving(x, y, 2);
+	}
+	menubase_key(key);
+	if (((btn & RBUTTON_DOWNBIT) || (key & KEY_MENU)) &&
+		(menubase.num == 1)) {
+		menubase_close();
+	}
+}
+
+void menubase_modalproc(void) {
 
 	inputmng_resetmouse(0);
-	while(taskmng_sleep(5)) {
-		if (menuvram == NULL) {
-			break;
-		}
-		btn = inputmng_getmouse(&x, &y);
-		inputmng_resetmouse(0);
-		if (btn & MOUSE_MOVEBIT) {
-			menubase_moving(x, y, 0);
-		}
-		if (btn & LBUTTON_DOWNBIT) {
-			menubase_moving(x, y, 1);
-		}
-		if (btn & LBUTTON_UPBIT) {
-			menubase_moving(x, y, 2);
-		}
+	while((taskmng_sleep(5)) && (menuvram != NULL)) {
+		menubase_proc();
 	}
 }
 

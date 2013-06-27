@@ -9,11 +9,11 @@
 
 #include	"compiler.h"
 #include	"gamecore.h"
-#include	"isf_cmd.h"
 #include	"savefile.h"
+#include	"isf_cmd.h"
 
 
-// KIDFN : ´ûÆÉ¥Õ¥é¥°¿ôÀßÄê (Nonaka.K)
+// KIDFN : Šù“Çƒtƒ‰ƒO”Ý’è (Nonaka.K)
 int isfcmd_a5(SCR_OPE *op) {
 
 	FLAGS	flags;
@@ -27,17 +27,20 @@ int isfcmd_a5(SCR_OPE *op) {
 	}
 
 	scr_kidclear();
+	cnt += 8;
+	cnt &= ~7;
 	flags->kid = variant_create(cnt, VARIANT_BIT);
 
 	sh = savefile_open(FALSE);
-	savefile_readkid(sh, flags->kid);
-	savefile_close(sh);
-
+	if (sh) {
+		sh->readkid(sh, flags->kid);
+		sh->close(sh);
+	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// KIDSCAN : ´ûÆÉµ¡Ç½¤È´ûÆÉ¥Õ¥é¥°¤ÎÈ½Äê
+// KIDSCAN : Šù“Ç‹@”\‚ÆŠù“Çƒtƒ‰ƒO‚Ì”»’è (T.Yui)
 int isfcmd_a7(SCR_OPE *op) {
 
 	UINT16	pos;
@@ -62,7 +65,7 @@ int isfcmd_a7(SCR_OPE *op) {
 }
 
 
-// SETKIDWNDPUTPOS : ´ûÆÉ¥¦¥£¥ó¥É¥¦¤Î¥×¥Ã¥È°ÌÃÖ»ØÄê
+// SETKIDWNDPUTPOS : Šù“ÇƒEƒBƒ“ƒhƒE‚ÌƒvƒbƒgˆÊ’uŽw’è (T.Yui)
 int isfcmd_ae(SCR_OPE *op) {
 
 	BYTE	num;
@@ -80,7 +83,7 @@ int isfcmd_ae(SCR_OPE *op) {
 }
 
 
-// SETMESWNDPUTPOS : ¥á¥Ã¥»¡¼¥¸¥¦¥£¥ó¥É¥¦¤Î¥×¥Ã¥È°ÌÃÖ»ØÄê
+// SETMESWNDPUTPOS : ƒƒbƒZ[ƒWƒEƒBƒ“ƒhƒE‚ÌƒvƒbƒgˆÊ’uŽw’è (T.Yui)
 int isfcmd_af(SCR_OPE *op) {
 
 	BYTE	num;
@@ -91,6 +94,7 @@ int isfcmd_af(SCR_OPE *op) {
 		(scr_getrect(op, &scrn) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
+	TRACEOUT(("msg: %d %d %d %d", scrn.s.left, scrn.s.top, scrn.s.width, scrn.s.height));
 	dispwin = &gamecore.dispwin;
 	dispwin->flag |= DISPWIN_CLIPTEXT;
 	dispwin->txtclip = scrn.s;

@@ -1,4 +1,4 @@
-XCOMM	$Id$
+XCOMM	$Id: Imakefile,v 1.12 2003/08/13 05:01:53 yui Exp $
 
 #include "config.tmpl"
 
@@ -24,7 +24,8 @@ DEFINES= ShmDefines $(OGG_DEFS) $(MPLAYER) $(TTFONT)
 
 SYS_LIBRARIES= -lm
 
-EXTRA_INCLUDES= -I. -I.. -I../common -I../isfcmd -I../sound \
+EXTRA_INCLUDES= -I. -I.. -I../common -I../isfcmd \
+		-I../sound -I../sound/vermouth \
 		-I../menubase -I../menu \
 		$(SDL_INCS) $(OGG_INCS)
 
@@ -33,13 +34,14 @@ LOCAL_LIBRARIES= $(XLIB) $(SDL_LIBS) $(OGG_LIBS)
 #define PassCDebugFlags
 
 COMMONOBJS=	../common/_memory.o ../common/lstarray.o ../common/milstr.o \
-		../common/profile.o ../common/rect.o ../common/textfile.o \
-		../common/variant.o
+		../common/profile.o ../common/rect.o ../common/resize.o \
+		../common/textfile.o ../common/variant.o ../common/codecnv.o
 
 COREOBJS=	../anime.o ../arcfile.o ../bmpdata.o ../cgload.o ../effect.o \
-		../event.o ../gamecore.o ../gamecfg.o ../savefile.o \
-		../script.o ../sndplay.o ../textdisp.o ../textwin.o \
-		../vram.o ../vramdraw.o ../vrammix.o
+		../event.o ../gamecore.o ../gamecfg.o ../gamedef.o \
+		../savedrs.o ../savefile.o ../saveisf.o ../script.o \
+		../sndplay.o ../textdisp.o ../textwin.o ../vram.o \
+		../vramdraw.o ../vrammix.o
 
 ISFCMDOBJS=	../isfcmd/isf_cmd0.o ../isfcmd/isf_cmd1.o ../isfcmd/isf_cmd2.o \
 		../isfcmd/isf_cmd3.o ../isfcmd/isf_cmd4.o ../isfcmd/isf_cmd5.o \
@@ -47,8 +49,9 @@ ISFCMDOBJS=	../isfcmd/isf_cmd0.o ../isfcmd/isf_cmd1.o ../isfcmd/isf_cmd2.o \
 		../isfcmd/isf_cmd9.o ../isfcmd/isf_cmda.o ../isfcmd/isf_cmdb.o \
 		../isfcmd/isf_cmdd.o ../isfcmd/isf_cmde.o ../isfcmd/isf_cmdf.o \
 		../isfcmd/isf_todo.o \
-		../isfcmd/drs_cmd0.o ../isfcmd/drs_cmd2.o ../isfcmd/drs_cmd4.o \
-		../isfcmd/drs_cmd5.o ../isfcmd/drs_cmd7.o \
+		../isfcmd/drs_cmd0.o ../isfcmd/drs_cmd1.o ../isfcmd/drs_cmd2.o \
+		../isfcmd/drs_cmd3.o ../isfcmd/drs_cmd4.o ../isfcmd/drs_cmd5.o \
+		../isfcmd/drs_cmd7.o ../isfcmd/drs_cmdf.o \
 		../isfcmd/scr_base.o
 
 MENUOBJS=	../menubase/menubase.o ../menubase/menudlg.o \
@@ -57,16 +60,21 @@ MENUOBJS=	../menubase/menubase.o ../menubase/menudlg.o \
 		../menu/dlgcfg.o ../menu/dlgsave.o ../menu/sysmenu.o
 
 SOUNDOBJS=	../sstream.o ../sound/sound.o ../sound/sndmix.o \
-		../sound/sndmp3.o ../sound/sndogg.o ../sound/sndwave.o
+		../sound/sndmp3.o ../sound/sndogg.o ../sound/sndwave.o \
+		../sound/sndmidi.o
 
 UNIXOBJS=	fontmng.o gamemsg.o inputmng.o moviemng.o scrnmng.o taskmng.o \
 		timemng.o \
-		dosio.o sdldraw.o codeconv.o trace.o
+		dosio.o sdldraw.o trace.o
 
 AUDIOOBJS=	audio.o cddamng.o
 
+MIDIOBJS=	../sound/vermouth/midimod.o ../sound/vermouth/midinst.o \
+		../sound/vermouth/midiout.o ../sound/vermouth/midtable.o \
+		../sound/vermouth/midvoice.o
+
 OBJS=		$(COMMONOBJS) $(COREOBJS) $(ISFCMDOBJS) $(MENUOBJS) \
-		$(SOUNDOBJS) \
+		$(SOUNDOBJS) $(MIDIOBJS) \
 		$(UNIXOBJS) $(AUDIOOBJS) \
 		akira.o
 SRCS=		$(OBJS:.o=.c)
@@ -83,25 +91,11 @@ XCOMM
 
 ANALYZEOBJS=	../analyze/analyze.o ../analyze/arccheck.o \
 		../analyze/arcread.o ../analyze/isfcheck.o \
-		../analyze/log.o ../analyze/scr.o
+		../analyze/log.o ../analyze/savcheck.o ../analyze/scr.o
 ANALYZESRCS=	$(ANALYZEOBJS:.o=.c)
 
-analyze:	$(ANALYZEOBJS) $(COMMONOBJS) dosio.o
-	$(CC) -o $@ $(ANALYZEOBJS) $(COMMONOBJS) dosio.o
-
-
-XCOMM
-XCOMM qvgacnv
-XCOMM
-
-TOOLOBJS=	$(COMMONOBJS) dosio.o ../arcfile.o ../arcwrite.o
-
-QVGACNVOBJS=	../toqvga/graphcnv.o ../toqvga/packpg0.o \
-		../cgload.o ../vram.o qvgacnv.o
-QVGACNVSRCS=	$(TOOLOBJS:.o=.c) $(QVGACNVOBJS:.o=.c)
-
-qvgacnv:	$(TOOLOBJS) $(QVGACNVOBJS)
-	$(CC) -o $@ $(TOOLOBJS) $(QVGACNVOBJS)
+analyze:	$(ANALYZEOBJS) $(COMMONOBJS) dosio.o trace.o ../gamedef.o
+	$(CC) -o $@ $(ANALYZEOBJS) $(COMMONOBJS) dosio.o trace.o ../gamedef.o
 
 
 XCOMM
@@ -115,7 +109,8 @@ mp3cnv:		$(TOOLOBJS) $(MP3CNVOBJS)
 	$(CC) -o $@ $(TOOLOBJS) $(MP3CNVOBJS)
 
 clean cleandir::
-	$(RM) analyze qvgacnv mp3cnv $(OBJS) $(QVGACNVOBJS) $(MP3CNVOBJS)
+	-$(RM) analyze mp3cnv $(OBJS)
+	-$(RM) $(ANALYZEOBJS) $(MP3CNVOBJS)
 
-distclean:: clean cleandir
-	$(RM) Makefile .depend
+distclean:: clean
+	-$(RM) Makefile .depend

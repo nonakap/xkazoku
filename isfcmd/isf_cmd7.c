@@ -9,13 +9,13 @@
 
 #include	"compiler.h"
 #include	"gamecore.h"
-#include	"arcfile.h"
-#include	"isf_cmd.h"
 #include	"sound.h"
+#include	"arcfile.h"
 #include	"sstream.h"
+#include	"isf_cmd.h"
 
 
-// ML : ²»³Ú¥Ç¡¼¥¿¤Î¥í¡¼¥É¡¦ºÆÀ¸ (T.Yui)
+// ML : ‰¹Šyƒf[ƒ^‚Ìƒ[ƒhEÄ¶ (T.Yui)
 int isfcmd_70(SCR_OPE *op) {
 
 	char	label[ARCFILENAME_LEN+1];
@@ -32,7 +32,7 @@ int isfcmd_70(SCR_OPE *op) {
 }
 
 
-// MP : ²»³Ú¤ÎºÆÀ¸ (T.Yui)
+// MP : ‰¹Šy‚ÌÄ¶ (T.Yui)
 int isfcmd_71(SCR_OPE *op) {
 
 	BYTE	flag;
@@ -42,13 +42,13 @@ int isfcmd_71(SCR_OPE *op) {
 	exever = gamecore.sys.version;
 
 	flag = 0;
-	if (exever != EXEVER_TEA2DEMO) {
+	if (exever != EXEVER_TEA2) {
 		if (scr_getbyte(op, &flag) != SUCCESS) {
 			return(GAMEEV_WRONGLENG);
 		}
 	}
 	tick = 0;
-	if (exever >= EXEVER_KAZOKUK) {
+	if (exever >= EXEVER_KAZOKU) {
 		if (scr_getval(op, &tick) != SUCCESS) {
 			return(GAMEEV_WRONGLENG);
 		}
@@ -58,7 +58,7 @@ int isfcmd_71(SCR_OPE *op) {
 }
 
 
-// MF : ²»³Ú¤Î¥Õ¥§¡¼¥É¥¢¥¦¥È
+// MF : ‰¹Šy‚ÌƒtƒF[ƒhƒAƒEƒg (T.Yui)
 int isfcmd_72(SCR_OPE *op) {
 
 	SINT32	tick;
@@ -71,7 +71,7 @@ int isfcmd_72(SCR_OPE *op) {
 }
 
 
-// MS : ²»³Ú¤Î¥¹¥È¥Ã¥×
+// MS : ‰¹Šy‚ÌƒXƒgƒbƒv (T.Yui)
 int isfcmd_73(SCR_OPE *op) {
 
 	sndplay_wavestop(0);
@@ -80,7 +80,7 @@ int isfcmd_73(SCR_OPE *op) {
 }
 
 
-// SER : ¸ú²Ì²»¤Î¥í¡¼¥É (T.Yui)		DRS cmd:76
+// SER : Œø‰Ê‰¹‚Ìƒ[ƒh (T.Yui)		DRS cmd:76
 int isfcmd_74(SCR_OPE *op) {
 
 	char			label[ARCFILENAME_LEN+1];
@@ -96,13 +96,13 @@ int isfcmd_74(SCR_OPE *op) {
 	if ((num >= 0) && (num < SOUNDTRK_MAXSE)) {
 		asa.type = ARCTYPE_SE;
 		asa.fname = label;
-		soundmix_load(SOUNDTRK_SE + num, &se_stream, &asa);
+		soundmix_load(SOUNDTRK_SE + num, arcse_ssopen, &asa);
 	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// SEP : ¸ú²Ì²»¤ÎºÆÀ¸ (T.Yui)
+// SEP : Œø‰Ê‰¹‚ÌÄ¶ (T.Yui)
 int isfcmd_75(SCR_OPE *op) {
 
 	SINT32	cmd;
@@ -123,7 +123,7 @@ int isfcmd_75(SCR_OPE *op) {
 }
 
 
-// SED : ¸ú²Ì²»¤Îºï½ü (T.Yui)										DRS cmd:78
+// SED : Œø‰Ê‰¹‚Ìíœ (T.Yui)										DRS cmd:78
 int isfcmd_76(SCR_OPE *op) {
 
 	SINT32	num;
@@ -131,7 +131,8 @@ int isfcmd_76(SCR_OPE *op) {
 	if (scr_getval(op, &num) != SUCCESS) {
 		return(GAMEEV_WRONGLENG);
 	}
-	sndplay_seplay(num, 0);
+//	TRACEOUT(("SE stop: %x (%d)", num, 0));
+	sndplay_seplay(num & 0x1f, 0);								// akiba
 	if ((num >= 0) && (num < SOUNDTRK_MAXSE)) {
 		soundmix_unload(SOUNDTRK_SE + num);
 	}
@@ -140,60 +141,49 @@ int isfcmd_76(SCR_OPE *op) {
 }
 
 
-// PCMON : PCM ²»À¼¤ÎºÆÀ¸ (T.Yui)
+// PCMON : PCM ‰¹º‚ÌÄ¶ Nonaka.K T.Yui
 int isfcmd_77(SCR_OPE *op) {
 
-	GAMECFG			gamecfg;
-	SNDPLAY			sndplay;
-	char			label[ARCFILENAME_LEN+1];
-	ARCSTREAMARG	asa;
-	BYTE			cmd;
+	GAMECFG		gamecfg;
+	SNDPLAY		sndplay;
+	char		label[ARCFILENAME_LEN+1];
+	BYTE		cmd;
 
 	gamecfg = &gamecore.gamecfg;
 	sndplay = &gamecore.sndplay;
 	if ((gamecfg->skip) || (!gamecfg->voice)) {
 		goto cmd77_exit;
 	}
-	asa.type = ARCTYPE_VOICE;
-	if (sndplay->playing & SNDPLAY_PCMLOAD) {
-		asa.fname = sndplay->pcm;
-	}
-	else {
+	if (!(sndplay->playing & SNDPLAY_PCMLOAD)) {
 		if (scr_getlabel(op, label, sizeof(label)) != SUCCESS) {
 			return(GAMEEV_WRONGLENG);
 		}
-		TRACEOUT(("VOICE(77): %-12s", label));
-		asa.fname = label;
+		sndplay_voiceset(label);
 	}
 	scr_getbyte(op, &cmd);
-	soundmix_load(SOUNDTRK_VOICE, &se_stream, &asa);
-	soundmix_play(SOUNDTRK_VOICE, 0, 0);
+	sndplay_voiceplay();
 
 cmd77_exit:
-	sndplay->playing &= ~SNDPLAY_PCMLOAD;
+	sndplay_voicereset();
 	return(GAMEEV_SUCCESS);
 }
 
 
-// PCML : PCM¤Î¥í¡¼¥É
+// PCML : PCM‚Ìƒ[ƒh Nonaka.K T.Yui
 int isfcmd_78(SCR_OPE *op) {
 
-	char		label[ARCFILENAME_LEN+1];
-	SNDPLAY		sndplay;
+	char	label[ARCFILENAME_LEN+1];
 
 	if (scr_getlabel(op, label, sizeof(label)) != SUCCESS) {
 		return(GAMEEV_WRONGLENG);
 	}
 	TRACEOUT(("VOICE(78): %-12s", label));
-	sndplay = &gamecore.sndplay;
-	sndplay->playing |= SNDPLAY_PCMLOAD;
-	milstr_ncpy(sndplay->pcm, label, sizeof(sndplay->pcm));
-
+	sndplay_voiceset(label);
 	return(GAMEEV_SUCCESS);
 }
 
 
-// PCMS : PCM¤ÎÄä»ß
+// PCMS : PCM‚Ì’â~ Nonaka.K T.Yui
 int isfcmd_79(SCR_OPE *op) {
 
 	soundmix_stop(SOUNDTRK_VOICE, 0);
@@ -204,20 +194,23 @@ int isfcmd_79(SCR_OPE *op) {
 }
 
 
-// PCMEND : PCM ²»À¼¤ÎÄä»ßÂÔµ¡ (T.Yui)
+// PCMEND : PCM ‰¹º‚Ì’â~‘Ò‹@ (Nonaka.K)
 int isfcmd_7a(SCR_OPE *op) {
 
 	(void)op;
-//	soundmix_stop(SOUNDTRK_VOICE, 0);
 	return(GAMEEV_WAITPCMEND);
 }
 
 
-// SES : SES ¸ú²Ì²»¤ÎÄä»ß (T.Yui)
+// SES : SES Œø‰Ê‰¹‚Ì’â~ (T.Yui)
 int isfcmd_7b(SCR_OPE *op) {
 
 	SINT32	num;
 	SINT32	tick;
+
+	if (gamecore.sys.version == EXEVER_TSUKU) {			// ƒeƒXƒg
+		return(isfcmd_90(op));
+	}
 
 	if ((scr_getval(op, &num) != SUCCESS) ||
 		(scr_getval(op, &tick) != SUCCESS)) {
@@ -228,29 +221,82 @@ int isfcmd_7b(SCR_OPE *op) {
 }
 
 
-// PCMGETPOS : PCM¤ÎºÆÀ¸°ÌÃÖ¼èÆÀ
+// BGMGETPOS : ‰¹Šy‚ÌÄ¶ˆÊ’uæ“¾ (T.Yui)
+static void setplaypos(int ch, BYTE kind, UINT16 num) {
+
+	if (!kind) {
+		scr_flagop(num, (BYTE)((soundmix_isplaying(ch))?1:0));
+	}
+	else {
+		scr_valset(num, soundmix_getpos(ch));
+	}
+}
+
+int isfcmd_7c(SCR_OPE *op) {
+
+	BYTE	kind;
+	UINT16	num;
+
+	if (gamecore.sys.version == EXEVER_TSUKU) {			// ƒeƒXƒg
+		return(isfcmd_91(op));
+	}
+
+	if ((scr_getbyte(op, &kind) != SUCCESS) ||
+		(scr_getword(op, &num) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	setplaypos(SOUNDTRK_SOUND, kind, num);
+	return(GAMEEV_SUCCESS);
+}
+
+
+// SEGETPOS : Œø‰Ê‰¹‚ÌÄ¶ˆÊ’uæ“¾ (T.Yui)
+int isfcmd_7d(SCR_OPE *op) {
+
+	SINT32	senum;
+	BYTE	kind;
+	UINT16	num;
+
+	if (gamecore.sys.version == EXEVER_TSUKU) {			// ƒeƒXƒg
+		return(isfcmd_92(op));
+	}
+
+	if ((scr_getval(op, &senum) != SUCCESS) ||
+		(scr_getbyte(op, &kind) != SUCCESS) ||
+		(scr_getword(op, &num) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	if ((senum >= 0) && (senum < SOUNDTRK_MAXSE)) {
+		setplaypos(SOUNDTRK_SE + senum, kind, num);
+	}
+	else {
+		if (!kind) {
+			scr_flagop(num, 0);
+		}
+		else {
+			scr_valset(num, 0);
+		}
+	}
+	return(GAMEEV_SUCCESS);
+}
+
+
+// PCMGETPOS : PCM‚ÌÄ¶ˆÊ’uæ“¾ (T.Yui)
 int isfcmd_7e(SCR_OPE *op) {
 
 	BYTE	kind;
-	BYTE	cmd;
 	UINT16	num;
 
 	if ((scr_getbyte(op, &kind) != SUCCESS) ||
 		(scr_getword(op, &num) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
-	cmd = soundmix_isplaying(SOUNDTRK_VOICE)?1:0;
-	if (!kind) {
-		scr_flagop(num, cmd);
-	}
-	else {
-		scr_valset(num, cmd);
-	}
+	setplaypos(SOUNDTRK_VOICE, kind, num);
 	return(GAMEEV_SUCCESS);
 }
 
 
-// PCMCN : ²»À¼¥Õ¥¡¥¤¥ëÌ¾¤Î¥Ğ¥Ã¥¯¥¢¥Ã¥×
+// PCMCN : ‰¹ºƒtƒ@ƒCƒ‹–¼‚ÌƒoƒbƒNƒAƒbƒv (T.Yui)
 int isfcmd_7f(SCR_OPE *op) {
 
 	(void)op;

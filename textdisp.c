@@ -1,17 +1,53 @@
 #include	"compiler.h"
-#include	"gamecore.h"
-#include	"inputmng.h"
 #include	"fontmng.h"
+#include	"inputmng.h"
 #include	"taskmng.h"
+#include	"gamecore.h"
+#include	"arcfile.h"
 
 
 enum {
-	TEXTDISP_DONE		= 0x00,
 	TEXTDISP_CMDREQ		= 0x01,
-	TEXTDISP_PRINT		= 0x02,
-	TEXTDISP_MOUSEEV	= 0x04,
-	TEXTDISP_NEXTPAGE	= 0x08
+	TEXTDISP_STRREQ		= 0x02,
+	TEXTDISP_PRINT		= 0x04,
+	TEXTDISP_MOUSEEV	= 0x08,
+	TEXTDISP_NEXTPAGE	= 0x10,
+	TEXTDISP_DONE		= 0x20
 };
+
+static const BYTE textsinglebyte[] = {
+			0x81, 0x40, 0x81, 0x40, 0x81, 0x41, 0x81, 0x42,
+			0x81, 0x45, 0x81, 0x48, 0x81, 0x49, 0x81, 0x69,
+			0x81, 0x6a, 0x81, 0x75, 0x81, 0x76, 0x82, 0x4f,
+			0x82, 0x50, 0x82, 0x51, 0x82, 0x52, 0x82, 0x53,
+			0x82, 0x54, 0x82, 0x55, 0x82, 0x56, 0x82, 0x57,
+			0x82, 0x58, 0x82, 0xa0, 0x82, 0xa2, 0x82, 0xa4,
+			0x82, 0xa6, 0x82, 0xa8, 0x82, 0xa9, 0x82, 0xaa,
+			0x82, 0xab, 0x82, 0xac, 0x82, 0xad, 0x82, 0xae,
+			0x81, 0x40, 0x82, 0xb0, 0x82, 0xb1, 0x82, 0xb2,
+			0x82, 0xb3, 0x82, 0xb4, 0x82, 0xb5, 0x82, 0xb6,
+			0x82, 0xb7, 0x82, 0xb8, 0x82, 0xb9, 0x82, 0xba,
+			0x82, 0xbb, 0x82, 0xbc, 0x82, 0xbd, 0x82, 0xbe,
+			0x82, 0xbf, 0x82, 0xc0, 0x82, 0xc1, 0x82, 0xc2,
+			0x82, 0xc3, 0x82, 0xc4, 0x82, 0xc5, 0x82, 0xc6,
+			0x82, 0xc7, 0x82, 0xc8, 0x82, 0xc9, 0x82, 0xca,
+			0x82, 0xcb, 0x82, 0xcc, 0x82, 0xcd, 0x82, 0xce,
+			0x82, 0xd0, 0x82, 0xd1, 0x82, 0xd3, 0x82, 0xd4,
+			0x82, 0xd6, 0x82, 0xd7, 0x82, 0xd9, 0x82, 0xda,
+			0x82, 0xdc, 0x82, 0xdd, 0x82, 0xde, 0x82, 0xdf,
+			0x82, 0xe0, 0x82, 0xe1, 0x82, 0xe2, 0x82, 0xe3,
+			0x82, 0xe4, 0x82, 0xe5, 0x82, 0xe6, 0x82, 0xe7,
+			0x82, 0xe8, 0x82, 0xe9, 0x82, 0xea, 0x82, 0xeb,
+			0x82, 0xed, 0x82, 0xf0, 0x82, 0xf1, 0x83, 0x41,
+			0x83, 0x43, 0x83, 0x45, 0x83, 0x47, 0x83, 0x49,
+			0x83, 0x4a, 0x83, 0x4c, 0x83, 0x4e, 0x83, 0x50,
+			0x83, 0x52, 0x83, 0x54, 0x83, 0x56, 0x83, 0x58,
+			0x83, 0x5a, 0x83, 0x5c, 0x83, 0x5e, 0x83, 0x60,
+			0x83, 0x62, 0x83, 0x63, 0x83, 0x65, 0x83, 0x67,
+			0x83, 0x69, 0x83, 0x6a, 0x82, 0xaf, 0x83, 0x6c,
+			0x83, 0x6d, 0x83, 0x6e, 0x83, 0x71, 0x83, 0x74,
+			0x83, 0x77, 0x83, 0x7a, 0x83, 0x7d, 0x83, 0x7e,
+			0x83, 0x80, 0x83, 0x81, 0x83, 0x82, 0x83, 0x84};
 
 
 #ifdef TRACE
@@ -20,8 +56,8 @@ static void debugtextout(STRING_T *str) {
 	char	buf[1024 + 1];
 	char	*p = buf;
 	int		r = 512;
-	BYTE	*ptr;
-	BYTE	remain;
+const BYTE	*ptr;
+	int		remain;
 
 	ptr = str->ptr;
 	remain = str->remain;
@@ -53,151 +89,167 @@ static void debugtextout(STRING_T *str) {
 #endif
 
 
-// ---- text
+// ---- number
 
-typedef struct {
-	BYTE	zero[2];
-	BYTE	minus[2];
-	BYTE	space[2];
-} NUMSTR;
+static BOOL makenumber(TEXT_T *txt, int num) {
 
-static const NUMSTR numstr[4] = {
-			{{0x82, 0x4f}, {0x81, 0x7c}, {0x81, 0x40}},
-			{{0x82, 0x4f}, {0x81, 0x7c}, {0x82, 0x4f}},
-			{{0x7f, 0x30}, {0x7f, 0x2d}, {0x7f, 0x20}},
-			{{0x7f, 0x30}, {0x7f, 0x2d}, {0x7f, 0x30}}};
-
-static BOOL makenumber(STRING_T *dst, STRING_T *src) {
-
-	int			size;
-	int			num;
 	SINT32		val;
 	int			s;
 	UINT		value;
-	int			flag;
 	BYTE		*p;
-const NUMSTR	*ns;
 
-	if (src->remain < 5) {
+	if (scr_valget(num, &val) != SUCCESS) {
 		return(FAILURE);
 	}
-	size = dst->remain;
-	size--;
-	size /= 2;
-	if (size <= 0) {
-		size = 0;
+	p = txt->txtwork + (sizeof(txt->txtwork) & (~1));
+	s = (val < 0)?-1:1;
+	value = val * s;
+	while(txt->txtwork < p) {
+		p -= 2;
+		num = val % 10;
+		p[0] = 0x82;
+		p[1] = (BYTE)(0x4f + num);
+		val /= 10;
+		if (!val) {
+			break;
+		}
 	}
-	num = LOADINTELWORD(src->ptr);
-	size = min(size, (int)src->ptr[2]);
-	flag = (src->ptr[3]?1:0);				// µÕ¤«¤â
-	flag += (src->ptr[4]?2:0);				// µÕ¤«¤â
-	src->ptr += 5;
-	src->remain -= 5;
-	ns = numstr + flag;
-	scr_valget(num, &val);
-	dst->remain = size * 2 + 1;
-	p = dst->ptr + (size * 2);
-	p[0] = 0;
+	if ((txt->txtwork < p) && (s < 0)) {
+		p -= 2;
+		txt->txtwork[0] = 0x81;
+		txt->txtwork[1] = 0x7c;
+	}
+	txt->txt.ptr = p;
+	txt->txt.remain = (txt->txtwork + sizeof(txt->txtwork)) - p;
+	return(SUCCESS);
+}
+
+static BOOL makenumberzen(TEXT_T *txt, int num, int colomn, int zero) {
+
+	SINT32		val;
+	int			s;
+	UINT		value;
+	BYTE		*p;
+
+	colomn = min(colomn, (int)sizeof(txt->txtwork) / 2);
+	if (scr_valget(num, &val) != SUCCESS) {
+		return(FAILURE);
+	}
+	txt->txt.ptr = txt->txtwork;
+	txt->txt.remain = colomn * 2;
+	p = txt->txtwork + (colomn * 2);
 	s = (val < 0)?-1:1;
 	value = val * s;
 	while(1) {
 		p -= 2;
 		num = val % 10;
-		p[0] = ns->zero[0];
-		p[1] = (BYTE)(ns->zero[1] + num);
+		p[0] = 0x82;
+		p[1] = (BYTE)(0x4f + num);
 		val /= 10;
-		size--;
-		if ((!val) || (!size)) {
+		colomn--;
+		if ((!val) || (!colomn)) {
 			break;
 		}
 	}
-	if ((size) && (s < 0)) {
-		size--;
-		dst->ptr[0] = ns->minus[0];
-		dst->ptr[1] = ns->minus[1];
+	if ((colomn) && (s < 0)) {
+		colomn--;
+		txt->txtwork[0] = 0x81;
+		txt->txtwork[1] = 0x7c;
 	}
-	while(size--) {
+	if (colomn) {
+		colomn--;
 		p -= 2;
-		p[0] = ns->space[0];
-		p[1] = ns->space[1];
+		p[0] = zero?0x82:0x81;
+		p[1] = zero?0x4f:0x40;
+		while(colomn--) {
+			p -= 2;
+			p[0] = p[2];
+			p[1] = p[3];
+		}
+	}
+	return(SUCCESS);
+}
+
+static BOOL makenumberhan(TEXT_T *txt, int num, int colomn, int zero) {
+
+	SINT32		val;
+	int			s;
+	UINT		value;
+	BYTE		*p;
+
+	colomn = min(colomn, (int)sizeof(txt->txtwork));
+	if (scr_valget(num, &val) != SUCCESS) {
+		return(FAILURE);
+	}
+	txt->txt.ptr = txt->txtwork;
+	txt->txt.remain = colomn;
+	p = txt->txtwork + colomn;
+	s = (val < 0)?-1:1;
+	value = val * s;
+	while(1) {
+		p -= 1;
+		num = val % 10;
+		p[0] = (BYTE)('0' + num);
+		val /= 10;
+		colomn--;
+		if ((!val) || (!colomn)) {
+			break;
+		}
+	}
+	if ((colomn) && (s < 0)) {
+		colomn--;
+		txt->txtwork[0] = '-';
+	}
+	if (colomn) {
+		colomn--;
+		p -= 1;
+		p[0] = zero?'0':' ';
+		while(colomn--) {
+			p -= 1;
+			p[0] = p[1];
+		}
 	}
 	return(SUCCESS);
 }
 
 
-static UINT textdisp_put(TEXTCTRL textctrl, TEXT_T *txt, STRING_T *str) {
+// ---- text sub
 
-	int			bak;
-	BYTE		c;
+static void textdisp_print(TEXTCTRL textctrl, TEXT_T *txt,
+					void (*func)(VRAMHDL dst, void *fhdl, const char *str,
+							UINT32 color, POINT_T *pt, const RECT_T *rct)) {
+
 	char		buf[4];
 	RECT_U		rect;
 	POINT_T		pt;
-	BOOL		ascii;
 	int			fontwidth;
 	POINT_T		fontsize;
-	UINT32		col;
+	int			leng;
 
-	bak = str->remain;
-	if (bak <= 0) {
-		return(TEXTDISP_DONE);
-	}
-	c = *str->ptr;
-	ascii = FALSE;
-	if (textctrl->fonttype & TEXTCTRL_ASCII) {
-		if (c == 0x5c) {
-			str->ptr++;
-			str->remain--;
-			if (str->remain <= 0) {
-				return(TEXTDISP_DONE);
-			}
-			if (str->ptr[0] == 0) {
-				goto zen_break;
-			}
-			c = str->ptr[0];
-		}
-		while(c == 0x7f) {
-			str->ptr++;
-			str->remain--;
-			if (str->remain <= 0) {
-				return(TEXTDISP_DONE);
-			}
-			c = *str->ptr;
-			ascii = TRUE;
-		}
-	}
-
-zen_break:
-	str->ptr++;
-	str->remain--;
-	if (c == 0) {
-		return(TEXTDISP_CMDREQ);
+	if (txt->txt.remain <= 0) {
+		goto tdd_done;
 	}
 
 	fontwidth = textctrl->fontsize;
-	if (!ascii) {
-		if (c < 0x80) {
-			buf[0] = textsinglebyte[c * 2 + 0];
-			buf[1] = textsinglebyte[c * 2 + 1];
+	buf[0] = txt->txt.ptr[0];
+	if ((((buf[0] ^ 0x20) - 0xa1) & 0xff) < 0x3c) {
+		if (txt->txt.remain < 2) {
+			goto tdd_done;
 		}
-		else {
-			if (str->remain <= 0) {
-				return(TEXTDISP_DONE);
-			}
-			str->remain--;
-			buf[0] = c;
-			buf[1] = *str->ptr++;
-			if (!buf[1]) {
-				return(TEXTDISP_CMDREQ);
-			}
+		buf[1] = txt->txt.ptr[1];
+		if (buf[1] == '\0') {
+			goto tdd_done;
 		}
 		buf[2] = '\0';
-		textctrl->intext += 2;
+		leng = 2;
 	}
 	else {
-		buf[0] = c;
+		if (buf[0] == '\0') {
+			goto tdd_done;
+		}
 		buf[1] = '\0';
-		fontwidth >>= 1;
-		textctrl->intext++;
+		leng = 1;
+		fontwidth /= 2;
 	}
 
 	if (textctrl->fonttype & TEXTCTRL_CLIP) {
@@ -205,17 +257,15 @@ zen_break:
 			txt->x = textctrl->clip.left;
 			txt->y += textctrl->fontsize + 2;
 			if ((txt->y + textctrl->fontsize + 2) > textctrl->clip.bottom) {
-				str->ptr -= (bak - str->remain);
-				str->remain = bak;
-				return(TEXTDISP_NEXTPAGE);
+				txt->flag |= TEXTDISP_NEXTPAGE;
+				return;
 			}
 		}
 	}
 
-	if (c == 0x20) {
-		txt->x += fontwidth;
-		return(TEXTDISP_PRINT);
-	}
+	txt->txt.ptr += leng;
+	txt->txt.remain -= leng;
+	textctrl->intext += leng;
 
 	fontmng_getdrawsize(textctrl->font, buf, &fontsize);
 
@@ -224,117 +274,235 @@ zen_break:
 #ifdef SIZE_QVGA
 	vramdraw_halfpoint(&rect.p);
 #endif
-	col = textctrl->fontcolor[1];
-	if (col) {
+	if (textctrl->fonttype & TEXTCTRL_SHADOW) {
 		pt.x = rect.p.x + 1;
 		pt.y = rect.p.y + 1;
-		vrammix_text(textctrl->vram, textctrl->font, buf, col, &pt, NULL);
+		func(textctrl->vram, textctrl->font, buf, 
+										textctrl->fontcolor[1], &pt, NULL);
 		fontsize.x += 1;
 		fontsize.y += 1;
 	}
 	pt.x = rect.p.x;
 	pt.y = rect.p.y;
-	vrammix_text(textctrl->vram, textctrl->font, buf,
+	func(textctrl->vram, textctrl->font, buf,
 										textctrl->fontcolor[0], &pt, NULL);
 	rect.r.right = rect.r.left + fontsize.x;
 	rect.r.bottom = rect.r.top + fontsize.y;
 	unionrect_add(&textctrl->drawrect, &rect.r);
 	txt->x += fontwidth;
-	return(TEXTDISP_PRINT);
+	return;
+
+tdd_done:
+	txt->flag &= ~TEXTDISP_PRINT;
+}
+
+static void textdisp_strreq(TEXTCTRL textctrl, TEXT_T *txt) {
+
+	BYTE		c;
+	BOOL		ascii;
+
+	txt->cmd.remain -= 1;
+	if (txt->cmd.remain < 0) {
+		goto tdsr_done;
+	}
+	c = *txt->cmd.ptr++;
+	ascii = FALSE;
+	if (textctrl->fonttype & TEXTCTRL_ASCII) {
+		if (c == 0x5c) {
+			txt->cmd.remain -= 1;
+			if (txt->cmd.remain < 0) {
+				goto tdsr_done;
+			}
+			c = *txt->cmd.ptr++;
+			if (c == '\0') {
+				c = 0x5c;
+			}
+		}
+		while(c == 0x7f) {
+			txt->cmd.remain--;
+			if (txt->cmd.remain < 0) {
+				goto tdsr_done;
+			}
+			c = *txt->cmd.ptr++;
+			ascii = TRUE;
+		}
+	}
+	if (c == 0) {
+		txt->flag &= ~TEXTDISP_STRREQ;
+		return;
+	}
+
+	if ((!ascii) && (c < 0x80)) {
+		txt->txtwork[0] = textsinglebyte[c * 2 + 0];
+		txt->txtwork[1] = textsinglebyte[c * 2 + 1];
+		txt->txt.remain = 2;
+	}
+	else if ((((c ^ 0x20) - 0xa1) & 0xff) < 0x3c) {
+		txt->cmd.remain -= 1;
+		if (txt->cmd.remain < 0) {
+			goto tdsr_done;
+		}
+		txt->txtwork[0] = c;
+		txt->txtwork[1] = *txt->cmd.ptr++;
+		if (txt->txtwork[1] == '\0') {
+			txt->flag &= ~TEXTDISP_STRREQ;
+			return;
+		}
+		txt->txt.remain = 2;
+	}
+	else {
+		txt->txtwork[0] = c;
+		txt->txt.remain = 1;
+	}
+	txt->txt.ptr = txt->txtwork;
+	txt->flag |= TEXTDISP_PRINT;
+	return;
+
+tdsr_done:
+	txt->flag = TEXTDISP_DONE;
 }
 
 
-// ----
+// ---- cmd:5b
+
+static void textdisp_cmd5b(TEXTCTRL textctrl, TEXT_T *txt) {
+
+	BYTE		c;
+	int			num;
+	UINT32		col;
+	BOOL		r;
+
+	while(1) {
+		txt->cmd.remain--;
+		if (txt->cmd.remain < 0) {
+			break;
+		}
+		c = *txt->cmd.ptr++;
+		switch(c) {
+			case 0x00:	// exit?
+				break;
+
+			case 0x01:
+				txt->cmd.remain -= 3;
+				if (txt->cmd.remain < 0) {
+					goto tdc_done;
+				}
+				col = MAKEPALETTE(txt->cmd.ptr[0], txt->cmd.ptr[1],
+													txt->cmd.ptr[2]);
+				txt->cmd.ptr += 3;
+				textctrl->fontcolor[0] = col;
+				break;
+
+			case 0x08:	// Šù“Çƒtƒ‰ƒO‚ÌÝ’è
+				txt->cmd.remain -= 4;
+				if (txt->cmd.remain < 0) {
+					goto tdc_done;
+				}
+				num = scr_cmdval(LOADINTELDWORD(txt->cmd.ptr));
+				txt->cmd.ptr += 4;
+				variant_set(gamecore.flags.kid, num, 1);
+ 				break;
+
+			case 0x09:	// ?
+				txt->cmd.remain -= 1;
+				if (txt->cmd.remain < 0) {
+					goto tdc_done;
+				}
+				txt->cmd.ptr += 1;
+				break;
+
+			case 0x0a:	// param;
+				txt->cmd.remain -= 2;
+				if (txt->cmd.remain < 0) {
+					goto tdc_done;
+				}
+				num = LOADINTELWORD(txt->cmd.ptr);
+				txt->cmd.ptr += 2;
+				if (gamecore.sys.version >= EXE_VER1) {
+					txt->cmd.remain -= 3;
+					if (txt->cmd.remain < 0) {
+						goto tdc_done;
+					}
+					if (!txt->cmd.ptr[2]) {
+						r = makenumberzen(txt, num,
+										txt->cmd.ptr[0], txt->cmd.ptr[1]);
+					}
+					else {
+						r = makenumberhan(txt, num,
+										txt->cmd.ptr[0], txt->cmd.ptr[1]);
+					}
+					txt->cmd.ptr += 3;
+				}
+				else {
+					r = makenumber(txt, num);
+				}
+				if (r == SUCCESS) {
+					txt->flag |= TEXTDISP_PRINT;
+					return;
+				}
+				break;
+
+			case 0xff:
+#ifdef TRACE
+				debugtextout(&txt->cmd);
+#endif
+				txt->flag |= TEXTDISP_STRREQ;
+				return;
+
+			default:
+				TRACEOUT(("text err cmd:%x", c));
+				goto tdc_done;
+		}
+	}
+
+tdc_done:
+	txt->flag = TEXTDISP_DONE;
+}
 
 void textdisp_draw(int num, POINT_T *pt, SCR_OPE *op) {
 
 	TEXT_T		txt;
-	BYTE		c;
-	int			kid;
 	TEXTCTRL	textctrl;
-	int			flag;
-	STRING_T	str2;
-	BYTE		work[32];
-
-	textctrl = &gamecore.textdraw;
-	textctrl_renewal(textctrl);
-	unionrect_rst(&textctrl->drawrect);
+	UINT		flag;
 
 	if ((num < 0) && (num >= GAMECORE_MAXVRAM)) {
 		goto tddraw_end;
 	}
+	textctrl = &gamecore.textdraw;
 	textctrl->vram = gamecore.vram[num];
+	textctrl_renewal(textctrl);
+	unionrect_rst(&textctrl->drawrect);
 
-	txt.str.ptr = op->ptr;
-	txt.str.remain = op->remain;
+	txt.cmd.ptr = op->ptr;
+	txt.cmd.remain = op->remain;
 	txt.x = pt->x;
 	txt.y = pt->y;
+	txt.flag = TEXTDISP_CMDREQ;
 
 	while(1) {
-		if (txt.str.remain <= 0) {
+		flag = txt.flag;
+		if (flag & (TEXTDISP_DONE | TEXTDISP_NEXTPAGE | TEXTDISP_MOUSEEV)) {
 			break;
 		}
-		txt.str.remain--;
-		c = *txt.str.ptr++;
-		switch(c) {
-			case 0x00:	// ?
-			case 0x02:	// mouseevent
-			case 0x03:	// clear
-			case 0x06:	// cr
-			case 0x11:
-				break;
-
-			case 0x01:
-				if (txt.str.remain < 3) {
-					goto tddraw_end;
-				}
-				textctrl->fontcolor[0] = MAKEPALETTE(txt.str.ptr[0],
-													txt.str.ptr[1],
-													txt.str.ptr[2]);
-				txt.str.remain -= 3;
-				txt.str.ptr += 3;
-				break;
-
-			case 0x08:	// ´ûÆÉ¥Õ¥é¥°¤ÎÀßÄê
-				if (txt.str.remain >= 4) {
-					txt.str.remain -= 4;
-					kid = scr_cmdval(LOADINTELDWORD(txt.str.ptr));
-					txt.str.ptr += 4;
-					variant_set(gamecore.flags.kid, kid, 1);
-				}
-				else {
-					goto tddraw_end;
- 				}
- 				break;
-
-			case 0x0a:	// param;			¤³¤ì ¤¤¤Ä¤«¤éÊÑ¹¹¤Ë¤Ê¤Ã¤¿¡©
-				str2.ptr = work;
-				str2.remain = sizeof(work);
-				if (makenumber(&str2, &txt.str)) {
-					goto tddraw_end;
-				}
-				do {
-					flag = textdisp_put(textctrl, &txt, &str2);
-				} while(flag & TEXTDISP_PRINT);
-				break;
-
-			case 0xff:
-				do {
-					flag = textdisp_put(textctrl, &txt, &txt.str);
-				} while(flag & TEXTDISP_PRINT);
-				break;
-
-			default:
-				TRACEOUT(("text err cmd:%x", c));
-				goto tddraw_end;
+		else if (flag & TEXTDISP_PRINT) {
+			textdisp_print(textctrl, &txt, vrammix_text);
 		}
+		else if (flag & TEXTDISP_STRREQ) {
+			textdisp_strreq(textctrl, &txt);
+		}
+		else if (flag & TEXTDISP_CMDREQ) {
+			textdisp_cmd5b(textctrl, &txt);
+		}
+		else {
+			break;
+		}
+	}
+	if (textctrl->drawrect.type) {
+		effect_vramdraw(num, unionrect_get(&textctrl->drawrect));
 	}
 
 tddraw_end:
-	if (textctrl->drawrect.type) {
-		vramdraw_setrect(textctrl->vram, unionrect_get(&textctrl->drawrect));
-		vramdraw_draw();
-	}
+	return;
 }
 
 
@@ -354,7 +522,12 @@ static void textdisp_setpos(TEXTDISP textdisp, TEXTCTRL textctrl) {
 		if (txt->flag) {
 			txt->x = textctrl->tx;
 			txt->y = y;
-			y += textctrl->fontsize + 2;
+			y += textctrl->fontsize;
+#ifndef SIZE_QVGA
+			y += 2;
+#else
+			y += 1;
+#endif
 		}
 		txt++;
 	}
@@ -371,7 +544,7 @@ static void textdisp_getpos(TEXTDISP textdisp, TEXTCTRL textctrl) {
 }
 
 
-static int textdisp_prepare(int num, int count) {
+static int textdisp_prepare(int num, int count, UINT flag) {
 
 	TEXTDISP	textdisp;
 	TEXTWIN		textwin;
@@ -386,11 +559,13 @@ static int textdisp_prepare(int num, int count) {
 
 	textdisp->txtnum = num;
 	textdisp->count = count;
+	textdisp->flag = flag;
 
 	textdisp_setpos(textdisp, &textwin->textctrl);
 
 	gc = &gamecore.gamecfg;
-	if ((!gc->textwaittick) || (gc->skip) || (gc->readskip)) {
+	if ((!gc->textwaittick) || (gc->skip) ||
+		((gc->lastread) && (gc->readskip))) {
 		skip = 1;
 	}
 	else {
@@ -406,8 +581,14 @@ static int textdisp_prepare(int num, int count) {
 
 static BOOL textdisp_waitkey(void) {
 
+	GAMECFG	gc;
 	UINT	btn;
 	UINT	key;
+
+	gc = &gamecore.gamecfg;
+	if ((gc->skip) || ((gc->lastread) && (gc->readskip))) {
+		return(TRUE);
+	}
 
 	btn = event_getmouse(NULL, NULL);
 	key = event_getkey();
@@ -425,61 +606,55 @@ static BOOL textdisp_waitkey(void) {
 
 // ----
 
-static UINT textdisp_out(TEXTDISP textdisp, TEXTWIN textwin,
-												TEXT_T *txt, STRING_T *str) {
+static void textdisp_print2(TEXTDISP textdisp, TEXTWIN textwin, TEXT_T *txt) {
 
 	TEXTCTRL	textctrl;
 
 	textctrl = &textwin->textctrl;
-	if (textdisp->renum) {
-		textdisp->renum = FALSE;
+	if (textdisp->flag & TDFLAG_RENUM) {
+		textdisp->flag &= ~TDFLAG_RENUM;
 		textdisp_setpos(textdisp, textctrl);
 	}
-	return(textdisp_put(textctrl, txt, str));
+	textdisp_print(textctrl, txt, vrammix_textex);
 }
 
-
-static UINT textdisp_ctrl(TEXTDISP textdisp, TEXTWIN textwin, TEXT_T *txt) {
+static void textdisp_cmdreq(TEXTDISP textdisp, TEXTWIN textwin, TEXT_T *txt) {
 
 	BYTE		c;
-	UINT		ret;
-	int			num;
-	STRING_T	name;
 	TEXTCTRL	textctrl;
+	int			num;
 	UINT32		col;
+	BOOL		r;
+	int			i;
+	char		path[ARCFILENAME_LEN+1];
 
 	textctrl = &textwin->textctrl;
-	ret = 0;
-	while(!ret) {
-		if (txt->str.remain <= 0) {
-			ret = TEXTDISP_DONE;
+	while(1) {
+		txt->cmd.remain--;
+		if (txt->cmd.remain < 0) {
 			break;
 		}
-		txt->str.remain--;
-		c = *txt->str.ptr++;
+		c = *txt->cmd.ptr++;
 		switch(c) {
-			case 0x00:		// exit?
+			case 0x00:	// exit?
 				break;
 
 			case 0x01:
 				num = 0;
 				if (gamecore.sys.version >= EXE_VER1) {
-					if (txt->str.remain <= 0) {
-						ret = TEXTDISP_DONE;
-						break;
+					txt->cmd.remain -= 1;
+					if (txt->cmd.remain < 0) {
+						goto tdc_done;
 					}
-					num = txt->str.ptr[0];
-					txt->str.remain -= 1;
-					txt->str.ptr += 1;
+					num = *txt->cmd.ptr++;
 				}
-				if (txt->str.remain < 3) {
-					ret = TEXTDISP_DONE;
-					break;
+				txt->cmd.remain -= 3;
+				if (txt->cmd.remain < 0) {
+					goto tdc_done;
 				}
-				col = MAKEPALETTE(txt->str.ptr[0], txt->str.ptr[1],
-													txt->str.ptr[2]);
-				txt->str.remain -= 3;
-				txt->str.ptr += 3;
+				col = MAKEPALETTE(txt->cmd.ptr[0], txt->cmd.ptr[1],
+													txt->cmd.ptr[2]);
+				txt->cmd.ptr += 3;
 				if (num < 3) {
 					textctrl->fontcolor[num] = col;
 				}
@@ -487,77 +662,172 @@ static UINT textdisp_ctrl(TEXTDISP textdisp, TEXTWIN textwin, TEXT_T *txt) {
 
 			case 0x02:	// mouseevent
 				TRACEOUT(("[MOUSE EVENT WAIT]"));
-				ret = TEXTDISP_MOUSEEV;
-				break;
+				txt->flag |= TEXTDISP_MOUSEEV;
+				return;
 
 			case 0x03:	// clear
 				textwin_clear(textdisp->txtnum);
 				textdisp_setpos(textdisp, textctrl);
 				break;
 
-			case 0x04:	// ¿ÍÌ¾É½¼¨
-				if (txt->str.remain > 0) {
-					txt->str.remain--;
-					num = *txt->str.ptr++;
-					if (num >= GAMECORE_MAXNAME) {
-						break;
-					}
-					name.ptr = (BYTE *)(textwin->chrname[num]);
-					name.remain = GAMECORE_NAMELEN;
-					TRACEOUT(("NAME = %s", name.ptr));
-					while(textdisp_out(textdisp, textwin, txt, &name)
-													& TEXTDISP_PRINT) { }
+			case 0x04:	// l–¼•\Ž¦
+				txt->cmd.remain -= 1;
+				if (txt->cmd.remain < 0) {
+					goto tdc_done;
 				}
-				else {
-					ret = TEXTDISP_DONE;
+				num = *txt->cmd.ptr++;
+				if (num < GAMECORE_MAXNAME) {
+					txt->txt.ptr = (BYTE *)(textwin->chrname[num]);
+					txt->txt.remain = GAMECORE_NAMELEN;
+					TRACEOUT(("NAME = %s", txt->txt.ptr));
+					txt->flag |= TEXTDISP_PRINT;
+					return;
 				}
 				break;
 
 			case 0x06:	// cr
 				txt->x = textctrl->clip.left;
-				txt->y += textctrl->fontsize + 2;
+				txt->y += textctrl->fontsize;
+#ifndef SIZE_QVGA
+				txt->y += 2;
+#else
+				txt->y += 1;
+#endif
 				break;
 
-			case 0x08:	// ´ûÆÉ¥Õ¥é¥°¤ÎÀßÄê
-				if (txt->str.remain >= 4) {
-					txt->str.remain -= 4;
-					num = scr_cmdval(LOADINTELDWORD(txt->str.ptr));
-					txt->str.ptr += 4;
-					variant_set(gamecore.flags.kid, num, 1);
+			case 0x08:	// Šù“Çƒtƒ‰ƒO‚ÌÝ’è
+				txt->cmd.remain -= 4;
+				if (txt->cmd.remain < 0) {
+					goto tdc_done;
 				}
-				else {
-					ret = TEXTDISP_DONE;
- 				}
+				num = scr_cmdval(LOADINTELDWORD(txt->cmd.ptr));
+				txt->cmd.ptr += 4;
+				variant_set(gamecore.flags.kid, num, 1);
  				break;
 
+			case 0x09:	// ?
+				txt->cmd.remain -= 1;
+				if (txt->cmd.remain < 0) {
+					goto tdc_done;
+				}
+				txt->cmd.ptr += 1;
+				break;
+
 			case 0x0a:	// param;
-				if (txt->str.remain >= 2) {
-					txt->str.remain -= 2;
-					txt->str.ptr += 2;
+				txt->cmd.remain -= 2;
+				if (txt->cmd.remain < 0) {
+					goto tdc_done;
+				}
+				num = LOADINTELWORD(txt->cmd.ptr);
+				txt->cmd.ptr += 2;
+				if (gamecore.sys.version >= EXE_VER1) {
+					txt->cmd.remain -= 2;
+					if (txt->cmd.remain < 0) {
+						goto tdc_done;
+					}
+					r = makenumberzen(txt, num,
+										txt->cmd.ptr[0], txt->cmd.ptr[1]);
+					txt->cmd.ptr += 2;
 				}
 				else {
-					ret = TEXTDISP_DONE;
+					r = makenumber(txt, num);
+				}
+				if (r == SUCCESS) {
+					txt->flag |= TEXTDISP_PRINT;
+					return;
 				}
 				break;
 
 			case 0x11:
-				textdisp->renum = TRUE;
+				if (gamecore.sys.version >= EXE_VER2) {
+					txt->cmd.remain -= 4;
+					if (txt->cmd.remain < 0) {
+						goto tdc_done;
+					}
+					num = scr_cmdval(LOADINTELDWORD(txt->cmd.ptr));
+					txt->cmd.ptr += 4;
+					textwin_setname(textwin, num);
+				}
+				else if (gamecore.sys.version >= EXE_VER1) {
+					textdisp->flag |= TDFLAG_RENUM;
+				}
+				else {
+					TRACEOUT(("[MOUSE EVENT WAIT]"));
+					txt->flag |= TEXTDISP_MOUSEEV;
+					return;
+				}
+				break;
+
+			case 0x12:
+				if (gamecore.sys.version >= EXE_VER2) {
+					textdisp->flag |= TDFLAG_RENUM;
+				}
+				else {
+					goto tdc_done;
+				}
+				break;
+
+			case 0x13:
+				path[ARCFILENAME_LEN] = '\0';
+				for (i=0; i<ARCFILENAME_LEN; i++) {
+					txt->cmd.remain -= 1;
+					if (txt->cmd.remain < 0) {
+						goto tdc_done;
+					}
+					path[i] = *txt->cmd.ptr++;
+					if (path[i] == '\0') {
+						break;
+					}
+				}
+				if (!sndplay_voicecondition(path)) {
+					sndplay_voiceplay();
+				}
+				sndplay_voicereset();
 				break;
 
 			case 0xff:
 #ifdef TRACE
-				debugtextout(&txt->str);
+				debugtextout(&txt->cmd);
 #endif
-				ret = TEXTDISP_PRINT;
-				break;
+				txt->flag |= TEXTDISP_STRREQ;
+				return;
 
 			default:
 				TRACEOUT(("text err cmd:%x", c));
-				ret = TEXTDISP_DONE;
-				break;
+				goto tdc_done;
 		}
 	}
-	return(ret);
+
+tdc_done:
+	txt->flag = TEXTDISP_DONE;
+}
+
+static UINT textdisp_step(TEXTDISP textdisp, TEXTWIN textwin, TEXT_T *txt) {
+
+	UINT	flag;
+
+	while(1) {
+		flag = txt->flag;
+		if (flag & (TEXTDISP_DONE | TEXTDISP_NEXTPAGE | TEXTDISP_MOUSEEV)) {
+			return(flag & (TEXTDISP_DONE | TEXTDISP_NEXTPAGE |
+														TEXTDISP_MOUSEEV));
+		}
+		else if (flag & TEXTDISP_PRINT) {
+			textdisp_print2(textdisp, textwin, txt);
+			if ((txt->flag & TEXTDISP_PRINT) && (!textdisp->skip)) {
+				return(TEXTDISP_PRINT);
+			}
+		}
+		else if (flag & TEXTDISP_STRREQ) {
+			textdisp_strreq(&textwin->textctrl, txt);
+		}
+		else if (flag & TEXTDISP_CMDREQ) {
+			textdisp_cmdreq(textdisp, textwin, txt);
+		}
+		else {
+			return(TEXTDISP_DONE);
+		}
+	}
 }
 
 
@@ -568,10 +838,10 @@ int textdisp_set(int num, SCR_OPE *op) {
 	TEXTDISP	textdisp;
 
 	textdisp = &gamecore.textdisp;
-	textdisp->txt[0].str.ptr = op->ptr;
-	textdisp->txt[0].str.remain = op->remain;
+	textdisp->txt[0].cmd.ptr = op->ptr;
+	textdisp->txt[0].cmd.remain = op->remain;
 	textdisp->txt[0].flag = TEXTDISP_CMDREQ;
-	return(textdisp_prepare(num, 1));
+	return(textdisp_prepare(num, 1, 0));
 }
 
 int textdisp_multiset(int num, int txtnum, SCR_OPE *op) {
@@ -585,23 +855,23 @@ int textdisp_multiset(int num, int txtnum, SCR_OPE *op) {
 	textdisp = &gamecore.textdisp;
 	txt = textdisp->txt;
 	if (txtnum == 0) {
-		txt->str.ptr = op->ptr;
-		txt->str.remain = op->remain;
+		txt->cmd.ptr = op->ptr;
+		txt->cmd.remain = op->remain;
 		txt->flag = TEXTDISP_CMDREQ;
 		txt++;
 		cnt = 1;
 		for (i=0; i<GAMECORE_MAXTEXT; i++) {
 			ext = textdisp->ext[i];
 			if ((ext) && (ext->remain)) {
-				txt->str.ptr = ext->ptr;
-				txt->str.remain = ext->remain;
+				txt->cmd.ptr = ext->ptr;
+				txt->cmd.remain = ext->remain;
 				txt->flag = TEXTDISP_CMDREQ;
 				txt++;
 				cnt++;
 				ext->remain = 0;
 			}
 		}
-		return(textdisp_prepare(num, cnt));
+		return(textdisp_prepare(num, cnt, TDFLAG_MULTI));
 	}
 	else if ((txtnum > 0) && (txtnum < GAMECORE_MAXTEXT)) {
 		ext = textdisp->ext[txtnum];
@@ -655,23 +925,9 @@ int textdisp_exec(void) {
 	txt = textdisp->txt;
 	cnt = textdisp->count;
 	flag = 0;
-	while(1) {
-		if (txt->flag & TEXTDISP_CMDREQ) {
-			txt->flag = textdisp_ctrl(textdisp, textwin, txt);
-			continue;
-		}
-		if (txt->flag & TEXTDISP_PRINT) {
-			txt->flag = textdisp_out(textdisp, textwin, txt, &txt->str);
-			if ((!(txt->flag & TEXTDISP_PRINT)) || (textdisp->skip)) {
-				continue;
-			}
-		}
-		flag |= txt->flag;
+	while(cnt--) {
+		flag |= textdisp_step(textdisp, textwin, txt);
 		txt++;
-		cnt--;
-		if (!cnt) {
-			break;
-		}
 	}
 
 	if (textwin->textctrl.drawrect.type) {
@@ -688,7 +944,7 @@ int textdisp_exec(void) {
 			taskmng_sleep(gamecore.gamecfg.textwaittick);
 		}
 	}
-	else if (flag & (TEXTDISP_MOUSEEV | TEXTDISP_NEXTPAGE)) {
+	else if (flag & (TEXTDISP_NEXTPAGE | TEXTDISP_MOUSEEV)) {
 		if (textdisp_waitkey()) {
 			textdisp->skip &= ~2;
 			if (flag & TEXTDISP_NEXTPAGE) {
@@ -698,12 +954,7 @@ int textdisp_exec(void) {
 			txt = textdisp->txt;
 			cnt = textdisp->count;
 			while(cnt--) {
-				if (txt->flag & TEXTDISP_MOUSEEV) {
-					txt->flag = TEXTDISP_CMDREQ;
-				}
-				else if (txt->flag & TEXTDISP_NEXTPAGE) {
-					txt->flag = TEXTDISP_PRINT;
-				}
+				txt->flag &= ~(TEXTDISP_NEXTPAGE | TEXTDISP_MOUSEEV);
 				txt++;
 			}
 		}

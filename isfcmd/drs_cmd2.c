@@ -11,11 +11,9 @@
 #include	"gamecore.h"
 #include	"arcfile.h"
 #include	"drs_cmd.h"
-#include	"fontmng.h"
-#include	"cgload.h"
 
 
-// WS : ¥¦¥£¥ó¥É¥¦É½¼¨°ÌÃÖÀßÄê (T.Yui)
+// WS : ƒEƒBƒ“ƒhƒE•\Ž¦ˆÊ’uÝ’è
 int drscmd_20(SCR_OPE *op) {
 
 	BYTE	num;
@@ -28,13 +26,12 @@ int drscmd_20(SCR_OPE *op) {
 		return(GAMEEV_WRONGLENG);
 	}
 	scr_getbyte(op, &val);
-
 	textwin_setpos(num, &scrn.s, &clip.s);
 	return(GAMEEV_SUCCESS);
 }
 
 
-// WP : ¥¦¥£¥ó¥É¥¦¥Ñ¡¼¥ÄÆÉ¤ß¹þ¤ß (T.Yui)
+// WP : ƒEƒBƒ“ƒhƒEƒp[ƒc“Ç‚Ýž‚Ý
 int drscmd_21(SCR_OPE *op) {
 
 	BYTE	num;
@@ -54,42 +51,43 @@ int drscmd_21(SCR_OPE *op) {
 }
 
 
-// WO : ¥¦¥£¥ó¥É¥¦¥ª¡¼¥×¥ó
-int drscmd_28(SCR_OPE *op) {
+// WL : ƒNƒŠƒbƒN‘Òƒp[ƒc“Ç‚Ýž‚Ý
+int drscmd_22(SCR_OPE *op) {
 
-	BYTE	num;
-
-	if (scr_getbyte(op, &num) != SUCCESS) {
-		return(GAMEEV_WRONGLENG);
-	}
-	textwin_open(num);
+	(void)op;
 	return(GAMEEV_SUCCESS);
 }
 
 
-// WC : ¥¦¥£¥ó¥É¥¦¤Î¥¯¥í¡¼¥º
-int drscmd_29(SCR_OPE *op) {
-
-	BYTE	num;
-
-	if (scr_getbyte(op, &num) != SUCCESS) {
-		return(GAMEEV_WRONGLENG);
-	}
-	textwin_close(num);
-	return(GAMEEV_SUCCESS);
-}
-
-
-// WSS : ¥á¥Ã¥»¡¼¥¸¥¦¥£¥ó¥É¥¦¤ÎÉ½¼¨
+// WSS : ƒƒbƒZ[ƒWƒEƒBƒ“ƒhƒE‚Ì•\Ž¦
 int drscmd_2a(SCR_OPE *op) {
 
-	BYTE	cmd;
+	BYTE	num;
 	TEXTWIN	textwin;
 
-	if (scr_getbyte(op, &cmd) != SUCCESS) {
+	if (scr_getbyte(op, &num) != SUCCESS) {
 		return(GAMEEV_WRONGLENG);
 	}
-	textwin = textwin_getwin(0);
+	textwin = textwin_getwin(num);
+	if (textwin) {
+		textwin->flag &= ~TEXTWIN_TEXTHIDE;
+		vramdraw_setrect(textwin->textctrl.vram, NULL);
+		vramdraw_draw();
+	}
+	return(GAMEEV_SUCCESS);
+}
+
+
+// WSH : ƒƒbƒZ[ƒWƒEƒBƒ“ƒhƒE‚Ì”ñ•\Ž¦
+int drscmd_2b(SCR_OPE *op) {
+
+	BYTE	num;
+	TEXTWIN	textwin;
+
+	if (scr_getbyte(op, &num) != SUCCESS) {
+		return(GAMEEV_WRONGLENG);
+	}
+	textwin = textwin_getwin(num);
 	if (textwin) {
 		textwin->flag |= TEXTWIN_TEXTHIDE;
 		vramdraw_setrect(textwin->textctrl.vram, NULL);
@@ -99,21 +97,16 @@ int drscmd_2a(SCR_OPE *op) {
 }
 
 
-// WSH : ¥á¥Ã¥»¡¼¥¸¥¦¥£¥ó¥É¥¦¤ÎÈóÉ½¼¨
-int drscmd_2b(SCR_OPE *op) {
+// PM : •¶Žš‚Ì•\Ž¦
+int drscmd_2c(SCR_OPE *op) {
 
-	BYTE	cmd;
-	TEXTWIN	textwin;
+	BYTE	num;
+	UINT16	leng;
 
-	if (scr_getbyte(op, &cmd) != SUCCESS) {
+	if ((scr_getbyte(op, &num) != SUCCESS) ||
+		(scr_getword(op, &leng) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
-	textwin = textwin_getwin(0);
-	if (textwin) {
-		textwin->flag &= ~TEXTWIN_TEXTHIDE;
-		vramdraw_setrect(textwin->textctrl.vram, NULL);
-		vramdraw_draw();
-	}
-	return(GAMEEV_SUCCESS);
+	return(textdisp_set(num, op));
 }
 

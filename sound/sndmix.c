@@ -8,8 +8,8 @@
 #define	UPBASEBITS	8
 #define	UPMIXBASE	(1 << UPBASEBITS)
 
-// µ¶Êª¤Æ¤ó¤×¤ì¡¼¤È
-// ¥Þ¥¤¥¯¥í¥½¥Õ¥È¤Ï¥Þ¥¯¥íÅ¸³«²¼¼ê¤À¤«¤éÆ°ºî¥Á¥§¥­¤¹¤ë¤è¤¦¤Ë¡£
+// ‹U•¨‚Ä‚ñ‚Õ‚ê[‚Æ
+// ƒ}ƒCƒNƒƒ\ƒtƒg‚Íƒ}ƒNƒ“WŠJ‰ºŽè‚¾‚©‚ç“®ìƒ`ƒFƒL‚·‚é‚æ‚¤‚ÉB
 
 #if defined(SOUND_MONOOUT)
 
@@ -137,7 +137,7 @@
 #include "mixmn16.mcr"
 
 
-// ¥ô¥©¥ê¥å¡¼¥à³Ý¤±»»¤Ê¤·¥Ð¡¼¥¸¥ç¥ó Ã±ÆÈºÆÀ¸¤Î¤ß
+// ƒ”ƒHƒŠƒ…[ƒ€Š|‚¯ŽZ‚È‚µƒo[ƒWƒ‡ƒ“ ’P“ÆÄ¶‚Ì‚Ý
 #define	MIX_INPUTBIT	8
 #define	MIX_OUTPUTBIT	16
 #define	MIX_CHANNELS	1
@@ -305,7 +305,7 @@
 #include "mixst16.mcr"
 
 
-// ¥ô¥©¥ê¥å¡¼¥à³Ý¤±»»¤Ê¤·¥Ð¡¼¥¸¥ç¥ó Ã±ÆÈºÆÀ¸¤Î¤ß
+// ƒ”ƒHƒŠƒ…[ƒ€Š|‚¯ŽZ‚È‚µƒo[ƒWƒ‡ƒ“ ’P“ÆÄ¶‚Ì‚Ý
 #define	MIX_INPUTBIT	8
 #define	MIX_OUTPUTBIT	16
 #define	MIX_CHANNELS	1
@@ -354,11 +354,12 @@
 
 static BOOL loopproc(SMIXTRACK trk) {
 
+	int		r;
+
 	if (trk->loop) {
-		trk->fremain = trk->loopsize;
-		sndmix_datatrash(trk, (UINT)-1);
-		if (trk->stream_seek(trk->stream, trk->loopfpos, 0)
-														== trk->loopfpos) {
+		trk->samplepos = 0;
+		r = trk->decrew(trk);
+		if (r == SNDMIX_SUCCESS) {
 			return(SNDMIX_SUCCESS);
 		}
 		trk->flag |= SNDTRK_PAUSED;
@@ -384,6 +385,7 @@ static BOOL pcmget(SMIXTRACK trk) {
 		if (loopproc(trk) != SNDMIX_SUCCESS) {
 			goto pcmget_stop;
 		}
+		trk->samplepos = 0;
 		r = trk->dec(trk, trk->buffer);
 		if (r == (UINT)-1) {
 			goto pcmget_paused;
@@ -392,6 +394,7 @@ static BOOL pcmget(SMIXTRACK trk) {
 			goto pcmget_stop;
 		}
 	}
+	trk->samplepos += r;
 	trk->remain = r;
 	return(SNDMIX_SUCCESS);
 

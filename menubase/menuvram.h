@@ -38,7 +38,7 @@ extern "C" {
 
 extern UINT32 menucolor[];
 
-VRAMHDL menuvram_resload(MENURES *res, int bpp);
+VRAMHDL menuvram_resload(const MENURES *res, int bpp);
 void menuvram_res2put(VRAMHDL vram, const MENURES2 *res, const POINT_T *pt);
 void menuvram_res3put(VRAMHDL vram, const MENURES2 *res, const POINT_T *pt,
 																UINT mvc);
@@ -53,6 +53,7 @@ void menuvram_base(VRAMHDL vram);
 VRAMHDL menuvram_create(int width, int height);
 void menuvram_caption(VRAMHDL vram, const RECT_T *rect,
 							const VRAMHDL icon, const char *caption);
+void menuvram_minimizebtn(VRAMHDL vram, const RECT_T *rect, BOOL focus);
 void menuvram_closebtn(VRAMHDL vram, const RECT_T *rect, BOOL focus);
 
 #ifdef __cplusplus

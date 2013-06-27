@@ -11,7 +11,6 @@
 #include	"gamecore.h"
 #include	"arcfile.h"
 #include	"isf_cmd.h"
-#include	"cgload.h"
 
 
 static BOOL scr_getwinnum(SCR_OPE *op, BYTE *num) {
@@ -29,7 +28,7 @@ static BOOL scr_getwinnum(SCR_OPE *op, BYTE *num) {
 }
 
 
-// CW : ¥³¥Ş¥ó¥É¥¦¥£¥ó¥É¥¦¤Î°ÌÃÖ ²£¥µ¥¤¥º¥»¥Ã¥È (T.Yui)
+// CW : ƒRƒ}ƒ“ƒhƒEƒBƒ“ƒhƒE‚ÌˆÊ’u ‰¡ƒTƒCƒYƒZƒbƒg (T.Yui)
 int isfcmd_10(SCR_OPE *op) {
 
 	BYTE	num;
@@ -41,7 +40,7 @@ int isfcmd_10(SCR_OPE *op) {
 		(scr_getrect(op, &scrn) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
-	// ²¿¡©
+	// ‰½H
 	scr_getbyte(op, &cmd);
 
 	textwin = textwin_getwin(num);
@@ -56,7 +55,7 @@ int isfcmd_10(SCR_OPE *op) {
 }
 
 
-// CP : ¥³¥Ş¥ó¥É¥¦¥£¥ó¥É¥¦¤Î¥Õ¥ì¡¼¥àÆÉ¤ß¹ş¤ß (T.Yui)
+// CP : ƒRƒ}ƒ“ƒhƒEƒBƒ“ƒhƒE‚ÌƒtƒŒ[ƒ€“Ç‚İ‚İ (T.Yui)
 int isfcmd_11(SCR_OPE *op) {
 
 	BYTE	num;
@@ -73,7 +72,7 @@ int isfcmd_11(SCR_OPE *op) {
 }
 
 
-// CIR : ¥¢¥¤¥³¥óÆÉ¤ß¹ş¤ß (T.Yui)
+// CIR : ƒAƒCƒRƒ““Ç‚İ‚İ (T.Yui)
 int isfcmd_12(SCR_OPE *op) {
 
 	BYTE	num;
@@ -90,7 +89,7 @@ int isfcmd_12(SCR_OPE *op) {
 }
 
 
-// CPS : Ê¸»ú¥Ñ¥ì¥Ã¥ÈÀßÄê (T.Yui)
+// CPS : •¶šƒpƒŒƒbƒgİ’è (T.Yui)
 int isfcmd_13(SCR_OPE *op) {
 
 	BYTE	num;
@@ -123,7 +122,7 @@ int isfcmd_13(SCR_OPE *op) {
 }
 
 
-// CIP : ¥³¥Ş¥ó¥É¤Ë¥¢¥¤¥³¥ó¥»¥Ã¥È (T.Yui)
+// CIP : ƒRƒ}ƒ“ƒh‚ÉƒAƒCƒRƒ“ƒZƒbƒg (T.Yui)
 int isfcmd_14(SCR_OPE *op) {
 
 	BYTE	num;
@@ -134,8 +133,7 @@ int isfcmd_14(SCR_OPE *op) {
 	if ((scr_getwinnum(op, &num) != SUCCESS) ||
 		(scr_getbyte(op, &cmd) != SUCCESS) ||
 		(scr_getval(op, &item.num) != SUCCESS) ||
-		(scr_getval(op, &item.pt.x) != SUCCESS) ||
-		(scr_getval(op, &item.pt.y) != SUCCESS)) {
+		(scr_getpt(op, &item.pt) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
 	if (cmd < GAMECORE_MAXCMDS) {
@@ -151,57 +149,41 @@ int isfcmd_14(SCR_OPE *op) {
 }
 
 
-// CSET : ¥³¥Ş¥ó¥É¤ÎÌ¾Á°¥»¥Ã¥È Nonaka.K, T.Yui
+// CSET : ƒRƒ}ƒ“ƒh‚Ì–¼‘OƒZƒbƒg Nonaka.K, T.Yui
 int isfcmd_15(SCR_OPE *op) {
 
 	BYTE		num;
 	BYTE		cmd;
-	int			len;
-	int			fontsize;
 	RECT_U		scrn;
 	TEXTWIN		textwin;
 	CHO_T		*cho;
+	char		str[GAMECORE_CHOICELEN];
 
 	if ((scr_getwinnum(op, &num) != SUCCESS) ||
 		(scr_getbyte(op, &cmd) != SUCCESS) ||
-		(scr_getrect(op, &scrn) != SUCCESS)) {
+		(scr_getrect(op, &scrn) != SUCCESS) ||
+		(scr_getlabel(op, str, sizeof(str)) != SUCCESS)) {
 		return(GAMEEV_WRONGLENG);
 	}
-
 	textwin = textwin_getwin(num);
 	if ((textwin == NULL) || (cmd >= GAMECORE_MAXCMDS)) {
 		goto isf15_exit;
 	}
 	cho = textwin->cho + cmd;
 	vramdraw_scrn2rect(&scrn.s, &cho->rct);
-
-	// Lien¤À¤ÈSJIS¤ÇÆş¤Ã¤Æ¤ë¤ó¤À¤±¤É¡Ä
-	len = scr_getmsg(op, cho->str, sizeof(cho->str));
-	cho->x = cho->rct.left;
-	cho->y = cho->rct.top;
-	if (gamecore.sys.version < EXE_VER1) {
-		fontsize = textwin->textctrl.fontsize;
-#ifndef SIZE_QVGA
-		cho->x += (scrn.s.width - (len * fontsize / 2)) / 2;
-		cho->y += (scrn.s.height - fontsize) / 2;
-#else
-		fontsize = vramdraw_half(fontsize);
-		cho->x += (cho->rct.right - cho->rct.left - (len * fontsize / 2)) / 2;
-		cho->y += (cho->rct.bottom - cho->rct.top - fontsize) / 2;
-#endif
-	}
+	milstr_ncpy(cho->str, str, sizeof(cho->str));
 
 isf15_exit:
 	return(GAMEEV_SUCCESS);
 }
 
 
-// CWO : ¥³¥Ş¥ó¥É¥¦¥£¥ó¥É¥¦¤Î¥ª¡¼¥×¥ó (T.Yui)
+// CWO : ƒRƒ}ƒ“ƒhƒEƒBƒ“ƒhƒE‚ÌƒI[ƒvƒ“ (T.Yui)
 int isfcmd_16(SCR_OPE *op) {
 
-	BYTE		num;
-	SINT32		cmds;
-	BYTE		type;
+	BYTE	num;
+	SINT32	cmds;
+	BYTE	type;
 
 	if ((scr_getwinnum(op, &num) != SUCCESS) ||
 		(scr_getval(op, &cmds) != SUCCESS) ||
@@ -222,7 +204,7 @@ int isfcmd_16(SCR_OPE *op) {
 }
 
 
-// CWC : ¥³¥Ş¥ó¥É¥¦¥£¥ó¥É¥¦¤Î¥¯¥í¡¼¥º (T.Yui)
+// CWC : ƒRƒ}ƒ“ƒhƒEƒBƒ“ƒhƒE‚ÌƒNƒ[ƒY (T.Yui)
 int isfcmd_17(SCR_OPE *op) {
 
 	BYTE	num;
@@ -235,7 +217,7 @@ int isfcmd_17(SCR_OPE *op) {
 }
 
 
-// CC : ¥³¥Ş¥ó¥ÉÁªÂò¼Â¹Ô (T.Yui)
+// CC : ƒRƒ}ƒ“ƒh‘I‘ğÀs (T.Yui)
 int isfcmd_18(SCR_OPE *op) {
 
 	BYTE	num;
@@ -272,9 +254,7 @@ int isfcmd_18(SCR_OPE *op) {
 				break;
 
 			case 3:		// Get Param
-//				if (textwin->flag & TEXTWIN_CMDCAP) {
-					scr_valset(val, event_getcmdwin(textwin));
-//				}
+				scr_valset(val, event_getcmdwin(textwin));
 				break;
 
 			default:
@@ -283,13 +263,13 @@ int isfcmd_18(SCR_OPE *op) {
 		}
 	}
 	else {
-		scr_valset(val, -1);		// ¥»¥Ã¥È¤·¤Æ¤¤¤¤¡©
+		scr_valset(val, -1);		// ƒZƒbƒg‚µ‚Ä‚¢‚¢H
 	}
 	return(GAMEEV_SUCCESS);
 }
 
 
-// CCLR : ¥³¥Ş¥ó¥É¤ÎÌ¾Á°¥¯¥ê¥¢
+// CCLR : ƒRƒ}ƒ“ƒh‚Ì–¼‘OƒNƒŠƒA
 int isfcmd_19(SCR_OPE *op) {
 
 	(void)op;
@@ -297,18 +277,74 @@ int isfcmd_19(SCR_OPE *op) {
 }
 
 
-// CRESET : ¥³¥Ş¥ó¥É¤ÎÌ¾Á°ÀßÄê¤Î½àÈ÷
+// CRESET : ƒRƒ}ƒ“ƒh‚Ì–¼‘Oİ’è‚Ì€”õ (T.Yui)
 int isfcmd_1a(SCR_OPE *op) {
+
+	int		i;
+	TEXTWIN	textwin;
+
+	for (i=0; i<GAMECORE_MAXTXTWIN; i++) {
+		textwin = gamecore.textwin[i];
+		if (textwin) {
+			listarray_destroy(textwin->cmdtext);
+			textwin->cmdtext = NULL;
+			ZeroMemory(&textwin->cmd, sizeof(textwin->cmd));
+			ZeroMemory(&textwin->cho, sizeof(textwin->cho));
+		}
+	}
+	(void)op;
+	return(GAMEEV_SUCCESS);
+}
+
+
+// CRND : ƒRƒ}ƒ“ƒh‚Ìƒ‰ƒ“ƒ_ƒ€”z’u
+int isfcmd_1b(SCR_OPE *op) {
 
 	(void)op;
 	return(GAMEEV_SUCCESS);
 }
 
 
-// CRND : ¥³¥Ş¥ó¥É¤Î¥é¥ó¥À¥àÇÛÃÖ
-int isfcmd_1b(SCR_OPE *op) {
+// CTEXT : ƒeƒLƒXƒg•\¦ T.Yui, abe
+int isfcmd_1c(SCR_OPE *op) {
 
-	(void)op;
+	BYTE		num;
+	RECT_U		scrn;
+	char		str[GAMECORE_CMDTEXTLEN];
+	SINT32		col[6];
+	int			i;
+	TEXTWIN		textwin;
+	CMDTEXT		cmdtext;
+
+	if ((scr_getwinnum(op, &num) != SUCCESS) ||
+		(scr_getrect(op, &scrn) != SUCCESS) ||
+		(scr_getlabel(op, str, sizeof(str)) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
+	}
+	if (gamecore.sys.version == EXEVER_ROSYU2) {
+		col[0] = col[1] = col[2] = 0xff;
+		col[3] = col[4] = col[5] = 0;
+	} else {
+		for (i=0; i<6; i++) {
+			if (scr_getval(op, col + i) != SUCCESS) {
+				return(GAMEEV_WRONGLENG);
+			}
+			col[i] &= 0xff;
+		}
+	}
+	textwin = textwin_getwin(num);
+	if (textwin) {
+		if (textwin->cmdtext == NULL) {
+			textwin->cmdtext = listarray_new(sizeof(CMDTEXT_T), 16);
+		}
+		cmdtext = (CMDTEXT)listarray_append(textwin->cmdtext, NULL);
+		if (cmdtext) {
+			vramdraw_scrn2rect(&scrn.s, &cmdtext->rect);
+			cmdtext->col[0] = MAKEPALETTE(col[0], col[1], col[2]);
+			cmdtext->col[1] = MAKEPALETTE(col[3], col[4], col[5]);
+			milstr_ncpy(cmdtext->str, str, sizeof(cmdtext->str));
+		}
+	}
 	return(GAMEEV_SUCCESS);
 }
 

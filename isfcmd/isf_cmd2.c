@@ -11,11 +11,9 @@
 #include	"gamecore.h"
 #include	"arcfile.h"
 #include	"isf_cmd.h"
-#include	"fontmng.h"
-#include	"cgload.h"
 
 
-// WS : ウィンドウ山绩疤弥肋年 Nonaka.K, T.Yui
+// WS : 僂傿儞僪僂昞帵埵抲愝掕 Nonaka.K, T.Yui
 int isfcmd_20(SCR_OPE *op) {
 
 	BYTE	num;
@@ -27,13 +25,14 @@ int isfcmd_20(SCR_OPE *op) {
 		return(GAMEEV_WRONGLENG);
 	}
 	scr_getbyte(op, &val);
+	TRACEOUT(("window: %d %d %d %d", scrn.s.left, scrn.s.top, scrn.s.width, scrn.s.height));
 
 	textwin_setpos(num, &scrn.s, NULL);
 	return(GAMEEV_SUCCESS);
 }
 
 
-// WP : ウィンドウパ〖ツ粕み哈み (Nonaka.K)
+// WP : 僂傿儞僪僂僷乕僣撉傒崬傒 (Nonaka.K)
 int isfcmd_21(SCR_OPE *op) {
 
 	BYTE	num;
@@ -50,7 +49,7 @@ int isfcmd_21(SCR_OPE *op) {
 }
 
 
-// CN : 客湿叹矢机眶肋年 (T.Yui)
+// CN : 恖暔柤暥帤悢愝掕 (T.Yui)
 int isfcmd_24(SCR_OPE *op) {
 
 	BYTE	cmd;
@@ -64,7 +63,7 @@ int isfcmd_24(SCR_OPE *op) {
 }
 
 
-// CNS : 客湿叹セット Nonaka.K, T.Yui
+// CNS : 恖暔柤僙僢僩 Nonaka.K, T.Yui
 int isfcmd_25(SCR_OPE *op) {
 
 	BYTE	num;
@@ -92,7 +91,7 @@ int isfcmd_25(SCR_OPE *op) {
 }
 
 
-// PF : メッセ〖ジ山绩スピ〖ド肋年
+// PF : 儊僢僙乕僕昞帵僗僺乕僪愝掕
 int isfcmd_26(SCR_OPE *op) {
 
 	(void)op;
@@ -100,7 +99,7 @@ int isfcmd_26(SCR_OPE *op) {
 }
 
 
-// PB : 矢机の络きさ回年 (Nonaka.K)
+// PB : 暥帤偺戝偒偝巜掕 (Nonaka.K)
 int isfcmd_27(SCR_OPE *op) {
 
 	BYTE		num;
@@ -119,10 +118,9 @@ int isfcmd_27(SCR_OPE *op) {
 }
 
 
-// PJ : 矢机の妨轮肋年 (T.Yui)
+// PJ : 暥帤偺宍懺愝掕 (T.Yui)
 int isfcmd_28(SCR_OPE *op) {
 
-#if 0							// 悸狠にコマンドを斧たわけではないので∧
 	BYTE		num;
 	BYTE		type;
 	TEXTWIN		textwin;
@@ -135,14 +133,11 @@ int isfcmd_28(SCR_OPE *op) {
 	if (textwin) {
 		textctrl_settype(&textwin->textctrl, type);
 	}
-#else
-	(void)op;
-#endif
 	return(GAMEEV_SUCCESS);
 }
 
 
-// WO : ウィンドウオ〖プン Nonaka.K, T.Yui
+// WO : 僂傿儞僪僂僆乕僾儞 Nonaka.K, T.Yui							DRS cmd:28
 int isfcmd_29(SCR_OPE *op) {
 
 	BYTE	num;
@@ -150,12 +145,13 @@ int isfcmd_29(SCR_OPE *op) {
 	if (scr_getbyte(op, &num) != SUCCESS) {
 		return(GAMEEV_WRONGLENG);
 	}
+	TRACEOUT(("cmd 29"));
 	textwin_open(num);
 	return(GAMEEV_SUCCESS);
 }
 
 
-// WC : ウィンドウのクロ〖ズ (T.Yui)
+// WC : 僂傿儞僪僂偺僋儘乕僘 (T.Yui)								DRS cmd:29
 int isfcmd_2a(SCR_OPE *op) {
 
 	BYTE	num;
@@ -163,12 +159,14 @@ int isfcmd_2a(SCR_OPE *op) {
 	if (scr_getbyte(op, &num) != SUCCESS) {
 		return(GAMEEV_WRONGLENG);
 	}
+	TRACEOUT(("cmd 2a"));
 	textwin_close(num);
+	textwin_cmdclose(num);	// 僪乕僞乕儊乕僇乕偩偲僐儅儞僪傕暵偠傞傜偟偄乧
 	return(GAMEEV_SUCCESS);
 }
 
 
-// PM : 矢机の山绩
+// PM : 暥帤偺昞帵
 int isfcmd_2b(SCR_OPE *op) {
 
 	BYTE	num;
@@ -180,7 +178,19 @@ int isfcmd_2b(SCR_OPE *op) {
 }
 
 
-// WSH : メッセ〖ジウィンドウの润山绩 (T.Yui)
+// PMP : 壒惡僼儔僌僠僃僢僋晅偒暥帤偺昞帵
+int isfcmd_2c(SCR_OPE *op) {
+
+	BYTE	num;
+
+	if (scr_getbyte(op, &num) != SUCCESS) {
+		return(GAMEEV_WRONGLENG);
+	}
+	return(textdisp_set(num, op));
+}
+
+
+// WSH : 儊僢僙乕僕僂傿儞僪僂偺旕昞帵 (T.Yui)
 int isfcmd_2d(SCR_OPE *op) {
 
 	SINT32	num;
@@ -189,7 +199,8 @@ int isfcmd_2d(SCR_OPE *op) {
 	if (scr_getval(op, &num) != SUCCESS) {
 		return(GAMEEV_WRONGLENG);
 	}
-	textwin = textwin_getwin(0);
+	TRACEOUT(("cmd 2d"));
+	textwin = textwin_getwin(num);
 	if (textwin) {
 		textwin->flag |= TEXTWIN_TEXTHIDE;
 		vramdraw_setrect(textwin->textctrl.vram, NULL);
@@ -199,20 +210,35 @@ int isfcmd_2d(SCR_OPE *op) {
 }
 
 
-// WSS : メッセ〖ジウィンドウの山绩 (T.Yui)
+// WSS : 儊僢僙乕僕僂傿儞僪僂偺昞帵 (T.Yui)
 int isfcmd_2e(SCR_OPE *op) {
 
-	SINT32	val;
+	SINT32	num;
 	TEXTWIN	textwin;
 
-	if (scr_getval(op, &val) != SUCCESS) {
+	if (scr_getval(op, &num) != SUCCESS) {
 		return(GAMEEV_WRONGLENG);
 	}
-	textwin = textwin_getwin(0);
+	TRACEOUT(("cmd 2e"));
+	textwin = textwin_getwin(num);
 	if (textwin) {
 		textwin->flag &= ~TEXTWIN_TEXTHIDE;
 		vramdraw_setrect(textwin->textctrl.vram, NULL);
 		vramdraw_draw();
+	}
+	return(GAMEEV_SUCCESS);
+}
+
+
+// WJP : 儊僢僙乕僕僂傿儞僪僂偺埵抲嫟桳 (T.Yui)
+int isfcmd_2f(SCR_OPE *op) {
+
+	BYTE	num;
+	BYTE	num2;
+
+	if ((scr_getbyte(op, &num) != SUCCESS) ||
+		(scr_getbyte(op, &num2) != SUCCESS)) {
+		return(GAMEEV_WRONGLENG);
 	}
 	return(GAMEEV_SUCCESS);
 }
