@@ -54,15 +54,6 @@ static char config_file[MAX_PATH] = "";
 
 static pid_t run_mplayer(const char *player, const char *filepath, int window_id);
 
-#if 1
-void
-moviemng_play(const char *fname, SCRN_T *scrn)
-{
-
-	UNUSED(fname);
-	UNUSED(scrn);
-}
-#else
 /*
  * –â“š–³—p‚Å mplayer ‚ð‹N“®‚·‚é
  */
@@ -275,4 +266,3 @@ run_mplayer(const char *player, const char *filepath, int window_id)
 	close(pipes[1]);
 	return child_pid;
 }
-#endif

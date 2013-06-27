@@ -105,7 +105,6 @@ xdraws_draws(void (*cb)(DEST_SURFACE *), const RECT_T *rct)
 {
 	DEST_SURFACE ds;
 	SDL_Surface *surface = SDL_GetVideoSurface();
-
 	SDL_LockSurface(surface);
 	ds.ptr = (BYTE *)surface->pixels;
 	ds.xalign = surface->format->BytesPerPixel;

@@ -31,6 +31,12 @@ BOOL fontmng_getsize(void *hdl, const char *string, POINT_T *pt);
 BOOL fontmng_getdrawsize(void *hdl, const char *string, POINT_T *pt);
 FNTDAT fontmng_get(void *hdl, const char *string);
 
+
+// ---- for SDL
+
+BOOL fontmng_init(void);
+void fontmng_setdeffontname(const char *name);
+
 #ifdef __cplusplus
 }
 #endif

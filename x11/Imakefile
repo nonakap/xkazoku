@@ -7,9 +7,10 @@ SDL_INCS= `$(SDL_CONFIG) --cflags`
 SDL_LIBS= `$(SDL_CONFIG) --libs` -lSDL_ttf
 
 #if defined(USE_OGGVORBIS)
-OGG_DEFS= -DOGGVORBIS_LIB
-OGG_INCS= $(OGG_CFLAGS)
-OGG_LIBS= $(OGG_LDFLAGS) -logg -lvorbis
+VORBIS_DEFS= -DOGGVORBIS_LIB
+VORBIS_CONFIG?= pkg-config vorbis
+VORBIS_INCS= `$(VORBIS_CONFIG) --cflags`
+VORBIS_LIBS= `$(VORBIS_CONFIG) --libs`
 #endif
 
 #if defined(MPLAYER_CMD)
@@ -27,9 +28,9 @@ SYS_LIBRARIES= -lm
 EXTRA_INCLUDES= -I. -I.. -I../common -I../isfcmd \
 		-I../sound -I../sound/vermouth \
 		-I../menubase -I../menu \
-		$(SDL_INCS) $(OGG_INCS)
+		$(SDL_INCS) $(VORBIS_INCS)
 
-LOCAL_LIBRARIES= $(XLIB) $(SDL_LIBS) $(OGG_LIBS)
+LOCAL_LIBRARIES= $(XLIB) $(SDL_LIBS) $(VORBIS_LIBS)
 
 #define PassCDebugFlags
 
@@ -99,6 +100,20 @@ analyze:	$(ANALYZEOBJS) $(COMMONOBJS) dosio.o trace.o ../gamedef.o
 
 
 XCOMM
+XCOMM qvgacnv
+XCOMM
+
+TOOLOBJS=	$(COMMONOBJS) dosio.o ../arcfile.o ../arcwrite.o
+
+QVGACNVOBJS=	../toqvga/graphcnv.o ../toqvga/packpg0.o \
+		../cgload.o ../vram.o qvgacnv.o
+QVGACNVSRCS=	$(TOOLOBJS:.o=.c) $(QVGACNVOBJS:.o=.c)
+
+qvgacnv:	$(TOOLOBJS) $(QVGACNVOBJS)
+	$(CC) -o $@ $(TOOLOBJS) $(QVGACNVOBJS)
+
+
+XCOMM
 XCOMM mp3cnv
 XCOMM
 
@@ -109,8 +124,8 @@ mp3cnv:		$(TOOLOBJS) $(MP3CNVOBJS)
 	$(CC) -o $@ $(TOOLOBJS) $(MP3CNVOBJS)
 
 clean cleandir::
-	-$(RM) analyze mp3cnv $(OBJS)
-	-$(RM) $(ANALYZEOBJS) $(MP3CNVOBJS)
+	-$(RM) analyze qvgacnv mp3cnv $(OBJS)
+	-$(RM) $(ANALYZEOBJS) $(QVGACNVOBJS) $(MP3CNVOBJS)
 
 distclean:: clean
 	-$(RM) Makefile .depend

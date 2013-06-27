@@ -4,6 +4,7 @@
 #include "gamecore.h"
 #include "x11.h"
 #include "scrnmng.h"
+#include "vramdraw.h"
 #include "menubase.h"
 
 static PALETTE_TABLE pal16bit;
@@ -72,71 +73,260 @@ norrect(DEST_SURFACE *ds, VRAMHDL s, MIX_RECT *rct)
 	return SUCCESS;
 }
 
-void
-drawcb_nor16(DEST_SURFACE *ds, MIX_RECT *mr)
-{
-	PALETTE_TABLE pix;
-	BYTE *p, *q;
-	int x;
 
-	p = mainvram->ptr + mr->srcpos * 3;
+#if defined(SUPPORT_16BPP)
+
+// ---- 16bpp
+
+static void draw16_nor16(DEST_SURFACE *ds, MIX_RECT *mr) {
+
+	BYTE	*p, *q;
+	int	x;
+	BYTE	g, r, b;
+
+	p = mainvram->ptr + (mr->srcpos * 2);
+	q = ds->ptr + mr->dstpos;
+	g = l16g;
+	r = l16r;
+	b = r16b;
+
+	do {
+		x = mr->width;
+		do {
+			PALETTE_TABLE pix;
+			UINT s;
+			s = *(UINT16 *)p;
+			pix.p.b = MAKE24B(s);
+			pix.p.g = MAKE24G(s);
+			pix.p.r = MAKE24R(s);
+			pix.d &= pal16bit.d;
+			*(UINT16 *)q = (((UINT16)pix.p.g) << g) |
+			    (((UINT16)pix.p.r) << r) | (pix.p.b >> b);
+			p += 2;
+			q += 2;
+		} while(--x);
+		p += (mainvram->width - mr->width) * 2;
+		q += ds->yalign - (mr->width * 2);
+	} while(--mr->height);
+}
+
+static void draw16_nor32(DEST_SURFACE *ds, MIX_RECT *mr) {
+
+	BYTE	*p, *q;
+	int	x;
+
+	p = mainvram->ptr + (mr->srcpos * 2);
 	q = ds->ptr + mr->dstpos;
 	do {
 		x = mr->width;
 		do {
-			pix.p.b = p[0];
-			pix.p.g = p[1];
-			pix.p.r = p[2];
-			pix.d &= pal16bit.d;
-			*(UINT16 *)q = (((UINT16)pix.p.g) << l16g) |
-			    (((UINT16)pix.p.r) << l16r) | (pix.p.b >> r16b);
-			p += 3;
-			q += ds->xalign;
-		} while (--x > 0);
-		p += (mainvram->width - mr->width) * 3;
-		q += ds->yalign - (mr->width * ds->xalign);
-	} while (--mr->height);
+			UINT s;
+			s = *(UINT16 *)p;
+			q[0] = MAKE24B(s);
+			q[1] = MAKE24G(s);
+			q[2] = MAKE24R(s);
+			q[3] = 0;
+			p += 2;
+			q += 4;
+		} while(--x);
+		p += (mainvram->width - mr->width) * 2;
+		q += ds->yalign - (mr->width * 4);
+	} while(--mr->height);
 }
 
-void
-drawcb_nor16onmenu(DEST_SURFACE *ds, MIX_RECT *mr)
-{
-	PALETTE_TABLE pix;
-	BYTE *p, *q, *a;
-	int x;
+static void draw16_nor16onmenu(DEST_SURFACE *ds, MIX_RECT *mr) {
 
-	p = mainvram->ptr + mr->srcpos * 3;
+	BYTE	*p, *q, *a;
+	int	x;
+	BYTE	g, r, b;
+
+	p = mainvram->ptr + (mr->srcpos * 2);
+	q = ds->ptr + mr->dstpos;
+	a = menuvram->alpha + mr->srcpos;
+	g = l16g;
+	r = l16r;
+	b = r16b;
+
+	do {
+		x = mr->width;
+		do {
+			if (a[0] == 0) {
+				PALETTE_TABLE pix;
+				UINT s;
+				s = *(UINT16 *)p;
+				pix.p.b = MAKE24B(s);
+				pix.p.g = MAKE24G(s);
+				pix.p.r = MAKE24R(s);
+				pix.d &= pal16bit.d;
+				*(UINT16 *)q = (((UINT16)pix.p.g) << g) |
+				    (((UINT16)pix.p.r) << r) | (pix.p.b >> b);
+			}
+			p += 2;
+			q += 2;
+			a += 1;
+		} while(--x);
+		p += (mainvram->width - mr->width) * 2;
+		q += ds->yalign - (mr->width * 2);
+		a += menuvram->width - mr->width;
+	} while(--mr->height);
+}
+
+static void draw16_nor32onmenu(DEST_SURFACE *ds, MIX_RECT *mr) {
+
+	BYTE	*p, *q, *a;
+	int	x;
+
+	p = mainvram->ptr + (mr->srcpos * 2);
 	q = ds->ptr + mr->dstpos;
 	a = menuvram->alpha + mr->srcpos;
 	do {
 		x = mr->width;
 		do {
 			if (a[0] == 0) {
-				pix.p.b = p[0];
-				pix.p.g = p[1];
-				pix.p.r = p[2];
-				pix.d &= pal16bit.d;
-				*(UINT16 *)q = (((UINT16)pix.p.g) << l16g) |
-				             (((UINT16)pix.p.r) << l16r) |
-					     (pix.p.b >> r16b);
+				UINT s;
+				s = *(UINT16 *)p;
+				q[0] = MAKE24B(s);
+				q[1] = MAKE24G(s);
+				q[2] = MAKE24R(s);
+				q[3] = 0;
 			}
-			p += 3;
-			q += ds->xalign;
+			p += 2;
+			q += 4;
 			a += 1;
-		} while (--x > 0);
-		p += (mainvram->width - mr->width) * 3;
-		q += ds->yalign - (mr->width * ds->xalign);
+		} while(--x);
+		p += (mainvram->width - mr->width) * 2;
+		q += ds->yalign - (mr->width * 4);
 		a += menuvram->width - mr->width;
-	} while (--mr->height);
+	} while(--mr->height);
 }
 
-void
-drawcb_nor32(DEST_SURFACE *ds, MIX_RECT *mr)
-{
-	BYTE *p, *q;
-	int x;
+static void draw16_nor16menu(DEST_SURFACE *ds, MIX_RECT *mr) {
 
-	p = mainvram->ptr + mr->srcpos * 3;
+	BYTE	*p, *q, *r, *a;
+	int	x;
+	BYTE	sg, sr, sb;
+
+	p = mainvram->ptr + (mr->srcpos * 2);
+	q = menuvram->ptr + (mr->srcpos * 2);
+	r = ds->ptr + mr->dstpos;
+	a = menuvram->alpha + mr->srcpos;
+	sg = l16g;
+	sr = l16r;
+	sb = r16b;
+
+	do {
+		x = mr->width;
+		do {
+			if (a[0]) {
+				PALETTE_TABLE pix;
+				UINT s;
+				if (a[0] & 2) {
+					s = *(UINT16 *)q;
+				}
+				else {
+					a[0] = 0;
+					s = *(UINT16 *)p;
+				}
+				pix.p.b = MAKE24B(s);
+				pix.p.g = MAKE24G(s);
+				pix.p.r = MAKE24R(s);
+				pix.d &= pal16bit.d;
+				*(UINT16 *)r = (((UINT16)pix.p.g) << sg) |
+				    (((UINT16)pix.p.r) << sr) | (pix.p.b >> sb);
+			}
+			p += 2;
+			q += 2;
+			r += 2;
+			a += 1;
+		} while(--x);
+		p += (mainvram->width - mr->width) * 2;
+		q += (menuvram->width - mr->width) * 2;
+		r += ds->yalign - (mr->width * 2);
+		a += menuvram->width - mr->width;
+	} while(--mr->height);
+}
+
+static void draw16_nor32menu(DEST_SURFACE *ds, MIX_RECT *mr) {
+
+	BYTE	*p, *q, *r, *a;
+	int	x;
+
+	p = mainvram->ptr + (mr->srcpos * 2);
+	q = menuvram->ptr + (mr->srcpos * 2);
+	r = ds->ptr + mr->dstpos;
+	a = menuvram->alpha + mr->srcpos;
+	do {
+		x = mr->width;
+		do {
+			UINT s;
+			if (a[0] & 2) {
+				s = *(UINT16 *)q;
+				r[0] = MAKE24B(s);
+				r[1] = MAKE24G(s);
+				r[2] = MAKE24R(s);
+				r[3] = 0;
+			}
+			else if (a[0]) {
+				a[0] = 0;
+				s = *(UINT16 *)p;
+				r[0] = MAKE24B(s);
+				r[1] = MAKE24G(s);
+				r[2] = MAKE24R(s);
+				r[3] = 0;
+			}
+			p += 2;
+			q += 2;
+			r += 4;
+			a += 1;
+		} while(--x);
+		p += (mainvram->width - mr->width) * 2;
+		q += (menuvram->width - mr->width) * 2;
+		r += ds->yalign - (mr->width * 4);
+		a += menuvram->width - mr->width;
+	} while(--mr->height);
+}
+#endif	/* SUPPORT_16BPP */
+
+#if defined(SUPPORT_24BPP)
+
+// ---- 24bpp
+
+static void draw24_nor16(DEST_SURFACE *ds, MIX_RECT *mr) {
+
+	BYTE	*p, *q;
+	int	x;
+	BYTE	g, r, b;
+
+	p = mainvram->ptr + (mr->srcpos * 3);
+	q = ds->ptr + mr->dstpos;
+	g = l16g;
+	r = l16r;
+	b = r16b;
+
+	do {
+		x = mr->width;
+		do {
+			PALETTE_TABLE	pix;
+			pix.p.b = p[0];
+			pix.p.g = p[1];
+			pix.p.r = p[2];
+			pix.d &= pal16bit.d;
+			*(UINT16 *)q = (((UINT16)pix.p.g) << g) |
+			    (((UINT16)pix.p.r) << r) | (pix.p.b >> b);
+			p += 3;
+			q += 2;
+		} while(--x);
+		p += (mainvram->width - mr->width) * 3;
+		q += ds->yalign - (mr->width * 2);
+	} while(--mr->height);
+}
+
+static void draw24_nor32(DEST_SURFACE *ds, MIX_RECT *mr) {
+
+	BYTE	*p, *q;
+	int	x;
+
+	p = mainvram->ptr + (mr->srcpos * 3);
 	q = ds->ptr + mr->dstpos;
 	do {
 		x = mr->width;
@@ -146,20 +336,54 @@ drawcb_nor32(DEST_SURFACE *ds, MIX_RECT *mr)
 			q[2] = p[2];
 			q[3] = 0;
 			p += 3;
-			q += ds->xalign;
-		} while (--x > 0);
+			q += 4;
+		} while(--x);
 		p += (mainvram->width - mr->width) * 3;
-		q += ds->yalign - (mr->width * ds->xalign);
-	} while (--mr->height);
+		q += ds->yalign - (mr->width * 4);
+	} while(--mr->height);
 }
 
-void
-drawcb_nor32onmenu(DEST_SURFACE *ds, MIX_RECT *mr)
-{
-	BYTE *p, *q, *a;
-	int x;
+static void draw24_nor16onmenu(DEST_SURFACE *ds, MIX_RECT *mr) {
 
-	p = mainvram->ptr + mr->srcpos * 3;
+	BYTE	*p, *q, *a;
+	int	x;
+	BYTE	g, r, b;
+
+	p = mainvram->ptr + (mr->srcpos * 3);
+	q = ds->ptr + mr->dstpos;
+	a = menuvram->alpha + mr->srcpos;
+	g = l16g;
+	r = l16r;
+	b = r16b;
+
+	do {
+		x = mr->width;
+		do {
+			if (a[0] == 0) {
+				PALETTE_TABLE	pix;
+				pix.p.b = p[0];
+				pix.p.g = p[1];
+				pix.p.r = p[2];
+				pix.d &= pal16bit.d;
+				*(UINT16 *)q = (((UINT16)pix.p.g) << g) |
+				    (((UINT16)pix.p.r) << r) | (pix.p.b >> b);
+			}
+			p += 3;
+			q += 2;
+			a += 1;
+		} while(--x);
+		p += (mainvram->width - mr->width) * 3;
+		q += ds->yalign - (mr->width * 2);
+		a += menuvram->width - mr->width;
+	} while(--mr->height);
+}
+
+static void draw24_nor32onmenu(DEST_SURFACE *ds, MIX_RECT *mr) {
+
+	BYTE	*p, *q, *a;
+	int		x;
+
+	p = mainvram->ptr + (mr->srcpos * 3);
 	q = ds->ptr + mr->dstpos;
 	a = menuvram->alpha + mr->srcpos;
 	do {
@@ -172,40 +396,144 @@ drawcb_nor32onmenu(DEST_SURFACE *ds, MIX_RECT *mr)
 				q[3] = 0;
 			}
 			p += 3;
-			q += ds->xalign;
+			q += 4;
 			a += 1;
-		} while (--x > 0);
+		} while(--x);
 		p += (mainvram->width - mr->width) * 3;
-		q += ds->yalign - (mr->width * ds->xalign);
+		q += ds->yalign - (mr->width * 4);
 		a += menuvram->width - mr->width;
-	} while (--mr->height);
+	} while(--mr->height);
 }
+
+static void draw24_nor16menu(DEST_SURFACE *ds, MIX_RECT *mr) {
+
+	BYTE	*p, *q, *r, *a;
+	int	x;
+	BYTE	sg, sr, sb;
+
+	p = mainvram->ptr + (mr->srcpos * 3);
+	q = menuvram->ptr + (mr->srcpos * 3);
+	r = ds->ptr + mr->dstpos;
+	a = menuvram->alpha + mr->srcpos;
+	sg = l16g;
+	sr = l16r;
+	sb = r16b;
+
+	do {
+		x = mr->width;
+		do {
+			if (a[0]) {
+				PALETTE_TABLE	pix;
+				if (a[0] & 2) {
+					pix.p.b = q[0];
+					pix.p.g = q[1];
+					pix.p.r = q[2];
+				}
+				else {
+					a[0] = 0;
+					pix.p.b = p[0];
+					pix.p.g = p[1];
+					pix.p.r = p[2];
+				}
+				pix.d &= pal16bit.d;
+				*(UINT16 *)r = (((UINT16)pix.p.g) << sg) |
+				    (((UINT16)pix.p.r) << sr) | (pix.p.b >> sb);
+			}
+			p += 3;
+			q += 3;
+			r += 2;
+			a += 1;
+		} while(--x);
+		p += (mainvram->width - mr->width) * 3;
+		q += (menuvram->width - mr->width) * 3;
+		r += ds->yalign - (mr->width * 2);
+		a += menuvram->width - mr->width;
+	} while(--mr->height);
+}
+
+static void draw24_nor32menu(DEST_SURFACE *ds, MIX_RECT *mr) {
+
+	BYTE	*p, *q, *r, *a;
+	int	x;
+
+	p = mainvram->ptr + (mr->srcpos * 3);
+	q = menuvram->ptr + (mr->srcpos * 3);
+	r = ds->ptr + mr->dstpos;
+	a = menuvram->alpha + mr->srcpos;
+	do {
+		x = mr->width;
+		do {
+			if (a[0] & 2) {
+				r[0] = q[0];
+				r[1] = q[1];
+				r[2] = q[2];
+				r[3] = 0;
+			}
+			else if (a[0]) {
+				a[0] = 0;
+				r[0] = p[0];
+				r[1] = p[1];
+				r[2] = p[2];
+				r[3] = 0;
+			}
+			p += 3;
+			q += 3;
+			r += 4;
+			a += 1;
+		} while(--x);
+		p += (mainvram->width - mr->width) * 3;
+		q += (menuvram->width - mr->width) * 3;
+		r += ds->yalign - (mr->width * 4);
+		a += menuvram->width - mr->width;
+	} while(--mr->height);
+}
+#endif	/* SUPPORT_24BPP */
+
+
+// ----
 
 void
 drawcb_nor(DEST_SURFACE *ds)
 {
 	MIX_RECT mr;
 
-	if (ds->bit == 16) {
-		if (norrect(ds, mainvram, &mr) != SUCCESS)
-			return;
+	if (norrect(ds, mainvram, &mr) != SUCCESS)
+		return;
 
-		if (menuvram == NULL)
-			drawcb_nor16(ds, &mr);
-		else
-			drawcb_nor16onmenu(ds, &mr);
-	} else if (ds->bit == 32) {
-		if (norrect(ds, mainvram, &mr) != SUCCESS)
-			return;
-
-		if (menuvram == NULL)
-			drawcb_nor32(ds, &mr);
-		else
-			drawcb_nor32onmenu(ds, &mr);
-	} else {
-		fprintf(stderr, "%d bit isn't support\n", ds->bit);
-		__ASSERT(0);
+#if defined(SUPPORT_16BPP)
+	if (mainvram->bpp == 16) {
+		if (menuvram == NULL) {
+			if (ds->bit == 16) {
+				draw16_nor16(ds, &mr);
+			} else if (ds->bit == 32) {
+				draw16_nor32(ds, &mr);
+			}
+		} else {
+			if (ds->bit == 16) {
+				draw16_nor16onmenu(ds, &mr);
+			} else if (ds->bit == 32) {
+				draw16_nor32onmenu(ds, &mr);
+			}
+		}
 	}
+#endif
+#if defined(SUPPORT_24BPP)
+	if (mainvram->bpp == 24) {
+		if (menuvram == NULL) {
+			if (ds->bit == 16) {
+				draw24_nor16(ds, &mr);
+			} else if (ds->bit == 32) {
+				draw24_nor32(ds, &mr);
+			}
+		} else {
+			if (ds->bit == 16) {
+				draw24_nor16onmenu(ds, &mr);
+			} else if (ds->bit == 32) {
+				draw24_nor32onmenu(ds, &mr);
+			}
+		}
+	}
+#endif
 }
 
 void
@@ -216,90 +544,7 @@ scrnmng_draw(const RECT_T *rct)
 		xdraws_draws(drawcb_nor, rct);
 }
 
-/* ----- */
-
-void
-drawcb_nor16menu(DEST_SURFACE *ds, MIX_RECT *mr)
-{
-	PALETTE_TABLE pix;
-	BYTE *p, *q, *r, *a;
-	int x;
-
-	p = mainvram->ptr + (mr->srcpos * 3);
-	q = menuvram->ptr + (mr->srcpos * 3);
-	r = ds->ptr + mr->dstpos;
-	a = menuvram->alpha + mr->srcpos;
-	do {
-		x = mr->width;
-		do {
-			if (a[0] & 2) {
-				pix.p.b = q[0];
-				pix.p.g = q[1];
-				pix.p.r = q[2];
-				pix.d &= pal16bit.d;
-				*(UINT16 *)r = (((UINT16)pix.p.g) << l16g) |
-				             (((UINT16)pix.p.r) << l16r) |
-					     (pix.p.b >> r16b);
-			}
-			else if (a[0]) {
-				a[0] = 0;
-				pix.p.b = p[0];
-				pix.p.g = p[1];
-				pix.p.r = p[2];
-				pix.d &= pal16bit.d;
-				*(UINT16 *)r = (((UINT16)pix.p.g) << l16g) |
-				             (((UINT16)pix.p.r) << l16r) |
-					     (pix.p.b >> r16b);
-			}
-			p += 3;
-			q += 3;
-			r += ds->xalign;
-			a += 1;
-		} while (--x);
-		p += (mainvram->width - mr->width) * 3;
-		q += (menuvram->width - mr->width) * 3;
-		r += ds->yalign - (mr->width * ds->xalign);
-		a += menuvram->width - mr->width;
-	} while (--mr->height);
-}
-
-void
-drawcb_nor32menu(DEST_SURFACE *ds, MIX_RECT *mr)
-{
-	BYTE *p, *q, *r, *a;
-	int x;
-
-	p = mainvram->ptr + (mr->srcpos * 3);
-	q = menuvram->ptr + (mr->srcpos * 3);
-	r = ds->ptr + mr->dstpos;
-	a = menuvram->alpha + mr->srcpos;
-	do {
-		x = mr->width;
-		do {
-			if (a[0] & 2) {
-				r[0] = 0;
-				r[1] = q[2];
-				r[2] = q[1];
-				r[3] = q[0];
-			}
-			else if (a[0]) {
-				a[0] = 0;
-				r[0] = 0;
-				r[1] = p[2];
-				r[2] = p[1];
-				r[3] = p[0];
-			}
-			p += 3;
-			q += 3;
-			r += ds->xalign;
-			a += 1;
-		} while (--x);
-		p += (mainvram->width - mr->width) * 3;
-		q += (menuvram->width - mr->width) * 3;
-		r += ds->yalign - (mr->width * ds->xalign);
-		a += menuvram->width - mr->width;
-	} while (--mr->height);
-}
+// ----
 
 void
 drawcb_menu(DEST_SURFACE *ds)
@@ -309,14 +554,24 @@ drawcb_menu(DEST_SURFACE *ds)
 	if (norrect(ds, menuvram, &mr) != SUCCESS)
 		return;
 
-	if (ds->bit == 16) {
-		drawcb_nor16menu(ds, &mr);
-	} else if (ds->bit == 32) {
-		drawcb_nor32menu(ds, &mr);
-	} else {
-		fprintf(stderr, "%d bit isn't support\n", ds->bit);
-		__ASSERT(0);
+#if defined(SUPPORT_16BPP)
+	if (menuvram->bpp == 16) {
+		if (ds->bit == 16) {
+			draw16_nor16menu(ds, &mr);
+		} else if (ds->bit == 32) {
+			draw16_nor32menu(ds, &mr);
+		}
 	}
+#endif
+#if defined(SUPPORT_24BPP)
+	if (menuvram->bpp == 24) {
+		if (ds->bit == 16) {
+			draw24_nor16menu(ds, &mr);
+		} else if (ds->bit == 32) {
+			draw24_nor32menu(ds, &mr);
+		}
+	}
+#endif
 }
 
 void

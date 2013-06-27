@@ -27,18 +27,18 @@
 
     1.2. 環境
 
-          15/16/32bpp の TrueColor/DirectColor で動作します。
+          15/16/24/32bpp の TrueColor/DirectColor で動作します。
 
     1.3. 開発環境
 
         開発環境は以下の通りです。
 
           ・NetBSD/i386
-          ・XFree86 4.4.0 (3D Rage Mobility, 1024x768x16bpp)
+          ・XFree86 4.4.0
           ・SDL 1.2.7
           ・SDL_ttf 2.0.6
           ・libogg 1.1
-          ・libvorbis 1.0.1
+          ・libvorbis 1.1
 
 
  2. コンパイル＆インストール
@@ -61,13 +61,9 @@
             USE_OGGVIRBIS : 音楽の再生に Ogg vorbis 形式ファイルを使用する際に
                             #define してください。
 
-            OGG_CFLAGS    : Ogg vorbis 関連のインクルードヘッダファイルが
-                            コンパイラの標準パスに含まれていない場合には、
-                            OGG_CFLAGS に必要なオプションを記述してください。
-
-            OGG_LDFLAGS   : Ogg vorbis 関連のライブラリファイルがリンカの
-                            標準パスに含まれていない場合には、OGG_LDFLAGS に
-                            必要なオプションを記述してください。
+            VORBIS_CONFIG : pkg-config のファイル名が変更されている場合に
+                            記述してください。通常は記述する必要は無いと
+                            思います。
 
         2.2.2. フォント関連
 
@@ -213,10 +209,6 @@
     ・Simple DirectMedia Layer
       http://www.libsdl.org/
       SDL, SDL_ttf
-
-    ・My Linux 日本語化計画
-      http://www.on.cs.keio.ac.jp/~yasu/jp_fonts.html
-      フリーの TrueType 形式のフォント(東風明朝体、東風ゴシック)
 
     ・Xiph.Org
       http://www.xiph.org/, http://www.ogg.org/

@@ -21,6 +21,7 @@
 #include "fontmng.h"
 #include "inputmng.h"
 #include "moviemng.h"
+#include "taskmng.h"
 
 /*
  * signal handler
@@ -46,6 +47,7 @@ usage(void)
 	printf("Usage: %s [options]\n", progname);
 	printf("\t--help       [-h]       : print this message\n");
 	printf("\t--fullscreen [-f]       : full screen mode\n");
+	printf("\t--mplayer    [-m] <file>: specify MPlayer execute file\n");
 	printf("\t--suf        [-s] <file>: specify .SUF file\n");
 	printf("\t--ttfont     [-t] <file>: specify TrueType font file\n");
 	exit(1);
@@ -72,6 +74,15 @@ main(int argc, char *argv[])
 		switch (ch) {
 		case 'f':
 			fullscreen_flag = 1;
+			break;
+
+		case 'm':
+			if (access(optarg, X_OK) < 0) {
+				fprintf(stderr, "Can't access %s.\n", optarg);
+				exit(1);
+			}
+			milstr_ncpy(mplayer_cmd, optarg, sizeof(mplayer_cmd));
+			mplayer_flag = 1;
 			break;
 
 		case 's': 

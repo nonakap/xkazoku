@@ -28,12 +28,14 @@
  */
 
 #include <sys/param.h>
+
+#include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
-#include <assert.h>
 
 typedef	signed char	CHAR;
 typedef	signed short	SHORT;
@@ -125,10 +127,10 @@ typedef	int		BOOL;
 
 #ifndef	SIZE_QVGA
 #define	SUPPORT_24BPP
-#define	SCREEN_BPP			24
+#define	SCREEN_BPP	24
 #else
 #define	SUPPORT_16BPP
-#define	SCREEN_BPP			16
+#define	SCREEN_BPP	16
 #endif
 
 #define	VERMOUTH_LIB
