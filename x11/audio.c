@@ -77,8 +77,10 @@ sound_init(UINT rate)
 		opna_rate = 22050;
 	else if (rate < 48000)
 		opna_rate = 44100;
-	else
+	else if (rate == 48000)
 		opna_rate = 48000;
+	else
+		opna_rate = 44100;
 
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO/*|SDL_INIT_TIMER*/) < 0) {
 		fprintf(stderr, "Error: SDL_Init: %s\n", SDL_GetError());

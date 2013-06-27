@@ -40,52 +40,56 @@ taskmng_exit(void)
 void
 taskmng_rol(void)
 {
+	static UINT32 tick = 0;
 	SDL_Event e;
 
-	if (!is_proc) {
-		return;
-	}
+	if (is_proc) {
+		while (SDL_PollEvent(&e) > 0) {
+			switch (e.type) {
+			case SDL_MOUSEBUTTONUP:
+				switch (e.button.button) {
+				case SDL_BUTTON_LEFT:
+					inputmng_buttonup(LBUTTON_BIT);
+					break;
 
-	while (SDL_PollEvent(&e) > 0) {
-		switch (e.type) {
-		case SDL_MOUSEBUTTONUP:
-			switch (e.button.button) {
-			case SDL_BUTTON_LEFT:
-				inputmng_buttonup(LBUTTON_BIT);
+				case SDL_BUTTON_RIGHT:
+					inputmng_buttonup(RBUTTON_BIT);
+					break;
+				}
 				break;
 
-			case SDL_BUTTON_RIGHT:
-				inputmng_buttonup(RBUTTON_BIT);
+			case SDL_MOUSEBUTTONDOWN:
+				switch (e.button.button) {
+				case SDL_BUTTON_LEFT:
+					inputmng_buttondown(LBUTTON_BIT);
+					break;
+
+				case SDL_BUTTON_RIGHT:
+					inputmng_buttondown(RBUTTON_BIT);
+					break;
+				}
+				break;
+
+			case SDL_KEYDOWN:
+				inputmng_keyset(e.key.keysym.sym);
+				break;
+
+			case SDL_KEYUP:
+				inputmng_keyreset(e.key.keysym.sym);
+				break;
+
+			case SDL_QUIT:
+				taskmng_exit();
 				break;
 			}
-			break;
+		}
+		stream_prepart_task();
 
-		case SDL_MOUSEBUTTONDOWN:
-			switch (e.button.button) {
-			case SDL_BUTTON_LEFT:
-				inputmng_buttondown(LBUTTON_BIT);
-				break;
-
-			case SDL_BUTTON_RIGHT:
-				inputmng_buttondown(RBUTTON_BIT);
-				break;
-			}
-			break;
-
-		case SDL_KEYDOWN:
-			inputmng_keyset(e.key.keysym.sym);
-			break;
-
-		case SDL_KEYUP:
-			inputmng_keyreset(e.key.keysym.sym);
-			break;
-
-		case SDL_QUIT:
-			taskmng_exit();
-			break;
+		if (GETTICK() - tick >= 20) {
+			usleep(1);
+			tick = GETTICK();
 		}
 	}
-	stream_prepart_task();
 }
 
 BOOL
@@ -98,10 +102,12 @@ taskmng_isavail(void)
 BOOL
 taskmng_sleep(UINT32 tick)
 {
-	UINT32 base = GETTICK();
+	UINT32 base;
+
+	base = GETTICK();
 	while (is_proc && ((GETTICK() - base) < tick)) {
 		taskmng_rol();
-		usleep(1);
+		usleep(20);
 	}
 	return is_proc;
 }

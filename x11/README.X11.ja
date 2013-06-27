@@ -6,7 +6,7 @@
 
     D.O. から発売されている Windows 上で動作するゲーム「家族計画」を X11 上で
     プレイを出来る様にするプログラム…の筈でした。
-    昔の Purple や CD-BROS 系列メーカのゲームは動作するかもしれません。
+    昔の Purple や CD-BROS 系列メーカのゲームも動作するかもしれません。
 
 
  1. 動作環境
@@ -19,13 +19,13 @@
           ・SDL 1.2.x
           ・SDL_ttf 2.0.x
 
-        CD-DA の代りに ogg 形式ファイルを再生するのであれば以下のライブラリも
-        必要です。
+        CD-DA の代りに Ogg Vorbis 形式ファイルを再生するのであれば以下の
+        ライブラリも必要となります。
 
           ・libogg
           ・libvorbis
 
-        動画を再生するのであれば以下のライブラリも必要です。
+        動画を再生するのであれば以下のライブラリも必要となります。
 
           ・xine-lib
 
@@ -58,36 +58,45 @@
         4. make (必要であれば su で root になってください)
         5. make install
 
-    2.2. config.tmpl で指定可能な内容
+    2.2. config.tmpl の編集
 
         2.2.1. 音関連
 
-            USE_OGGVORBIS : 音楽の再生に Ogg vorbis 形式ファイルを使用する際に
+            USE_OGGVORBIS : 音楽の再生に Ogg Vorbis 形式ファイルを使用する際に
                             #define してください。
 
-            VORBIS_CONFIG : pkg-config のファイル名が変更されている場合に
-                            記述してください。通常は記述する必要は無いと
-                            思います。
+            VORBIS_CONFIG, VORBIS_INCS, VORBIS_LIBS:
+                            Vorbis のヘッダやライブラリが存在するディレクトリを
+                            指定する場合に使用してください。通常、指定する
+                            必要はありません。
 
-        2.2.2. フォント関連
+            OGG_CONFIG, OGG_INCS, OGG_LIBS:
+                            Ogg のヘッダやライブラリが存在するディレクトリを
+                            指定する場合に使用してください。通常、指定する
+                            必要はありません。
 
-            TTFONT        : ゲーム中で使用する TrueType フォントのパスを記述
-                            してください。
-
-        2.2.3. 動画関連
+        2.2.2. 動画関連
 
             USE_XINE_LIB  : 動画の再生に xine-lib を使用する再に #define して
                             ください。
 
-            XINE_CONFIG   : xine-config のファイル名が変更されている場合に
-                            記述してください。通常は記述する必要は無いと
-                            思います。
+            XINE_CONFIG, XINE_INCS, XINE_LIBS :
+                            xine のヘッダやライブラリが存在するディレクトリを
+                            指定する場合に使用します。通常、指定する必要は
+                            ありません。
+
+        2.2.3. フォント関連
+
+            TTFONT        : ゲーム中で使用する TrueType フォントのパスを記述
+                            してください。指定されなかった場合には起動時の
+                            カレントディレクトリの default.ttf を使用するので
+                            指定する必要はありません。また、コマンドライン
+                            オプションで指定する事もできます。
 
         2.2.4. その他
 
             SDL_CONFIG    : sdl-config のファイル名が変更されている場合に
-                            記述してください。通常は記述する必要は無いと
-                            思います。
+                            指定してください。通常、指定する必要はありません。
 
     2.3. ゲームデータのインストール
 
@@ -123,20 +132,20 @@
             の様に trackXX.YYY というファイル名(*1)の音楽ファイルを置いて
             ください。以降、CD-DA の再生要求時に CD-ROM が存在していなければ、
             音楽ファイルを使用して音楽を再生します(*2)。
-            CD-DA を強制的に使用しない様にするには環境変数 NOCDROM を設定して
-            ください(*3)。
+            CD-DA を強制的に使用しない様にするには環境変数 NOCDROM を設定(*3)、
+            もしくは起動時のオプションに --disable-cdda を指定してください。
 
             (*1) XX は CD のトラック番号。
-                 YYY は RIFF 形式であれば wav、ogg vorbis 形式であれば ogg。
-                 但し ogg は config.tmpl でサポートする様に指定していなければ
-                 使用出来ません。
+                 YYY は RIFF 形式であれば wav、Ogg Vorbis 形式であれば ogg。
+                 但し Ogg Vorbis 形式は config.tmpl でサポートする様に指定
+                 していなければ使用出来ません。
 
-             (*2) CD-DA -> RIFF -> ogg の順番で音楽が再生出来るか試します。
+            (*2) CD-DA -> RIFF -> ogg の順番で音楽が再生出来るか試します。
 
-             (*3) 使用しているシェルが:
-                      sh, bash 等であれば NOCDROM=yes ; export NOCDROM
-                      csh, tcsh 等であれば setenv NOCDROM=yes
-                  もしくは xkazoku 起動時に env NOCDROM=yes xkazoku
+            (*3) 使用しているシェルが:
+                 sh, bash 等であれば NOCDROM=yes ; export NOCDROM
+                 csh, tcsh 等であれば setenv NOCDROM=yes
+                 もしくは xkazoku 起動時に env NOCDROM=yes xkazoku
 
 
  3. 実行   
@@ -169,21 +178,25 @@
 
         実行時に以下のオプションを指定する事ができます。
 
-        --help       [-h]        : ヘルプを表示します。
+        --help          [-h]        : ヘルプを表示します。
 
-        --fullscreen [-f]        : フルスクリーンモードで起動します。
+        --fullscreen    [-f]        : フルスクリーンモードで起動します。
 
-        --suf        [-s] <file> : .SUP ファイルパスを指定します。
-	                           既定値: カレントディレクトリの system.suf
+        --suf           [-s] <file> : .SUP ファイルパスを指定します。
+                                      既定値: カレントディレクトリの system.suf
 
-        --ttfont     [-t] <file> : 文字表示に使用する TrueType フォントを指定
-                                   します。
-				   既定値: カレントディレクトリの default.ttf
+        --ttfont        [-t] <file> : 文字表示に使用する TrueType フォントを指定
+                                      します。
+                                      既定値: カレントディレクトリの default.ttf
 
-        --rate       [-r] <rate> : サウンドデバイスをオープンする時に渡す
-	                           サンプリングレートを指定します。
-				   有効値: 0, 11025, 22050, 44100, 48000
-				   既定値: 44100
+        --rate          [-r] <rate> : サウンドデバイスをオープンする時に渡す
+                                      サンプリングレートを指定します。
+                                      有効値: 0, 11025, 22050, 44100, 48000
+                                      既定値: 44100
+
+        --disable-cdda  [-c]        : 音楽再生時に CD-DA を使用しません。
+
+        --disable-movie [-v]        : 動画を再生しません。
 
 
  4. 操作
@@ -209,11 +222,9 @@
 
     5.2. Windows とのセーブファイルの互換性
 
-        Windows で作成されたセーブファイルを利用する事は出来ます。
-
-        xkazoku で作成したセーブファイルを Windows で使用する事は
-        なるべく止めておいた方が良いと思います(と言うか試してみた
-        事がありません)。
+        Windows で作成されたセーブファイルを利用する事が可能です。
+        ただし xkazoku で作成したセーブファイルを元のゲームで使用することは
+        お勧めしかねます。
 
 
  6. 問題点、備考
@@ -232,7 +243,7 @@
 
     ・Xiph.Org
       http://www.xiph.org/, http://www.ogg.org/
-      Ogg, Ogg Vorbis
+      Ogg, Vorbis
 
     ・xine
       http://xinehq.de/

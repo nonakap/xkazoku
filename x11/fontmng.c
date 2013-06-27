@@ -390,8 +390,8 @@ FNTDAT fontmng_get(void *hdl, const char *string) {
 #endif
 
 	leng = 1;
-	if (((((string[0] ^ 0x20) - 0xa1) & 0xff) < 0x3c) &&
-		(string[1] != '\0')) {
+	if ((((((UINT8)string[0] ^ 0x20) - 0xa1) & 0xff) < 0x3c) &&
+		((UINT8)string[1] != '\0')) {
 		leng = 2;
 	}
 	getfont1(fhdl, fdat, string, leng);

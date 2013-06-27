@@ -18,6 +18,7 @@
 #include "sstream.h"
 #include "arcfile.h"
 
+#include "cddamng.h"
 #include "fontmng.h"
 #include "inputmng.h"
 #include "moviemng.h"
@@ -50,14 +51,16 @@ static void
 usage(void)
 {
 	printf("Usage: %s [options]\n", progname);
-	printf("\t--help       [-h]                 : print this message\n");
-	printf("\t--fullscreen [-f]                 : full screen mode\n");
+	printf("\t--help          [-h]                 : print this message\n");
+	printf("\t--fullscreen    [-f]                 : full screen mode\n");
 #if defined(SUPPORT_MOVIE_MPLAYER)
-	printf("\t--mplayer    [-m] <file>          : specify MPlayer execute file\n");
+	printf("\t--mplayer       [-m] <file>          : specify MPlayer execute file\n");
 #endif
-	printf("\t--suf        [-s] <file>          : specify .SUF file\n");
-	printf("\t--ttfont     [-t] <file>          : specify TrueType font file\n");
-	printf("\t--rate       [-r] <sampling rate> : specify sound sampling rate\n");
+	printf("\t--suf           [-s] <file>          : specify .SUF file\n");
+	printf("\t--ttfont        [-t] <file>          : specify TrueType font file\n");
+	printf("\t--rate          [-r] <sampling rate> : specify sound sampling rate\n");
+	printf("\t--disable-cdda  [-c]                 : don't use CD-DA\n");
+	printf("\t--disable-movie [-v]                 : don't play movie\n");
 	exit(1);
 }
 
@@ -65,13 +68,15 @@ int
 main(int argc, char *argv[])
 {
 	static struct option longopts[] = {
-		{ "fullscreen",	no_argument,		0,	'f' },
-		{ "mplayer",	required_argument,	0,	'm' },
-		{ "suf",	required_argument,	0,	's' },
-		{ "ttfont",	required_argument,	0,	't' },
-		{ "rate",	required_argument,	0,	'r' },
-		{ "help",	no_argument,		0,	'h' },
-		{ 0,		0,			0,	0   },
+		{ "fullscreen",		no_argument,		0,	'f' },
+		{ "mplayer",		required_argument,	0,	'm' },
+		{ "suf",		required_argument,	0,	's' },
+		{ "ttfont",		required_argument,	0,	't' },
+		{ "rate",		required_argument,	0,	'r' },
+		{ "disable-cdda",	no_argument,		0,	'c' },
+		{ "disable-movie",	no_argument,		0,	'v' },
+		{ "help",		no_argument,		0,	'h' },
+		{ 0,			0,			0,	0   },
 	};
 	static char suffile[MAX_PATH] = "system.suf";
 	long rate;
@@ -80,7 +85,7 @@ main(int argc, char *argv[])
 
 	progname = argv[0];
 
-	while ((ch = getopt_long(argc, argv, "hfm:s:t:r:", longopts, NULL)) != -1) {
+	while ((ch = getopt_long(argc, argv, "hfcm:s:t:r:", longopts, NULL)) != -1) {
 		switch (ch) {
 		case 'f':
 			fullscreen_flag = 1;
@@ -132,6 +137,14 @@ main(int argc, char *argv[])
 			}
 			break;
 
+		case 'c':
+			nocdrom_flag = TRUE;
+			break;
+
+		case 'v':
+			nomovie_flag = TRUE;
+			break;
+
 		case '?':
 		case 'h':
 		default:
@@ -141,6 +154,15 @@ main(int argc, char *argv[])
 	}
 	argc -= optind;
 	argv += optind;
+
+	if (access(suffile, R_OK) < 0) {
+		fprintf(stderr, "Not found '%s'.\n", suffile);
+		return 1;
+	}
+	if (access(fontname, R_OK) < 0) {
+		fprintf(stderr, "Not found '%s'.\n", fontname);
+		return 1;
+	}
 
 	dosio_init();
 

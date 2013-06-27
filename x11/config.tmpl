@@ -4,12 +4,19 @@ XCOMM
 XCOMM 音楽の再生に Ogg vorbis を使用する場合は #define してください
 XCOMM
 XCOMM VORBIS_CONFIG= pkg-config vorbis
+XCOMM VORBIS_INCS= `$(VORBIS_CONFIG) --cflags`
+XCOMM VORBIS_LIBS= `$(VORBIS_CONFIG) --libs`
+XCOMM OGG_CONFIG= pkg-config ogg
+XCOMM OGG_INCS= `$(OGG_CONFIG) --cflags`
+XCOMM OGG_LIBS= `$(OGG_CONFIG) --libs`
 #undef	USE_OGGVORBIS
 
 XCOMM
 XCOMM 動画再生に xine-lib を使用する場合は #define してください
 XCOMM
 XCOMM XINE_CONFIG= xine-config
+XCOMM XINE_INCS= `$(XINE_CONFIG) --cflags`
+XCOMM XINE_LIBS= `$(XINE_CONFIG) --libs`
 #undef	USE_XINE_LIB
 
 

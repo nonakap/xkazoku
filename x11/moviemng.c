@@ -41,6 +41,13 @@
 
 #include <SDL_syswm.h>
 
+BOOL nomovie_flag = 
+#if !defined(SUPPORT_MOVIE_MPLAYER) && !defined(SUPPORT_MOVIE_XINE)
+	FALSE;
+#else
+	TRUE;
+#endif
+
 #if !defined(SUPPORT_MOVIE_MPLAYER) && !defined(SUPPORT_MOVIE_XINE)
 void
 moviemng_play(const char *fname, SCRN_T *scrn)
@@ -62,6 +69,9 @@ moviemng_play(const char *fname, SCRN_T *scrn)
 	int i;
 
 	UNUSED(scrn);
+
+	if (!nomovie_flag)
+		return;
 
 	memset(&info, 0, sizeof(info));
 	info.version.major = SDL_MAJOR_VERSION;

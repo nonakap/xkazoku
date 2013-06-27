@@ -30,6 +30,8 @@
 
 #include "cddamng.h"
 
+BOOL nocdrom_flag = FALSE;
+
 static int cdda_inited = 0;
 static int cddrive = -1;
 static SDL_CD *cdrom = NULL;
@@ -41,10 +43,6 @@ sdlcdda_init(void)
 	char *env;
 	int num;
 	int i;
-
-	if (getenv("NOCDROM")) {
-		return FAILURE;
-	}
 
 	if (SDL_InitSubSystem(SDL_INIT_CDROM/*|SDL_INIT_TIMER*/) < 0) {
 		fprintf(stderr, "Error: initialize SDL: %s\n", SDL_GetError());
@@ -109,7 +107,7 @@ cddamng_play(int track, int loop, int fadeintick)
 
 	UNUSED(fadeintick);
 
-	if (getenv("NOCDROM")) {
+	if (nocdrom_flag || getenv("NOCDROM")) {
 		return FAILURE;
 	}
 

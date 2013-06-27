@@ -6,6 +6,8 @@ extern "C" {
 
 void moviemng_play(const char *fname, SCRN_T *scrn);
 
+extern BOOL nomovie_flag;
+
 #if defined(SUPPORT_MOVIE_MPLAYER)
 extern char mplayer_cmd[MAX_PATH];
 extern int mplayer_flag;
