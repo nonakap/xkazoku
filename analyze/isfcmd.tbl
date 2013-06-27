@@ -1,0 +1,263 @@
+
+enum {
+	ISF_EXIT		= 1,
+	ISF_BYTE,
+	ISF_WORD,
+	ISF_DWORD,
+	ISF_VAL,
+	ISF_FNAME,
+	ISF_STR,
+	ISF_WIN,
+	ISF_MSG,
+	ISF_POINT,
+	ISF_RECT,
+	ISF_COLOR,
+	ISF_JMPTBL,
+	ISF_TICK,
+
+	ISF_CMD13,
+	ISF_CMD2b,
+	ISF_CMD44,
+	ISF_CMD47,
+	ISF_CMD55,
+	ISF_CMD57,
+	ISF_CMD5b,
+	ISF_CMD81,
+	ISF_CMDd6,
+	ISF_CMDef,
+
+	ISF_WARN1,
+	ISF_WARN2
+};
+
+static const BYTE isf00[] = {0};
+static const BYTE isf01[] = {ISF_FNAME, 0};
+static const BYTE isf02[] = {ISF_FNAME, 0};
+static const BYTE isf03[] = {0};
+static const BYTE isf04[] = {ISF_WORD, 0};
+static const BYTE isf05[] = {ISF_WORD, 0};
+static const BYTE isf06[] = {0};
+static const BYTE isf07[] = {ISF_VAL, ISF_JMPTBL, 0};
+static const BYTE isf08[] = {ISF_VAL, ISF_JMPTBL, 0};
+static const BYTE isf09[] = {ISF_FNAME, 0};
+
+static const BYTE isf10[] = {ISF_WIN, ISF_RECT, ISF_BYTE, 0};
+static const BYTE isf11[] = {ISF_WIN, ISF_BYTE, ISF_FNAME, 0};
+static const BYTE isf12[] = {ISF_WIN, ISF_BYTE, ISF_FNAME, 0};
+static const BYTE isf13[] = {ISF_WIN, ISF_CMD13, 0};
+static const BYTE isf14[] = {ISF_WIN, ISF_BYTE, ISF_VAL, ISF_POINT, 0};
+static const BYTE isf15[] = {ISF_WIN, ISF_BYTE, ISF_RECT, ISF_EXIT, 0};
+static const BYTE isf16[] = {ISF_WIN, ISF_VAL, ISF_BYTE, 0};
+static const BYTE isf17[] = {ISF_WIN, 0};
+static const BYTE isf18[] = {ISF_WIN, ISF_WORD, ISF_BYTE, 0};
+static const BYTE isf19[] = {ISF_WARN1, ISF_EXIT};
+static const BYTE isf1a[] = {0};
+static const BYTE isf1b[] = {0};
+static const BYTE isf1c[] = {ISF_WIN, ISF_RECT, ISF_STR, ISF_VAL, ISF_VAL,
+							ISF_VAL, ISF_VAL, ISF_VAL, ISF_VAL, 0};
+
+static const BYTE isf20[] = {ISF_BYTE, ISF_RECT, ISF_BYTE, 0};
+static const BYTE isf21[] = {ISF_BYTE, ISF_BYTE, ISF_FNAME, 0};
+static const BYTE isf23[] = {ISF_WARN1, ISF_BYTE, ISF_VAL, ISF_VAL, ISF_BYTE,
+							0};
+static const BYTE isf24[] = {ISF_BYTE, ISF_BYTE, 0};
+static const BYTE isf25[] = {ISF_BYTE, ISF_BYTE, ISF_EXIT};
+static const BYTE isf26[] = {ISF_WARN1, ISF_BYTE, ISF_VAL, 0};
+static const BYTE isf27[] = {ISF_BYTE, ISF_VAL, 0};
+static const BYTE isf28[] = {ISF_BYTE, ISF_BYTE, 0};
+static const BYTE isf29[] = {ISF_BYTE, 0};
+static const BYTE isf2a[] = {ISF_BYTE, 0};
+static const BYTE isf2b[] = {ISF_BYTE, ISF_CMD2b, 0};
+static const BYTE isf2d[] = {ISF_VAL, 0};
+static const BYTE isf2e[] = {ISF_VAL, 0};
+
+static const BYTE isf30[] = {ISF_WORD, 0};
+static const BYTE isf31[] = {ISF_WORD, ISF_BYTE, 0};
+static const BYTE isf32[] = {ISF_WORD, ISF_WORD, ISF_BYTE, 0};
+static const BYTE isf33[] = {ISF_WORD, ISF_WORD, 0};
+static const BYTE isf34[] = {ISF_WORD, ISF_WORD, ISF_WORD, 0};
+static const BYTE isf35[] = {ISF_BYTE, ISF_EXIT};
+static const BYTE isf36[] = {ISF_BYTE, ISF_WORD, 0};
+static const BYTE isf37[] = {ISF_BYTE, ISF_BYTE, 0};
+static const BYTE isf38[] = {ISF_WORD, ISF_WORD, 0};
+static const BYTE isf39[] = {ISF_WORD, ISF_WORD, 0};
+static const BYTE isf3a[] = {ISF_BYTE, ISF_BYTE, ISF_WORD, 0};
+static const BYTE isf3b[] = {ISF_WORD, ISF_WORD, 0};
+static const BYTE isf3c[] = {ISF_BYTE, ISF_BYTE, ISF_WORD, 0};
+
+static const BYTE isf40[] = {ISF_WORD, 0};
+static const BYTE isf41[] = {ISF_WORD, ISF_VAL, 0};
+static const BYTE isf42[] = {ISF_WORD, 0};
+static const BYTE isf43[] = {ISF_WORD, 0};
+static const BYTE isf44[] = {ISF_WORD, ISF_CMD44, 0};
+static const BYTE isf45[] = {ISF_WORD, ISF_WORD, ISF_VAL, 0};
+static const BYTE isf46[] = {ISF_WORD, ISF_WORD, ISF_WORD, 0};
+static const BYTE isf47[] = {ISF_CMD47, ISF_EXIT};
+static const BYTE isf48[] = {ISF_WORD, ISF_WORD, 0};
+static const BYTE isf49[] = {ISF_VAL, ISF_VAL, ISF_VAL, ISF_BYTE, 0};
+static const BYTE isf4a[] = {ISF_VAL, ISF_VAL, ISF_VAL, ISF_BYTE, 0};
+static const BYTE isf4b[] = {ISF_WORD, ISF_BYTE, 0};
+static const BYTE isf4c[] = {ISF_WORD, ISF_BYTE, 0};
+
+static const BYTE isf50[] = {ISF_VAL, ISF_POINT, 0};
+static const BYTE isf51[] = {ISF_VAL, ISF_POINT, 0};
+static const BYTE isf52[] = {0};
+static const BYTE isf53[] = {ISF_VAL, ISF_BYTE, ISF_BYTE, ISF_BYTE, 0};
+static const BYTE isf55[] = {ISF_VAL, ISF_BYTE, ISF_BYTE, ISF_BYTE,
+							ISF_CMD55, 0};
+static const BYTE isf56[] = {ISF_VAL, ISF_FNAME, 0};
+static const BYTE isf57[] = {ISF_CMD57, 0};
+static const BYTE isf58[] = {ISF_VAL, ISF_BYTE, ISF_BYTE, ISF_BYTE, ISF_BYTE,
+							ISF_RECT, 0};
+static const BYTE isf59[] = {ISF_VAL, 0};
+static const BYTE isf5a[] = {ISF_BYTE, 0};
+static const BYTE isf5b[] = {ISF_VAL, ISF_POINT, ISF_CMD5b, 0};
+static const BYTE isf5c[] = {ISF_WARN1, ISF_BYTE, ISF_VAL, ISF_VAL, 0};
+static const BYTE isf5d[] = {ISF_WARN1, ISF_BYTE, ISF_VAL, ISF_VAL, 0};
+static const BYTE isf5e[] = {ISF_CMD57, ISF_VAL, ISF_VAL, 0};
+static const BYTE isf5f[] = {ISF_CMD57, 0};
+
+static const BYTE isf60[] = {ISF_VAL, ISF_VAL, ISF_VAL, ISF_VAL, ISF_VAL,
+							ISF_FNAME, 0};
+static const BYTE isf62[] = {ISF_BYTE, ISF_VAL, ISF_RECT, ISF_RECT,
+							ISF_VAL, ISF_VAL, ISF_VAL, ISF_VAL, ISF_VAL, 0};
+static const BYTE isf63[] = {ISF_WORD, ISF_BYTE, ISF_BYTE, ISF_VAL, 0};
+static const BYTE isf64[] = {ISF_WARN1, ISF_BYTE, ISF_VAL, 0};
+static const BYTE isf65[] = {ISF_VAL, ISF_FNAME, 0};
+static const BYTE isf66[] = {ISF_WARN1, ISF_VAL, ISF_VAL, ISF_VAL, ISF_VAL,
+							0};
+static const BYTE isf68[] = {ISF_WARN1, 0};
+static const BYTE isf69[] = {ISF_WARN1, ISF_VAL, 0};
+static const BYTE isf6f[] = {ISF_VAL, ISF_VAL, ISF_POINT, 0};
+
+static const BYTE isf70[] = {ISF_FNAME, ISF_BYTE, 0};
+static const BYTE isf71[] = {ISF_BYTE, ISF_TICK, 0};
+static const BYTE isf72[] = {ISF_VAL, 0};
+static const BYTE isf73[] = {0};
+static const BYTE isf74[] = {ISF_FNAME, ISF_VAL, 0};
+static const BYTE isf75[] = {ISF_VAL, ISF_TICK, 0};
+static const BYTE isf76[] = {ISF_VAL, 0};
+static const BYTE isf77[] = {ISF_EXIT};
+static const BYTE isf78[] = {ISF_FNAME, 0};
+static const BYTE isf79[] = {ISF_VAL, 0};
+static const BYTE isf7a[] = {0};
+static const BYTE isf7b[] = {ISF_VAL, ISF_VAL, 0};
+static const BYTE isf7e[] = {ISF_BYTE, ISF_WORD, 0};
+static const BYTE isf7f[] = {0};
+
+static const BYTE isf80[] = {ISF_WARN1, ISF_BYTE, ISF_FNAME, 0};
+static const BYTE isf81[] = {ISF_CMD81, 0};
+static const BYTE isf82[] = {ISF_RECT, 0};
+static const BYTE isf83[] = {ISF_WARN1, ISF_POINT, 0};
+static const BYTE isf84[] = {ISF_BYTE, ISF_RECT, ISF_BYTE, ISF_WORD, ISF_BYTE,
+							ISF_BYTE, ISF_BYTE, 0};
+static const BYTE isf85[] = {ISF_WORD, ISF_WORD, ISF_BYTE, ISF_BYTE, 0};
+static const BYTE isf86[] = {0};
+static const BYTE isf87[] = {0};
+static const BYTE isf88[] = {ISF_BYTE, ISF_VAL, ISF_VAL, ISF_VAL, ISF_VAL,
+							ISF_VAL, ISF_VAL, ISF_VAL, ISF_VAL, 0};
+static const BYTE isf89[] = {ISF_VAL, 0};
+static const BYTE isf8a[] = {ISF_FNAME, ISF_POINT, 0};
+static const BYTE isf8b[] = {0};
+static const BYTE isf8d[] = {ISF_BYTE, ISF_VAL, 0};
+static const BYTE isf8e[] = {ISF_VAL, 0};
+static const BYTE isf8f[] = {0};
+
+static const BYTE isf90[] = {ISF_WARN1, ISF_VAL, ISF_VAL, 0};
+static const BYTE isf91[] = {ISF_VAL, ISF_BYTE, ISF_TICK, 0};
+static const BYTE isf92[] = {ISF_VAL, 0};
+static const BYTE isf9f[] = {ISF_WARN1, ISF_BYTE, ISF_VAL, 0};
+
+static const BYTE isfa0[] = {0};
+static const BYTE isfa1[] = {ISF_WARN1, ISF_COLOR, ISF_COLOR, 0};
+static const BYTE isfa2[] = {ISF_WARN1, ISF_COLOR, ISF_COLOR, ISF_WORD,
+							ISF_BYTE, ISF_WORD, ISF_WORD, 0};
+static const BYTE isfa5[] = {ISF_DWORD, 0};
+static const BYTE isfa6[] = {ISF_WARN1, ISF_EXIT};
+static const BYTE isfa7[] = {ISF_WORD, ISF_VAL, 0};
+static const BYTE isfae[] = {ISF_BYTE, ISF_RECT, 0};
+static const BYTE isfaf[] = {ISF_BYTE, ISF_RECT, 0};
+
+static const BYTE isfbd[] = {ISF_VAL, ISF_VAL, ISF_VAL, ISF_VAL, 0};
+static const BYTE isfbe[] = {0};
+static const BYTE isfbf[] = {0};
+
+static const BYTE isfd6[] = {ISF_BYTE, ISF_BYTE, ISF_CMDd6, 0};
+static const BYTE isfd7[] = {0};
+
+static const BYTE isfe0[] = {ISF_BYTE, ISF_STR, 0};
+static const BYTE isfe1[] = {ISF_BYTE, ISF_BYTE, ISF_STR, 0};
+static const BYTE isfe2[] = {ISF_BYTE, ISF_BYTE, ISF_BYTE, ISF_WORD,
+							ISF_STR, 0};
+static const BYTE isfe3[] = {ISF_BYTE, ISF_BYTE, ISF_BYTE, ISF_WORD,
+							ISF_STR, 0};
+static const BYTE isfe4[] = {ISF_BYTE, ISF_BYTE, ISF_BYTE, ISF_BYTE, ISF_STR,
+							ISF_STR, ISF_STR, ISF_BYTE, ISF_VAL, ISF_VAL,
+							ISF_VAL, ISF_BYTE, ISF_WORD, ISF_WORD, 0};
+static const BYTE isfe5[] = {ISF_BYTE, 0};
+static const BYTE isfef[] = {ISF_CMDef, 0};
+
+static const BYTE isff0[] = {ISF_BYTE, ISF_FNAME, 0};
+static const BYTE isff1[] = {ISF_VAL, 0};
+static const BYTE isff2[] = {0};
+static const BYTE isff3[] = {ISF_RECT, ISF_FNAME, 0};
+static const BYTE isff4[] = {ISF_BYTE, 0};
+static const BYTE isff5[] = {ISF_BYTE, 0};
+static const BYTE isff7[] = {ISF_EXIT};
+static const BYTE isff8[] = {ISF_BYTE, ISF_BYTE, 0};
+static const BYTE isff9[] = {ISF_BYTE, ISF_BYTE, ISF_COLOR, 0};
+static const BYTE isffa[] = {ISF_VAL, 0};
+static const BYTE isffb[] = {0};
+static const BYTE isffc[] = {ISF_WORD, 0};
+
+
+static const BYTE *isfcmds[256] = {
+			isf00,	isf01,	isf02,	isf03,	isf04,	isf05,	isf06,	isf07,
+			isf08,	isf09,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+
+			isf10,	isf11,	isf12,	isf13,	isf14,	isf15,	isf16,	isf17,
+			isf18,	isf19,	isf1a,	isf1b,	isf1c,	NULL,	NULL,	NULL,
+
+			isf20,	isf21,	NULL,	isf23,	isf24,	isf25,	isf26,	isf27,
+			isf28,	isf29,	isf2a,	isf2b,	NULL,	isf2d,	isf2e,	NULL,
+
+			isf30,	isf31,	isf32,	isf33,	isf34,	isf35,	isf36,	isf37,
+			isf38,	isf39,	isf3a,	isf3b,	isf3c,	NULL,	NULL,	NULL,
+
+			isf40,	isf41,	isf42,	isf43,	isf44,	isf45,	isf46,	isf47,
+			isf48,	isf49,	isf4a,	isf4b,	isf4c,	NULL,	NULL,	NULL,
+
+			isf50,	isf51,	isf52,	isf53,	NULL,	isf55,	isf56,	isf57,
+			isf58,	isf59,	isf5a,	isf5b,	isf5c,	isf5d,	isf5e,	isf5f,
+
+			isf60,	NULL,	isf62,	isf63,	isf64,	isf65,	isf66,	NULL,
+			isf68,	isf69,	NULL,	NULL,	NULL,	NULL,	NULL,	isf6f,
+
+			isf70,	isf71,	isf72,	isf73,	isf74,	isf75,	isf76,	isf77,
+			isf78,	isf79,	isf7a,	isf7b,	NULL,	NULL,	isf7e,	isf7f,
+
+			isf80,	isf81,	isf82,	isf83,	isf84,	isf85,	isf86,	isf87,
+			isf88,	isf89,	isf8a,	isf8b,	NULL,	isf8d,	isf8e,	isf8f,
+
+			isf90,	isf91,	isf92,	NULL,	NULL,	NULL,	NULL,	NULL,
+			NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	isf9f,
+
+			isfa0,	isfa1,	isfa2,	NULL,	NULL,	isfa5,	isfa6,	isfa7,
+			NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	isfae,	isfaf,
+
+			NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+			NULL,	NULL,	NULL,	NULL,	NULL,	isfbd,	isfbe,	isfbf,
+
+			NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+			NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+
+			NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	isfd6,	isfd7,
+			NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,
+
+			isfe0,	isfe1,	isfe2,	isfe3,	isfe4,	isfe5,	NULL,	NULL,
+			NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	isfef,
+
+			isff0,	isff1,	isff2,	isff3,	isff4,	isff5,	NULL,	isff7,
+			isff8,	isff9,	isffa,	isffb,	isffc,	NULL,	NULL,	NULL,
+};
+

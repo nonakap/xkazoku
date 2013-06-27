@@ -1,0 +1,64 @@
+XCOMM	$Id: config.tmpl,v 1.2 2003/04/22 07:15:51 yui Exp $
+
+XCOMM
+XCOMM 音楽の再生に Ogg vorbis を使用する場合は #define してください
+XCOMM
+#undef	USE_OGGVORBIS
+
+XCOMM 標準パスにヘッダ、ライブラリが含まれていない場合に指定してください。
+XCOMM OGG_CFLAGS= -I/usr/pkg/include
+XCOMM OGG_LDFLAGS= -L/usr/pkg/lib -Wl,-rpath,/usr/pkg/lib
+
+
+XCOMM
+XCOMM MPlayer の実行パス
+XCOMM
+XCOMM 環境変数 MPLAYER_CMD、もしくはコマンドラインオプション --mplayer [-m]
+XCOMM でも指定できます。
+XCOMM
+XCOMM 指定の優先順位は下記の通りです。
+XCOMM   1. コマンドラインオプション: --mplayer [-m]
+XCOMM   2. 環境変数                : MPLAYER_CMD
+XCOMM   3. コンパイル時指定        : MPLAYER
+XCOMM
+XCOMM MPlayer は以下のオプションで起動されます。
+XCOMM  -vo x11 -wid <window_id> -x 640 -y 480 -zoom \
+XCOMM   -input conf=/tmp/.xkazoku-mplayer-input-XXXXXXX -framedrop <filename>
+XCOMM
+XCOMM #define	MPLAYER_CMD	/usr/pkg/bin/mplayer
+
+
+XCOMM
+XCOMM TrueType font filename
+XCOMM
+XCOMM 文字の表示に指定された TrueType フォントファイルを使用します。
+XCOMM 指定されなかった場合にはカレントディレクトリの default.ttf を使用します。
+XCOMM コマンドラインオプション --ttfont [-f] で指定する事もできます。
+XCOMM
+XCOMM #define	TTFONT /usr/pkg/lib/X11/fonts/TrueType/kochi-mincho.ttf
+
+
+XCOMM
+XCOMM その他
+XCOMM
+
+XCOMM sdl-config のファイル名が変更されている場合は指定してください。
+XCOMM 普通は指定する必要はありません。
+XCOMM
+XCOMM SDL_CONFIG= sdl-config
+
+
+XCOMM
+XCOMM for debug
+XCOMM
+XCOMM CDEBUGFLAGS= -O3 -march=i686 -mcpu=pentiumpro -funroll-loops -ffast-math
+XCOMM CDEBUGFLAGS+= -W -Wall -Wuninitialized
+XCOMM CDEBUGFLAGS+= -g -O2
+
+
+XCOMM
+XCOMM tracer
+XCOMM
+XCOMM CFLAGS+= -DTRACE
+
+XCOMM CFLAGS+= -DHAVE_MKSTEMP

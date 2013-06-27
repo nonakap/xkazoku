@@ -1,0 +1,141 @@
+
+・ビルドコード
+
+　common/*.c
+　sound/*.c
+　menu/*.c
+　menubase/*.c
+　isfcmd/*.c
+　*.c
+
+　と OS依存部をビルドして下さい。
+
+　QVGA版を作るには SIZE_QVGAを定義して下さい。
+
+
+
+・使用コンパイラ
+
+　Win9x/akira.dsw      VC++6.0
+　WinCE/akira.dsw      VC++5.0
+  WinCE/akiraCE.vcw    eVC++3
+　MacOSX/Akira PPC     Code Warrior5
+　MacOSX/Akira Carbon  Code Warrior6
+
+
+
+・OS依存部
+
+compiler.h
+
+　ogg vorbisを使用するには OGGVORBIS_LIB を定義して スタティックライブラリ
+をリンクして下さい。
+
+　その他のライブラリ使用のdefineは以下の通り
+　Amethyst - AMETHSYT_OVL もしくは AMETHYST_LIB
+　LEN - LEN_LIB
+　DAME - DAMEDEC_LIB
+
+
+
+・移植
+
+　ターゲットマシンには以下のデバイスが必須です。
+
+　・QVGA以上の１枚のサーフェス
+　・１チャンネルのサウンドストリーム
+　・ポインティングデバイス
+
+
+scrnmng:
+
+	void scrnmng_draw(const RECT_T *rct);
+	→ mainvram部分を描画
+	→ menuvramが存在(menuvram != NULL)した場合、
+		αプレーンによって以下の処理を行なう
+			0: mainvram部分を描画
+			1 or 2: 何もしない(scrnmng_menudrawでの描画部分)
+
+	void scrnmng_menudraw(const RECT_T *rct);
+	→ menuvramのαが…
+			0: 何もしない (mainvram描画部分)
+			1: mainvramを描画し menuvramのαを0にする (menuvram deleted mark)
+			2: menuvramを描画 (menuvram描画部分)
+
+
+
+fontmng:
+
+	BOOL fontmng_getsize(void *hdl, const char *string, POINT_T *pt);
+	→ 指定フォントのサイズを返す
+	→ stringはSJIS、戻り値は pt
+
+	BOOL fontmng_getdrawsize(void *hdl, const char *string, POINT_T *pt);
+	→ 指定フォントの描画サイズを返す
+	→ stringはSJIS、戻り値は pt
+
+	FNTDAT fontmng_get(void *hdl, const char *string);
+	→ 指定フォントデータを返す
+	→ stringはSJISで 必ず半角/全角１文字
+
+	typedef struct {
+		int		width;		// フォントバッファサイズ横幅
+		int		height;		// フォントバッファサイズ縦幅
+		int		pitch;		// フォントピッチ
+	} _FNTDAT, *FNTDAT;
+	このストラクチャの直後にフォントデータが FNTDAT.width * FNTDAT.height
+	バイト分存在する。
+
+
+
+inputmng:
+
+	DWORD inputmng_getmouse(int *x, int *y);
+	→ マウス状態を返す
+
+	void inputmng_resetmouse(DWORD mask);
+	→ マウス状態のリセット
+
+	DWORD inputmng_getkey(void);
+	→　キーボード情報を返す
+
+	void inputmng_resetkey(DWORD mask);
+	→　キーボード情報をリセット
+
+　　返り値のビットマップはヘッダを参照して下さい。
+
+
+
+その他のファイル
+　気力ないでつ…ソースを見て下さい
+
+
+
+
+
+* LP64対応化...
+
+　WORD, DWORDを undef
+
+
+long file_seek(FILEH handle, long pointer, int method);
+UINT file_read(FILEH handle, void *data, UINT length);
+UINT file_write(FILEH handle, const void *data, UINT length);
+
+void *fontmng_create(int size, UINT type, const TCHAR *fontface);
+
+UINT inputmng_getmouse(int *x, int *y);
+void inputmng_resetmouse(UINT mask);
+UINT inputmng_getkey(void);
+void inputmng_resetkey(UINT mask);
+
+BOOL taskmng_sleep(UINT32 tick);
+
+int gamemsg_send(UINT msg, long param);
+
+
+
+// その他変更
+void moviemng_play(const char *path, SCRN_T *scrn);
+関数名変更
+
