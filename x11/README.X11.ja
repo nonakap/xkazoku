@@ -25,6 +25,10 @@
           ・libogg
           ・libvorbis
 
+        動画を再生するのであれば以下のライブラリも必要です。
+
+          ・xine-lib
+
     1.2. 環境
 
           15/16/24/32bpp の TrueColor/DirectColor で動作します。
@@ -38,7 +42,8 @@
           ・SDL 1.2.7
           ・SDL_ttf 2.0.6
           ・libogg 1.1
-          ・libvorbis 1.1
+          ・libvorbis 1.0.1
+          ・xine-lib 1-rc5
 
 
  2. コンパイル＆インストール
@@ -50,15 +55,14 @@
         1. cd x11 (既に x11 に移動しているのであれば必要ありません)
         2. config.tmpl の編集
         3. xmkmf
-        4. make
-	(必要であれば su で root になってください)
+        4. make (必要であれば su で root になってください)
         5. make install
 
     2.2. config.tmpl で指定可能な内容
 
-        2.2.1. Ogg vorbis 関連
+        2.2.1. 音関連
 
-            USE_OGGVIRBIS : 音楽の再生に Ogg vorbis 形式ファイルを使用する際に
+            USE_OGGVORBIS : 音楽の再生に Ogg vorbis 形式ファイルを使用する際に
                             #define してください。
 
             VORBIS_CONFIG : pkg-config のファイル名が変更されている場合に
@@ -70,7 +74,16 @@
             TTFONT        : ゲーム中で使用する TrueType フォントのパスを記述
                             してください。
 
-        2.2.3. その他
+        2.2.3. 動画関連
+
+            USE_XINE_LIB  : 動画の再生に xine-lib を使用する再に #define して
+                            ください。
+
+            XINE_CONFIG   : xine-config のファイル名が変更されている場合に
+                            記述してください。通常は記述する必要は無いと
+                            思います。
+
+        2.2.4. その他
 
             SDL_CONFIG    : sdl-config のファイル名が変更されている場合に
                             記述してください。通常は記述する必要は無いと
@@ -121,9 +134,9 @@
              (*2) CD-DA -> RIFF -> ogg の順番で音楽が再生出来るか試します。
 
              (*3) 使用しているシェルが:
-                      sh, bash 等であれば NOCDROM= ; export NOCDROM
-                      csh, tcsh 等であれば setenv NOCDROM=
-                  もしくは xkazoku 起動時に env NOCDROM= xkazoku
+                      sh, bash 等であれば NOCDROM=yes ; export NOCDROM
+                      csh, tcsh 等であれば setenv NOCDROM=yes
+                  もしくは xkazoku 起動時に env NOCDROM=yes xkazoku
 
 
  3. 実行   
@@ -144,7 +157,7 @@
 
         $ cd ~/games/D.O./kazoku
         $ ln -s KAZOKU.SUF system.suf
-        $ ln -s /usr/pkg/lib/X11/font/TrueType/kochi-gothic.ttf default.ttf
+        $ ln -s /usr/pkg/lib/X11/fonts/TTF/kochi-gothic.ttf default.ttf
         $ ls
         DATA            GGD             KAZOKU.HLP      SE
         DOLOGO.AVI      ISF             KAZOKU.SAV      WMSC
@@ -161,9 +174,16 @@
         --fullscreen [-f]        : フルスクリーンモードで起動します。
 
         --suf        [-s] <file> : .SUP ファイルパスを指定します。
+	                           既定値: カレントディレクトリの system.suf
 
         --ttfont     [-t] <file> : 文字表示に使用する TrueType フォントを指定
                                    します。
+				   既定値: カレントディレクトリの default.ttf
+
+        --rate       [-r] <rate> : サウンドデバイスをオープンする時に渡す
+	                           サンプリングレートを指定します。
+				   有効値: 0, 11025, 22050, 44100, 48000
+				   既定値: 44100
 
 
  4. 操作
@@ -181,13 +201,13 @@
 
  5. セーブファイル
 
-    4.1. セーブファイルの場所
+    5.1. セーブファイルの場所
 
         xkazoku はゲームディレクトリにセーブファイル、ゲーム環境設定ファイルを
         作成します。その為、xkazoku を起動するユーザがゲームディレクトリに書き
         込み権限を持っているか確認してから起動してください。
 
-    4.2. Windows とのセーブファイルの互換性
+    5.2. Windows とのセーブファイルの互換性
 
         Windows で作成されたセーブファイルを利用する事は出来ます。
 
@@ -213,6 +233,10 @@
     ・Xiph.Org
       http://www.xiph.org/, http://www.ogg.org/
       Ogg, Ogg Vorbis
+
+    ・xine
+      http://xinehq.de/
+      xine-lib
 
 
  8. 謝辞

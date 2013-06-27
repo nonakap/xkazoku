@@ -4,10 +4,14 @@
 extern "C" {
 #endif
 
+void moviemng_play(const char *fname, SCRN_T *scrn);
+
+#if defined(SUPPORT_MOVIE_MPLAYER)
 extern char mplayer_cmd[MAX_PATH];
 extern int mplayer_flag;
+#endif
 
-void moviemng_play(const char *fname, SCRN_T *scrn);
+void movie_play(const char *moviefile);
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,8 @@
 /*	$Id: audio.c,v 1.3 2003/08/13 05:01:53 yui Exp $	*/
 
 /*
+ * Copyright (C) 2002-2004 NONAKA Kimihiro
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -9,11 +11,6 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgment:
- *      This product includes software developed by NONAKA Kimihiro.
- * 4. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
@@ -29,30 +26,34 @@
 
 #include "compiler.h"
 
+#include "x11.h"
 #include "audio.h"
 #include "sound.h"
 
 #include <SDL_audio.h>
 
 #define	DEFAULT_SAMPLES	512
-#define	NSNDBUF		3
+#define	NSNDBUF		2
 
 static BOOL sound_opened = FALSE;
-
 static int nsndbuf = 0;
 static char sndbuf[NSNDBUF][DEFAULT_SAMPLES * 4];
+UINT audio_rate = AUDIO_RATE;
+
 
 static void
 sound_play_cb(void *userdata, Uint8 *stream, int len)
 {
-	int length = len > DEFAULT_SAMPLES * 4 ? DEFAULT_SAMPLES * 4 : len;
+	int n;
 
 	UNUSED(userdata);
+	UNUSED(len);
 
-	soundmix_getpcm((short *)sndbuf[nsndbuf], length / 4);
-	SDL_MixAudio(stream, sndbuf[nsndbuf], length, SDL_MIX_MAXVOLUME);
-
+	n = nsndbuf;
 	nsndbuf = (nsndbuf + 1) % NSNDBUF;
+
+	soundmix_getpcm((short *)sndbuf[n], DEFAULT_SAMPLES);
+	SDL_MixAudio(stream, sndbuf[n], DEFAULT_SAMPLES * 4, SDL_MIX_MAXVOLUME);
 }
 
 BOOL
@@ -74,10 +75,12 @@ sound_init(UINT rate)
 		opna_rate = 11025;
 	else if (rate < 44100)
 		opna_rate = 22050;
-	else
+	else if (rate < 48000)
 		opna_rate = 44100;
+	else
+		opna_rate = 48000;
 
-	if (SDL_InitSubSystem(SDL_INIT_AUDIO|SDL_INIT_TIMER) < 0) {
+	if (SDL_InitSubSystem(SDL_INIT_AUDIO/*|SDL_INIT_TIMER*/) < 0) {
 		fprintf(stderr, "Error: SDL_Init: %s\n", SDL_GetError());
 		return FAILURE;
 	}

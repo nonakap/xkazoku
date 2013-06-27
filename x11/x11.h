@@ -57,6 +57,8 @@ void make16mask(UINT bmask, UINT rmask, UINT gmask);
 
 int sdlcdda_setup(void);
 
+extern UINT audio_rate;
+
 #ifdef	__cplusplus
 };
 #endif

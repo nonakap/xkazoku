@@ -8,21 +8,21 @@
 
 #include <signal.h>
 
-static BOOL is_proc = 1;
+static BOOL is_proc = FALSE;
 
 void
 sighandler(int signo)
 {
 
         UNUSED(signo);
-	is_proc = 0;
+	is_proc = FALSE;
 }
 
 void
 taskmng_init(void)
 {
 
-	is_proc = 1;
+	is_proc = TRUE;
 }
 
 void
@@ -34,7 +34,7 @@ void
 taskmng_exit(void)
 {
 
-	is_proc = 0;
+	is_proc = FALSE;
 }
 
 void
@@ -42,51 +42,50 @@ taskmng_rol(void)
 {
 	SDL_Event e;
 
-	if (is_proc) {
-		if (SDL_PollEvent(&e)) {
-			switch (e.type) {
-			case SDL_MOUSEBUTTONUP:
-				switch (e.button.button) {
-				case SDL_BUTTON_LEFT:
-					inputmng_buttonup(LBUTTON_BIT);
-					break;
+	if (!is_proc) {
+		return;
+	}
 
-				case SDL_BUTTON_RIGHT:
-					inputmng_buttonup(RBUTTON_BIT);
-					break;
-				}
+	while (SDL_PollEvent(&e) > 0) {
+		switch (e.type) {
+		case SDL_MOUSEBUTTONUP:
+			switch (e.button.button) {
+			case SDL_BUTTON_LEFT:
+				inputmng_buttonup(LBUTTON_BIT);
 				break;
 
-			case SDL_MOUSEBUTTONDOWN:
-				switch (e.button.button) {
-				case SDL_BUTTON_LEFT:
-					inputmng_buttondown(LBUTTON_BIT);
-					break;
-
-				case SDL_BUTTON_RIGHT:
-					inputmng_buttondown(RBUTTON_BIT);
-					break;
-				}
-				break;
-
-			case SDL_KEYDOWN:
-				inputmng_keyset(e.key.keysym.sym);
-				break;
-
-			case SDL_KEYUP:
-				inputmng_keyreset(e.key.keysym.sym);
-				break;
-
-			case SDL_QUIT:
-				is_proc = 0;
-				break;
-
-			default:
+			case SDL_BUTTON_RIGHT:
+				inputmng_buttonup(RBUTTON_BIT);
 				break;
 			}
+			break;
+
+		case SDL_MOUSEBUTTONDOWN:
+			switch (e.button.button) {
+			case SDL_BUTTON_LEFT:
+				inputmng_buttondown(LBUTTON_BIT);
+				break;
+
+			case SDL_BUTTON_RIGHT:
+				inputmng_buttondown(RBUTTON_BIT);
+				break;
+			}
+			break;
+
+		case SDL_KEYDOWN:
+			inputmng_keyset(e.key.keysym.sym);
+			break;
+
+		case SDL_KEYUP:
+			inputmng_keyreset(e.key.keysym.sym);
+			break;
+
+		case SDL_QUIT:
+			taskmng_exit();
+			break;
 		}
-		stream_prepart_task();
 	}
+	stream_prepart_task();
 }
 
 BOOL

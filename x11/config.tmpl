@@ -6,6 +6,12 @@ XCOMM
 XCOMM VORBIS_CONFIG= pkg-config vorbis
 #undef	USE_OGGVORBIS
 
+XCOMM
+XCOMM 動画再生に xine-lib を使用する場合は #define してください
+XCOMM
+XCOMM XINE_CONFIG= xine-config
+#undef	USE_XINE_LIB
+
 
 XCOMM
 XCOMM TrueType font filename
@@ -14,14 +20,13 @@ XCOMM 文字の表示に指定された TrueType フォントファイルを使用します。
 XCOMM 指定されなかった場合にはカレントディレクトリの default.ttf を使用します。
 XCOMM コマンドラインオプション --ttfont [-f] で指定する事もできます。
 XCOMM
-XCOMM #define	TTFONT /usr/pkg/lib/X11/fonts/TrueType/kochi-mincho.ttf
+XCOMM #define	TTFONT /usr/pkg/lib/X11/fonts/TTF/kochi-mincho.ttf
 
 
 XCOMM
 XCOMM その他
 XCOMM
-
 XCOMM sdl-config のファイル名が変更されている場合は指定してください。
-XCOMM 普通は指定する必要はありません。
+XCOMM 通常は指定する必要はありません。
 XCOMM
 XCOMM SDL_CONFIG= sdl-config

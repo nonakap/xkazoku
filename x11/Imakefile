@@ -13,24 +13,34 @@ VORBIS_INCS= `$(VORBIS_CONFIG) --cflags`
 VORBIS_LIBS= `$(VORBIS_CONFIG) --libs`
 #endif
 
+#if defined(USE_MPLAYER)
+MPLAYER_DEFS= -DSUPPORT_MOVIE_MPLAYER
 #if defined(MPLAYER_CMD)
-MPLAYER= -DMPLAYER=\"MPLAYER_CMD\"
+MPLAYER_DEFS+= -DMPLAYER=\"MPLAYER_CMD\"
+#endif
+#endif
+
+#if defined(USE_XINE_LIB)
+XINE_DEFS= -DSUPPORT_MOVIE_XINE
+XINE_CONFIG?= xine-config
+XINE_INCS= `$(XINE_CONFIG) --cflags`
+XINE_LIBS= `$(XINE_CONFIG) --libs`
 #endif
 
 #if defined(TTFONT)
-TTFONT= -DFONTNAME_DEFAULT=\"TTFONT\"
+TTFONT_DEFS= -DFONTNAME_DEFAULT=\"TTFONT\"
 #endif
 
-DEFINES= ShmDefines $(OGG_DEFS) $(MPLAYER) $(TTFONT)
+DEFINES= ShmDefines $(VORBIS_DEFS) $(MPLAYER_DEFS) $(XINE_DEFS) $(TTFONT_DEFS)
 
 SYS_LIBRARIES= -lm
 
 EXTRA_INCLUDES= -I. -I.. -I../common -I../isfcmd \
 		-I../sound -I../sound/vermouth \
 		-I../menubase -I../menu \
-		$(SDL_INCS) $(VORBIS_INCS)
+		$(SDL_INCS) $(VORBIS_INCS) $(XINE_INCS)
 
-LOCAL_LIBRARIES= $(XLIB) $(SDL_LIBS) $(VORBIS_LIBS)
+LOCAL_LIBRARIES= $(XLIB) $(SDL_LIBS) $(VORBIS_LIBS) $(XINE_LIBS)
 
 #define PassCDebugFlags
 
@@ -66,6 +76,7 @@ SOUNDOBJS=	../sstream.o ../sound/sound.o ../sound/sndmix.o \
 
 UNIXOBJS=	fontmng.o gamemsg.o inputmng.o moviemng.o scrnmng.o taskmng.o \
 		timemng.o \
+		moviemng_mplayer.o moviemng_xine.o \
 		dosio.o sdldraw.o trace.o
 
 AUDIOOBJS=	audio.o cddamng.o
